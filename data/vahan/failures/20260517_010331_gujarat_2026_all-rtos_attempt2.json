@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-16T19:33:31.952Z",
+  "attempt": 2,
+  "error": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('select')\u001b[22m\n",
+  "report": {
+    "year": 2026,
+    "months": [
+      4
+    ],
+    "state": "Gujarat",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "HTTP Server Error 503\n\nNo available server to handle this request",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260517_010331_gujarat_2026_all-rtos_attempt2.png",
+    "html": "data\\vahan\\failures\\20260517_010331_gujarat_2026_all-rtos_attempt2.html"
+  }
+}

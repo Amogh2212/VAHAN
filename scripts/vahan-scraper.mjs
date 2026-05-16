@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
+import { closePool } from "../lib/db.mjs";
+import { upsertRegistrationRows } from "../lib/registrations.mjs";
 
 const SOURCE_URL =
   "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml";
@@ -1097,6 +1099,8 @@ async function scrape(args) {
   try {
     let succeeded = 0;
     let failed = 0;
+    let neonUpserted = 0;
+    let neonSkipped = false;
     const reportItems = buildReportItems(workItems);
     for (const [index, reportItem] of reportItems.entries()) {
       const label = `${reportItem.year} ${reportItem.state} ${reportItem.rto || "All RTOs"}`;
@@ -1105,6 +1109,7 @@ async function scrape(args) {
         const scrapeResult = await scrapeReportWithRetries(context, page, args.outputDir, reportItem);
         page = scrapeResult.page;
         const reportRows = scrapeResult.reportRows;
+        const newRows = [];
 
         for (const item of reportItem.items) {
           for (const reportRow of reportRows) {
@@ -1113,7 +1118,7 @@ async function scrape(args) {
             if (vehicleCount === undefined || vehicleCount === null) {
               throw new Error(`Could not find month ${item.month} for fuel "${reportRow.label}"`);
             }
-            rows.push({
+            newRows.push({
               year: item.year,
               month: item.month,
               state: item.state,
@@ -1124,9 +1129,13 @@ async function scrape(args) {
               scraped_at: new Date().toISOString(),
               source_url: SOURCE_URL,
             });
-            succeeded += 1;
           }
         }
+        const upsertResult = await upsertRegistrationRows(newRows);
+        neonSkipped = neonSkipped || upsertResult.skipped;
+        neonUpserted += upsertResult.count;
+        rows.push(...newRows);
+        succeeded += newRows.length;
         await writeFileWithRetry(outputFile, toCsv(rows));
       } catch (error) {
         failed += reportItem.items.length;
@@ -1158,6 +1167,8 @@ async function scrape(args) {
           attempted_this_run: workItems.length,
           succeeded_this_run: succeeded,
           failed_this_run: failed,
+          neon_upserted_this_run: neonUpserted,
+          neon_skipped_this_run: neonSkipped,
           completed_at: new Date().toISOString(),
         },
         null,
@@ -1169,6 +1180,7 @@ async function scrape(args) {
     }
   } finally {
     await browser.close();
+    await closePool();
   }
 
   console.log(`Wrote ${rows.length} rows to ${outputFile}`);

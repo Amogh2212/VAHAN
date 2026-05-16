@@ -5,6 +5,8 @@ import process from "node:process";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { hasDatabaseUrl } from "./lib/db.mjs";
+import { loadRegistrationRowsFromDb, readRegistrationsCsv } from "./lib/registrations.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -201,23 +203,17 @@ function parseCsvLine(line) {
 
 async function loadRows() {
   if (dataCache) return dataCache;
-  const content = await fs.readFile(DATA_FILE, "utf8").catch(() => "");
-  const [headerLine, ...lines] = content.trim().split(/\r?\n/).filter(Boolean);
-  if (!headerLine) {
-    dataCache = [];
-    return dataCache;
+
+  if (hasDatabaseUrl()) {
+    try {
+      dataCache = await loadRegistrationRowsFromDb();
+      return dataCache;
+    } catch (error) {
+      console.warn(`[data] Neon read failed, falling back to CSV: ${error.message}`);
+    }
   }
-  const headers = parseCsvLine(headerLine);
-  dataCache = lines.map((line) => {
-    const values = parseCsvLine(line);
-    const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
-    return {
-      ...row,
-      year: Number(row.year),
-      month: Number(row.month),
-      vehicle_count: Number(row.vehicle_count || 0),
-    };
-  });
+
+  dataCache = await readRegistrationsCsv(DATA_FILE);
   return dataCache;
 }
 

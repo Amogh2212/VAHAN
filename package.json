@@ -7,11 +7,14 @@
     "dev": "node --env-file=.env server.mjs",
     "start": "node --env-file=.env server.mjs",
     "data:tdc": "node scripts/download-tdc-history.mjs",
-    "scrape:vahan": "node scripts/vahan-scraper.mjs",
-    "scrape:vahan:discover": "node scripts/vahan-scraper.mjs --mode discover",
-    "scrape:vahan:sample": "node scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1"
+    "db:schema": "node --env-file=.env scripts/apply-neon-schema.mjs",
+    "import:neon": "node --env-file=.env scripts/import-to-neon.mjs",
+    "scrape:vahan": "node --env-file=.env scripts/vahan-scraper.mjs",
+    "scrape:vahan:discover": "node --env-file=.env scripts/vahan-scraper.mjs --mode discover",
+    "scrape:vahan:sample": "node --env-file=.env scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1"
   },
   "dependencies": {
+    "pg": "^8.20.0",
     "playwright": "^1.52.0"
   }
 }

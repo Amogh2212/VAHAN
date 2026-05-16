@@ -741,3 +741,20 @@ year,month,state,rto,fuel_segment,fuel_type,vehicle_count,scraped_at,source_url
 2025,1,Haryana,gurugram,NON_EV,PETROL/HYBRID/CNG,0,2026-05-16T08:51:49.089Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
 2025,1,Haryana,gurugram,EV,PURE EV,9,2026-05-16T08:51:49.089Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
 2025,1,Haryana,gurugram,EV,STRONG HYBRID EV,2,2026-05-16T08:51:49.089Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,CNG ONLY,7058,2026-05-16T19:33:48.880Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,DIESEL,16757,2026-05-16T19:33:48.880Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,DIESEL/HYBRID,108,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,EV,ELECTRIC(BOV),305,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,LNG,0,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,NOT APPLICABLE,292,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL,37732,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL/CNG,1866,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL(E20),77830,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL(E20)/CNG,11780,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL(E20)/HYBRID,802,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL(E20)/HYBRID/CNG,0,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL/HYBRID,283,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,NON_EV,PETROL/HYBRID/CNG,0,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,EV,PLUG-IN HYBRID EV,0,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,EV,PURE EV,9427,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+2026,4,Gujarat,All Vahan4 Running Office,EV,STRONG HYBRID EV,734,2026-05-16T19:33:48.881Z,https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml

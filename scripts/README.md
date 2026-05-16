@@ -51,6 +51,25 @@ node scripts/vahan-scraper.mjs --mode discover --headed --channel chrome
 npm run scrape:vahan:sample
 ```
 
+When `DATABASE_URL` is present in `.env`, successful scrape rows are upserted
+into Neon and also written to the local CSV files. If `DATABASE_URL` is absent,
+the scraper continues to write CSV only.
+
+## Neon Import
+
+Create the Neon schema from `db/schema.sql`, then import the existing local CSV:
+
+```powershell
+npm run db:schema
+npm run import:neon
+```
+
+The import is idempotent. Rows are upserted by:
+
+```text
+year, month, state, rto, fuel_type
+```
+
 Preview the planned combinations without launching the browser or writing files:
 
 ```powershell
