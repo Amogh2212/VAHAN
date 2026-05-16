@@ -1,0 +1,117 @@
+﻿VAHAN Final Regression Check
+Timestamp: 2026-05-16 14:32:07 +05:30
+Workspace: C:\Users\amogh\Desktop\BHAIYA\Vahan EY
+
+Note: an earlier run hit a harness-only PowerShell ProcessStartInfo.ArgumentList compatibility issue, then a temp-script module-resolution issue. This report is the corrected final run.
+Scope: package inspection, JavaScript syntax checks, scraper dry-run, local server health, API regression probes, and Playwright browser checks for dashboard + compare pages.
+
+## Node version
+Command: node --version
+Exit code: 0
+OUTPUT:
+v24.13.1
+RESULT: PASS
+
+## NPM version
+Command: npm --version
+Exit code: 0
+OUTPUT:
+11.8.0
+RESULT: PASS
+
+## Package scripts listing
+Command: npm run
+Exit code: 0
+OUTPUT:
+Lifecycle scripts included in vahan-ey-scraper@0.1.0:
+  start
+    node --env-file=.env server.mjs
+available via `npm run`:
+  dev
+    node --env-file=.env server.mjs
+  data:tdc
+    node scripts/download-tdc-history.mjs
+  scrape:vahan
+    node scripts/vahan-scraper.mjs
+  scrape:vahan:discover
+    node scripts/vahan-scraper.mjs --mode discover
+  scrape:vahan:sample
+    node scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1
+RESULT: PASS
+
+## Syntax check server.mjs
+Command: node --check server.mjs
+Exit code: 0
+RESULT: PASS
+
+## Syntax check fetchTest.js
+Command: node --check fetchTest.js
+Exit code: 0
+RESULT: PASS
+
+## Syntax check scripts/download-tdc-history.mjs
+Command: node --check scripts/download-tdc-history.mjs
+Exit code: 0
+RESULT: PASS
+
+## Syntax check scripts/vahan-scraper.mjs
+Command: node --check scripts/vahan-scraper.mjs
+Exit code: 0
+RESULT: PASS
+
+## Syntax check public/app.js
+Command: node --check public/app.js
+Exit code: 0
+RESULT: PASS
+
+## Syntax check public/compare.js
+Command: node --check public/compare.js
+Exit code: 0
+RESULT: PASS
+
+## Scraper dry-run sample plan
+Command: node scripts/vahan-scraper.mjs --mode scrape --dry-run --years 2024 --months 1 --states Maharashtra
+Exit code: 0
+OUTPUT:
+Rows already present: 742
+Work items remaining: 0
+Dry run only. No browser launched and no files written.
+[]
+RESULT: PASS
+
+## Local server + API/browser checks
+Server process started: pid=8056, exited=False
+
+## API and Playwright browser regression
+Command: node .regression-api-browser-check.mjs
+Exit code: 0
+OUTPUT:
+HEALTH {"status":"ok","rowCount":742,"latestMonth":"2026-03","source":"VAHAN public dashboard aggregate data"}
+QUERY_STATUS 200 ROWS 4 TOTAL 18892
+REGISTRATIONS_STATUS 200 ROWS 4
+RTOS_STATUS 200 COUNT 1
+TRAVERSAL_STATUS 404
+DASHBOARD_TITLE VAHAN Registration Dashboard — Vehicle Registration Intelligence
+DASHBOARD_TOTAL 18,892 ROWS 4
+DASHBOARD_FILTER_TEXT Fuel segmentEVFuel typeAllStateGujaratRTOAll loaded RTOsFrom2024-01To2024-01
+COMPARE_STATUS Loaded Loaded
+COMPARE_DELTA Difference: -865 registrations Change: -4.6% Left: 18,892 total Right: 18,027 total
+API_AND_BROWSER_CHECKS_PASS
+RESULT: PASS
+Server process stopped.
+
+## Summary
+PASS: 12
+NON-PASS: 0
+- Node version: PASS
+- NPM version: PASS
+- Package scripts listing: PASS
+- Syntax check server.mjs: PASS
+- Syntax check fetchTest.js: PASS
+- Syntax check scripts/download-tdc-history.mjs: PASS
+- Syntax check scripts/vahan-scraper.mjs: PASS
+- Syntax check public/app.js: PASS
+- Syntax check public/compare.js: PASS
+- Scraper dry-run sample plan: PASS
+- Server startup: PASS
+- API and Playwright browser regression: PASS

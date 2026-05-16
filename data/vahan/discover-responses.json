@@ -1,0 +1,8 @@
+[
+  {
+    "status": 403,
+    "method": "GET",
+    "url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+    "contentType": "text/html"
+  }
+]

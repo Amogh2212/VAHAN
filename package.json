@@ -1,0 +1,17 @@
+{
+  "name": "vahan-ey-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env server.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "data:tdc": "node scripts/download-tdc-history.mjs",
+    "scrape:vahan": "node scripts/vahan-scraper.mjs",
+    "scrape:vahan:discover": "node scripts/vahan-scraper.mjs --mode discover",
+    "scrape:vahan:sample": "node scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}

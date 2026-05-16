@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Query and explore VAHAN vehicle registration data across Indian states and RTOs. Powered by live scraping of the VAHAN public dashboard." />
+    <title>VAHAN Registration Dashboard — Vehicle Registration Intelligence</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell" id="app">
+      <!-- ─── Hero / Query Panel ─────────────────────────────────────── -->
+      <section class="query-panel" id="queryPanel">
+        <div class="query-panel-head">
+          <div>
+            <p class="eyebrow">VAHAN Aggregate Dashboard</p>
+            <h1>Registration Query Dashboard</h1>
+          </div>
+          <a class="compare-link" href="/compare.html">Compare data</a>
+        </div>
+        <form id="queryForm" class="query-form" autocomplete="off">
+          <input
+            id="queryInput"
+            name="query"
+            placeholder="e.g. EV registrations in Noida from May 2024 to May 2025"
+            value="EV registrations in Maharashtra from Jan 2024 to Jan 2024"
+          />
+          <button type="submit" id="submitBtn">
+            <span class="btn-text">Run Query</span>
+          </button>
+        </form>
+        <p id="freshness" class="freshness"></p>
+      </section>
+
+      <!-- ─── Warnings ───────────────────────────────────────────────── -->
+      <section id="warnings" class="warnings" hidden></section>
+
+      <!-- ─── Summary Cards ──────────────────────────────────────────── -->
+      <section class="cards" id="summaryCards">
+        <article id="card-total">
+          <span>Total Registrations</span>
+          <strong id="total">0</strong>
+        </article>
+        <article id="card-average">
+          <span>Monthly Average</span>
+          <strong id="average">0</strong>
+        </article>
+        <article id="card-peak">
+          <span>Peak Month</span>
+          <strong id="peak">-</strong>
+        </article>
+        <article id="card-rows">
+          <span>Rows Returned</span>
+          <strong id="rowCount">0</strong>
+        </article>
+      </section>
+
+      <!-- ─── Filters + Trend ────────────────────────────────────────── -->
+      <section class="grid">
+        <article class="panel" id="filtersPanel">
+          <div class="panel-head">
+            <h2>Parsed Filters</h2>
+          </div>
+          <dl id="filters" class="filters"></dl>
+        </article>
+
+        <article class="panel" id="trendPanel">
+          <div class="panel-head">
+            <h2>Monthly Trend</h2>
+          </div>
+          <div id="trend" class="bars"></div>
+        </article>
+      </section>
+
+      <!-- ─── Fuel Breakdown ─────────────────────────────────────────── -->
+      <section class="panel" id="fuelPanel">
+        <div class="panel-head">
+          <h2>Fuel Breakdown</h2>
+        </div>
+        <div id="fuelBreakdown" class="fuel-list"></div>
+      </section>
+
+      <!-- ─── Result Table ───────────────────────────────────────────── -->
+      <section class="panel" id="tablePanel">
+        <div class="panel-head">
+          <h2>Result Rows</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>State</th>
+                <th>RTO</th>
+                <th>Segment</th>
+                <th>Fuel</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

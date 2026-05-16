@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Compare two VAHAN queries side by side to see how registrations change across months or locations." />
+    <title>VAHAN Compare View</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="compare-page">
+    <main class="shell">
+      <section class="compare-topbar">
+        <div class="compare-intro">
+          <p class="eyebrow">VAHAN Compare View</p>
+          <h1>Compare two data slices</h1>
+          <p class="compare-empty" id="modeHelp">
+            Compare the same place across two months, or two places in the same month.
+          </p>
+        </div>
+        <div class="compare-actions">
+          <a class="back-link" href="/">Back to dashboard</a>
+          <div class="mode-toggle" role="tablist" aria-label="Compare mode">
+            <button type="button" id="monthMode" class="active" aria-pressed="true">Month vs month</button>
+            <button type="button" id="locationMode" aria-pressed="false">Location vs location</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel compare-panel">
+        <form id="compareForm" class="compare-form" autocomplete="off">
+          <div class="compare-grid">
+            <label>
+              <span class="eyebrow">Left query</span>
+              <input id="leftQuery" name="leftQuery" value="EV registrations in Maharashtra from Jan 2024 to Jan 2024" />
+            </label>
+            <label>
+              <span class="eyebrow">Right query</span>
+              <input id="rightQuery" name="rightQuery" value="EV registrations in Gujarat from Jan 2024 to Jan 2024" />
+            </label>
+          </div>
+          <div class="compare-actions">
+            <button type="submit" id="compareBtn">Compare</button>
+            <p class="compare-empty" id="compareHint">Use two natural-language queries and compare the returned totals.</p>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel compare-panel" id="summaryPanel">
+        <div class="panel-head">
+          <h2>Comparison Summary</h2>
+        </div>
+        <div class="compare-delta" id="deltaSummary">
+          Run two queries to see the difference in totals, average, and peak month.
+        </div>
+      </section>
+
+      <section class="panel compare-panel" id="chartPanel">
+        <div class="panel-head">
+          <h2>Monthly Comparison</h2>
+        </div>
+        <div class="double-bar-chart" id="doubleBarChart">
+          <p class="compare-empty">Run two queries to compare monthly totals side by side.</p>
+        </div>
+      </section>
+
+      <section class="compare-grid">
+        <article class="panel compare-panel" id="leftPanel">
+          <div class="panel-head">
+            <h2>Left result <span id="leftResultMeta"></span></h2>
+            <span class="status-pill" id="leftStatus">Waiting</span>
+          </div>
+          <p class="compare-empty" id="leftQueryLabel">No query run yet.</p>
+          <div class="result-meta">
+            <div class="metric"><span>Total</span><strong id="leftTotal">-</strong></div>
+            <div class="metric"><span>Average</span><strong id="leftAverage">-</strong></div>
+            <div class="metric"><span>Peak month</span><strong id="leftPeak">-</strong></div>
+            <div class="metric"><span>Rows</span><strong id="leftRows">-</strong></div>
+          </div>
+          <div class="compare-section">
+            <div>
+              <h2>Monthly trend</h2>
+              <div class="compare-mini-bars" id="leftTrend"></div>
+            </div>
+            <div>
+              <h2>Fuel breakdown</h2>
+              <div class="fuel-list" id="leftFuel"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel compare-panel" id="rightPanel">
+          <div class="panel-head">
+            <h2>Right result <span id="rightResultMeta"></span></h2>
+            <span class="status-pill" id="rightStatus">Waiting</span>
+          </div>
+          <p class="compare-empty" id="rightQueryLabel">No query run yet.</p>
+          <div class="result-meta">
+            <div class="metric"><span>Total</span><strong id="rightTotal">-</strong></div>
+            <div class="metric"><span>Average</span><strong id="rightAverage">-</strong></div>
+            <div class="metric"><span>Peak month</span><strong id="rightPeak">-</strong></div>
+            <div class="metric"><span>Rows</span><strong id="rightRows">-</strong></div>
+          </div>
+          <div class="compare-section">
+            <div>
+              <h2>Monthly trend</h2>
+              <div class="compare-mini-bars" id="rightTrend"></div>
+            </div>
+            <div>
+              <h2>Fuel breakdown</h2>
+              <div class="fuel-list" id="rightFuel"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="/compare.js"></script>
+  </body>
+</html>

@@ -1,0 +1,243 @@
+Vahan Analytics Platform - Phase 1 Findings
+Date: 2026-05-14
+
+Project boundary
+----------------
+This project is limited to public, aggregated, anonymised vehicle registration
+statistics. It must not access owner-level details, personal data, registration
+certificate details, addresses, phone numbers, or individual vehicle-owner
+records.
+
+
+Goal
+----
+Identify a safe and automatable source for aggregate Vahan / Parivahan vehicle
+registration data that can feed the backend ingestion job and support the
+webapp's analytics features.
+
+
+Recommended data approach
+-------------------------
+The current recommendation is to build the product around monthly aggregate
+vehicle registration data unless a confirmed daily public API is later found.
+
+Recommended architecture:
+1. A scheduled backend ingestion job downloads or imports the latest monthly
+   dataset.
+2. The backend normalizes the records into the project database.
+3. The webapp queries the project database or cache, not the external data
+   source directly.
+4. API responses and UI screens should show a freshness label, for example:
+   "Data updated through May 2026".
+
+Correct product wording:
+"Monthly vehicle registration analytics based on public VAHAN/Parivahan
+aggregate data."
+
+Avoid this wording:
+"Live VAHAN data" or "daily VAHAN registrations", because no confirmed
+cron-safe daily production source has been found.
+
+
+Ranked source findings
+----------------------
+1. Recommended monthly source: Dataful VAHAN datasets
+
+   Main candidate:
+   https://dataful.in/datasets/18273/
+
+   Finding:
+   - This is the strongest practical monthly candidate found so far.
+   - It provides aggregate vehicle registration data sourced from
+     Parivahan / VAHAN.
+   - The checked dataset covers state, vehicle category, and fuel type by month.
+   - It lists formats as CSV, XLSX, and Parquet.
+   - It lists update frequency at source as Monthly.
+   - It lists last updated at Dataful as May 2026.
+   - It lists granularity as Month and State.
+
+   Other relevant Dataful monthly datasets:
+   - All-India year/month, vehicle category, and fuel type:
+     https://dataful.in/datasets/18259/
+   - All-India maker and vehicle type by month:
+     https://dataful.in/datasets/18266/
+   - All-India vehicle class and fuel type by month:
+     https://dataful.in/datasets/18261/
+
+   Caveats:
+   - Access, license, pricing, and automation permissions must be verified before
+     using Dataful in production ingestion.
+   - Dataful is a third-party mirror, so values may differ from the live Vahan
+     dashboard if the dashboard receives more frequent updates.
+
+
+2. Possible weekly source: CEIC VAHAN datasets
+
+   Example:
+   https://www.ceicdata.com/en/india/number-of-registered-motor-vehicles-weekly-by-category-wise
+
+   Finding:
+   - CEIC exposes Vahan registered motor vehicle data with Weekly frequency.
+   - The data is sourced from the Ministry of Road Transport and Highways.
+   - It appears to include category-wise and state-level series.
+
+   Caveats:
+   - CEIC is generally a paid/premium data provider.
+   - It may not be suitable if the project requires an open, no-login,
+     cron-safe source.
+
+
+3. Historical/testing source: Transport Data Commons CKAN
+
+   Dataset:
+   https://ckan.transport-data.org/dataset/vahan-vehicle-registrations-india
+
+   Tested API:
+   https://ckan.tdc.prod.datopian.com/en_GB/api/action/datastore_search
+
+   Tested resource:
+   vahan-vehicle-registrations-by-vehicle-category.csv
+   Resource ID: 6b236057-e718-4340-907c-d63c3145b706
+
+   Finding:
+   - The CKAN source is automatable and exposes structured aggregate data through
+     CSV and CKAN datastore APIs.
+   - It is useful for testing ingestion, schema design, and dashboard development.
+   - The tested resource contains aggregate fields such as date, state, RTO
+     office, vehicle type, category, and registration count.
+   - The tested freshness range was 2019-01-01 to 2024-05-01 with 584,267 rows.
+   - The CKAN dataset page indicates that updates are not planned / appear to be
+     annual or less frequent.
+
+   Conclusion:
+   - This is not a good production source for current 2026 monthly or daily data.
+   - Keep it as a historical/test source only.
+
+
+4. Official reference source: Parivahan / NIC public dashboard
+
+   URL:
+   https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en
+
+   Finding:
+   - This appears to be the current official public dashboard from MoRTH/NIC.
+   - It shows aggregate metrics and dimensions such as state, maker, class, fuel,
+     emission, vehicle type, status, and owner type.
+   - It is useful as a reference point for validating definitions and totals.
+
+   Caveats:
+   - A clean public JSON API, export feed, or cron-safe endpoint has not been
+     confirmed.
+   - The webapp should not rely on scraping dashboard/report pages unless an
+     official permitted API or downloadable feed is identified.
+
+
+5. Not recommended for automation: Parivahan public report pages
+
+   Example:
+   https://analytics.parivahan.gov.in/analytics/vahanpublicreport?lang=en
+
+   Finding:
+   - These pages expose useful filters and report-style data.
+   - Some report flows appear CAPTCHA-oriented.
+
+   Conclusion:
+   - Do not use these pages for automated scraping or scheduled ingestion unless
+     an official non-CAPTCHA API or allowed data feed is confirmed.
+
+
+6. Secondary CKAN candidate: India Data Portal
+
+   URL:
+   https://ckandev.indiadataportal.com/dataset/vehicle-registrations
+
+   Finding:
+   - This CKAN instance exposes Vahan vehicle registration resources as CSV and
+     datastore APIs.
+   - Some resource metadata labels the dataset frequency as Monthly.
+   - It includes useful RTO-level fields such as state, RTO name/code, category,
+     and registration count.
+
+   Caveat:
+   - The checked vehicle-category resource showed data last updated as
+     August 28, 2024, so it may not be fresh enough for a 2026 product unless a
+     newer resource is confirmed.
+
+
+Webapp data flow implication
+----------------------------
+When a user asks for data in the webapp, the app should not fetch live data
+directly from the Vahan dashboard.
+
+Expected flow:
+1. Backend ingestion imports the latest approved monthly source.
+2. Backend stores normalized aggregate records.
+3. Webapp calls the backend API.
+4. Backend responds from the database/cache with data plus freshness metadata.
+
+Example user request:
+"EV registrations in Maharashtra"
+
+Expected answer source:
+The backend returns the latest available monthly aggregate data from the local
+database, for example through May 2026, depending on the latest imported dataset.
+
+
+Freshness and product limits
+----------------------------
+- No confirmed latest-daily production-grade public source has been found.
+- Dataful is the best current monthly candidate, subject to license and access
+  verification.
+- CEIC is the clearest weekly candidate found, but it is likely paid/proprietary.
+- TDC CKAN is automatable but stale for current production data.
+- Parivahan/NIC remains the official reference, but a cron-safe public API has
+  not been confirmed.
+
+
+Recommended next steps
+----------------------
+1. Verify Dataful access, license, pricing, and automation permissions.
+2. Confirm whether Dataful files can be downloaded reliably by a backend job.
+3. Design the backend ingestion layer so the data source is pluggable.
+4. Store source metadata with every import, including source name, source URL,
+   import timestamp, and covered month range.
+5. Add freshness metadata to backend API responses and webapp screens.
+6. Use TDC CKAN only for historical testing unless a fresher CKAN resource is
+   confirmed.
+7. Use CEIC only if the project accepts paid/proprietary weekly data.
+8. Continue investigating whether Parivahan/NIC offers an official documented
+   public API or export feed.
+
+
+Privacy and compliance note
+---------------------------
+All researched sources are intended for aggregate registration count data. No
+individual owner details or personal data were fetched, required, or approved for
+this project.
+
+
+Individual vehicle data note
+----------------------------
+Yes, vehicle-related data can come from VAHAN, but only through authorized access.   
+                                                                                       
+  For your use case:                                                                   
+                                                                                       
+  - Possible from VAHAN/RC APIs: maker, model, fuel type, vehicle class, registration  
+    date/status, RTO, insurance/PUC status, fitness status, etc.                       
+  - Not freely available for any app: direct open API access where anyone can enter any    vehicle number.                                                                    
+  - Personal/owner data: restricted, usually masked, and needs consent, legal basis, or    special authorization.                                                             
+                                                                                       
+  Legal ways to get it:                                                                
+                                                                                       
+  1. Company has VAHAN/MoRTH/NIC API access
+      - Best case. Ask your manager for credentials, API docs, allowed fields, and rate        limits.                                                                        
+  2. Company uses an approved RC verification provider                                 
+      - Many companies integrate through vendors that provide RC verification APIs.    
+        Your company must confirm the vendor is authorized and allowed for your use    
+        case.                                                                          
+  3. DigiLocker/API Setu                                                               
+      - Good when the vehicle owner consents and shares their RC.                      
+      - Not suitable for silently looking up any random vehicle number.                
+                                                                                       
+  So the answer is: yes, from VAHAN-backed APIs, but not as a public free API. Your    
+  company must provide an approved data source or vendor contract.

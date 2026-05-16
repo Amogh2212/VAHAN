@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+data/tdc-history/vahan-vehicle-registrations-by-maker.csv
+data/tdc-history/vahan-vehicle-registrations-by-vehicle-category.csv
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store

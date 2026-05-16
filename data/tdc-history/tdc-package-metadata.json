@@ -1,0 +1,86 @@
+{
+  "title": "Vahan Vehicle Registrations - India",
+  "source_url": "https://indiadataportal.com/p/vehicle-registrations/",
+  "temporal_coverage_start": "2025-01-01",
+  "temporal_coverage_end": "2025-05-01",
+  "metadata_modified": "2026-01-26T14:24:11.335804",
+  "resources": [
+    {
+      "id": "9597f1c6-0500-4558-bc90-105a95a3619a",
+      "name": "vahan-vehicle-registrations-by-fuel-type.csv",
+      "format": "CSV",
+      "size": 35504492,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/9597f1c6-0500-4558-bc90-105a95a3619a/download/vahan-vehicle-registrations-by-fuel-type-nmiqeb.csv"
+    },
+    {
+      "id": "bbf205cc-1e07-48e0-8522-c04c076e6377",
+      "name": "vahan-vehicle-registrations-by-maker.csv",
+      "format": "CSV",
+      "size": 287222909,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/bbf205cc-1e07-48e0-8522-c04c076e6377/download/vahan-vehicle-registrations-by-maker-icltux.csv"
+    },
+    {
+      "id": "f33a2a2d-812d-4a25-96fa-07c99a915e51",
+      "name": "vahan-vehicle-registrations-by-norm.csv",
+      "format": "CSV",
+      "size": 31845714,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/f33a2a2d-812d-4a25-96fa-07c99a915e51/download/vahan-vehicle-registrations-by-norm-hmszqr.csv"
+    },
+    {
+      "id": "6b236057-e718-4340-907c-d63c3145b706",
+      "name": "vahan-vehicle-registrations-by-vehicle-category.csv",
+      "format": "CSV",
+      "size": 62689763,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/6b236057-e718-4340-907c-d63c3145b706/download/vahan-vehicle-registrations-by-vehicle-category-71m55i.csv"
+    },
+    {
+      "id": "d839e6d3-7858-4ead-8c51-f6a792757a86",
+      "name": "India_Vahan_registrations_by_vehicle_category_TDC_formatted.csv",
+      "format": "CSV",
+      "size": 5791,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/d839e6d3-7858-4ead-8c51-f6a792757a86/download/india-vahan-registrations-by-vehicle-category-tdc-formatted-1elzb3.csv"
+    },
+    {
+      "id": "ba03da53-2d6f-4e73-938e-3807f7be2838",
+      "name": "India_Vahan_registrations_by_fuel-powertrain_TDC_formatted.csv",
+      "format": "CSV",
+      "size": 4720,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/ba03da53-2d6f-4e73-938e-3807f7be2838/download/india-vahan-registrations-by-fuel-powertrain-tdc-formatted-xgrqzw.csv"
+    },
+    {
+      "id": "aa5dc0e5-184b-4291-a818-0e0d458e306a",
+      "name": "India_Vahan_registrations_by_vehicle_class_TDC_formatted.csv",
+      "format": "CSV",
+      "size": 23269,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/aa5dc0e5-184b-4291-a818-0e0d458e306a/download/india-vahan-registrations-by-vehicle-class-tdc-formatted-25mc0m.csv"
+    },
+    {
+      "id": "aeb56fa5-1eef-454d-97ab-21b53f8e6d50",
+      "name": "India_Vahan_registrations_by_emissions_norm_TDC_formatted.csv",
+      "format": "CSV",
+      "size": 7686,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/aeb56fa5-1eef-454d-97ab-21b53f8e6d50/download/india-vahan-registrations-by-emissions-norm-tdc-formatted-nlxqol.csv"
+    },
+    {
+      "id": "32b9e5fd-758a-47aa-8664-1fe9ebaca823",
+      "name": "India database fuel wise FY2011-2025.xlsx",
+      "format": "XLSX",
+      "size": 17147,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/32b9e5fd-758a-47aa-8664-1fe9ebaca823/download/india-database-fuel-wise-fy2011-2025-bcgcgm.xlsx"
+    },
+    {
+      "id": "7bfe46e0-a11b-4941-8124-967c3b6a69b9",
+      "name": "India_Vahan_registrations_by_vehicle_category_and_fuel_FY2011-FY2025_TDC_formatted.csv",
+      "format": "CSV",
+      "size": 24962,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/7bfe46e0-a11b-4941-8124-967c3b6a69b9/download/india-vahan-registrations-by-vehicle-category-and-fuel-fy2011-fy2025-tdc-formatted-4mae2h.csv"
+    },
+    {
+      "id": "e90a988a-54a9-4737-8d42-2b7a0efd1172",
+      "name": "Vahan.r",
+      "format": "r",
+      "size": 4629,
+      "url": "https://ckan.tdc.prod.datopian.com/dataset/111bf9f0-7268-4c27-ab58-29701b18a33a/resource/e90a988a-54a9-4737-8d42-2b7a0efd1172/download/vahan-oaqu9b.r"
+    }
+  ]
+}
