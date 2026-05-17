@@ -9,6 +9,7 @@ const submitBtn = document.querySelector("#submitBtn");
 const app = document.querySelector("#app");
 
 const fmt = new Intl.NumberFormat("en-IN");
+let activeRefreshJobId = null;
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -140,7 +141,7 @@ function render(data) {
   );
 
   document.querySelector("#freshness").textContent =
-    `${data.freshness.source}. Latest loaded month: ${data.freshness.latestMonth ?? "not available"}. Status: ${data.dataStatus ?? "complete"}.`;
+    `${data.freshness.source}. Latest loaded month: ${data.freshness.latestMonth ?? "not available"}. Status: ${data.dataStatus ?? "complete"}. Save: ${data.persistenceStatus ?? "saved"}.`;
 
   const scraperMessage = data.scraper?.autoTriggered
     ? data.scraper.success
@@ -152,6 +153,10 @@ function render(data) {
       ? ["Fresh data could not be fetched, and no cached rows matched this query."]
       : data.dataStatus === "stale"
         ? ["Showing stale local data because the live fetch failed."]
+        : data.dataStatus === "live"
+          ? ["Showing freshly scraped VAHAN data while it is saved in the background."]
+        : data.dataStatus === "refreshing"
+          ? [`Showing stored historical data while refreshing ${data.liveRefresh?.requiredMonths?.join(", ") ?? "recent months"} from VAHAN.`]
         : data.dataStatus === "partial"
           ? ["Some requested months are missing from the local dataset."]
           : [];
@@ -169,24 +174,58 @@ function render(data) {
 /* ── API Call ────────────────────────────────────────────────────────────── */
 
 async function runQuery(query) {
+  activeRefreshJobId = null;
   const response = await fetch("/api/query", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ query }),
   });
   if (!response.ok) throw new Error(`Query failed: ${response.status}`);
-  render(await response.json());
+  const data = await response.json();
+  render(data);
+  if (data.liveRefresh?.status === "pending" && data.liveRefresh.jobId) {
+    activeRefreshJobId = data.liveRefresh.jobId;
+    pollLiveRefresh(data.liveRefresh.jobId);
+  }
+}
+
+async function pollLiveRefresh(jobId) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (activeRefreshJobId !== jobId) return;
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    if (activeRefreshJobId !== jobId) return;
+
+    const response = await fetch(`/api/query-refresh/${encodeURIComponent(jobId)}`);
+    if (!response.ok) {
+      renderWarnings([`Live refresh failed: ${response.status}`]);
+      return;
+    }
+
+    const data = await response.json();
+    if (data.liveRefresh?.status === "pending") continue;
+
+    if (activeRefreshJobId === jobId) {
+      activeRefreshJobId = null;
+      render(data);
+    }
+    return;
+  }
+
+  if (activeRefreshJobId === jobId) {
+    renderWarnings(["Live VAHAN refresh is still running. Submit the query again in a few minutes for the latest data."]);
+  }
 }
 
 /* ── Events ─────────────────────────────────────────────────────────────── */
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  activeRefreshJobId = null;
   app.classList.add("loading");
   submitBtn.disabled = true;
   submitBtn.querySelector(".btn-text").textContent = "Working…";
   renderWarnings([
-    "Working on it. If this data is not loaded yet, the backend will run the VAHAN scraper first.",
+    "Working on it. Stored historical data will appear first if recent months need a live VAHAN refresh.",
   ]);
   try {
     await runQuery(input.value);

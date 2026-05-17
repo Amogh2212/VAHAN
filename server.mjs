@@ -6,13 +6,19 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { hasDatabaseUrl } from "./lib/db.mjs";
-import { loadRegistrationRowsFromDb, readRegistrationsCsv } from "./lib/registrations.mjs";
+import {
+  REGISTRATION_HEADERS,
+  loadRegistrationRowsFromDb,
+  readRegistrationsCsv,
+  upsertRegistrationRows,
+} from "./lib/registrations.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_fuel_monthly.csv");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
+const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 
@@ -172,9 +178,44 @@ const STATE_ALIASES = new Map([
 const RTO_ALIASES = CITY_DB;
 
 let dataCache = null;
+let persistenceQueue = Promise.resolve();
+let nextRefreshJobId = 1;
+const refreshJobs = new Map();
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function csvEscape(value) {
+  if (value === null || value === undefined) return "";
+  const text = String(value);
+  if (/[",\n\r]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
+  return text;
+}
+
+function toRegistrationsCsv(rows) {
+  const lines = [REGISTRATION_HEADERS.join(",")];
+  for (const row of rows) {
+    lines.push(REGISTRATION_HEADERS.map((header) => csvEscape(row[header])).join(","));
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function rowIdentity(row) {
+  return [row.year, row.month, row.state, row.rto, row.fuel_type].join("||");
+}
+
+function mergeRegistrationRows(existingRows, freshRows) {
+  const merged = new Map();
+  for (const row of existingRows) merged.set(rowIdentity(row), row);
+  for (const row of freshRows) merged.set(rowIdentity(row), row);
+  return [...merged.values()].sort((a, b) =>
+    a.year - b.year ||
+    a.month - b.month ||
+    a.state.localeCompare(b.state) ||
+    a.rto.localeCompare(b.rto) ||
+    a.fuel_type.localeCompare(b.fuel_type),
+  );
 }
 
 function parseCsvLine(line) {
@@ -215,6 +256,32 @@ async function loadRows() {
 
   dataCache = await readRegistrationsCsv(DATA_FILE);
   return dataCache;
+}
+
+async function persistScrapedRows(rows) {
+  if (!rows.length) return;
+
+  if (hasDatabaseUrl()) {
+    await upsertRegistrationRows(rows);
+  }
+
+  const csvRows = mergeRegistrationRows(await readRegistrationsCsv(DATA_FILE), rows);
+  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+  await fs.writeFile(DATA_FILE, toRegistrationsCsv(csvRows), "utf8");
+}
+
+function persistScrapedRowsInBackground(rows) {
+  if (!rows.length) return "saved";
+
+  persistenceQueue = persistenceQueue
+    .catch(() => {})
+    .then(() => persistScrapedRows(rows));
+
+  persistenceQueue.catch((error) => {
+    console.error(`[persist] Failed to save scraped rows: ${error.message}`);
+  });
+
+  return "pending";
 }
 
 function monthKey(year, month) {
@@ -447,6 +514,53 @@ function monthsByYear(from, to) {
   return [...groups.entries()].map(([year, months]) => ({ year, months }));
 }
 
+function monthKeyToParts(key) {
+  const [year, month] = key.split("-").map(Number);
+  return { year, month };
+}
+
+function addMonths(year, month, offset) {
+  const date = new Date(year, month - 1 + offset, 1);
+  return { year: date.getFullYear(), month: date.getMonth() + 1 };
+}
+
+function recentLiveMonthKeys(now = new Date()) {
+  const current = { year: now.getFullYear(), month: now.getMonth() + 1 };
+  return [0, -1, -2].map((offset) => {
+    const value = addMonths(current.year, current.month, offset);
+    return monthKey(value.year, value.month);
+  });
+}
+
+function groupMonthKeys(keys) {
+  const groups = new Map();
+  for (const key of keys) {
+    const { year, month } = monthKeyToParts(key);
+    if (!groups.has(year)) groups.set(year, []);
+    groups.get(year).push(month);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([year, months]) => ({ year, months: [...new Set(months)].sort((a, b) => a - b) }));
+}
+
+function recentMonthsForFilters(filters) {
+  if (!filters.from || !filters.to) return [];
+  const requested = new Set(monthsByYear(filters.from, filters.to).flatMap((group) =>
+    group.months.map((month) => monthKey(group.year, month)),
+  ));
+  const recent = recentLiveMonthKeys().filter((key) => requested.has(key));
+  return groupMonthKeys(recent);
+}
+
+function isRecentLiveRow(row) {
+  return recentLiveMonthKeys().includes(monthKey(row.year, row.month));
+}
+
+function storedRowsForImmediateQuery(rows) {
+  return rows.filter((row) => !isRecentLiveRow(row));
+}
+
 // Find which specific year+month combos are missing from the CSV for this location
 function findMissingMonths(filters, rows) {
   if (!filters.from || !filters.to) return [];
@@ -501,6 +615,21 @@ function shouldAutoScrape(filters, resultRows, missingMonths) {
   return resultRows.length === 0;
 }
 
+function extractScrapedRows(stdout = "") {
+  const line = stdout
+    .split(/\r?\n/)
+    .find((entry) => entry.startsWith(SCRAPED_ROWS_MARKER));
+  if (!line) return [];
+
+  try {
+    const rows = JSON.parse(line.slice(SCRAPED_ROWS_MARKER.length));
+    return Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    console.warn(`[auto-scrape] Could not parse scraped rows: ${error.message}`);
+    return [];
+  }
+}
+
 async function runScraperForFilters(filters, missingMonths) {
   const rto = filters.rtoSearch ?? filters.rto ?? filters.locationText;
   // If we have specific missing months, only scrape those; otherwise scrape the full range
@@ -512,6 +641,8 @@ async function runScraperForFilters(filters, missingMonths) {
     const args = [
       "scripts/vahan-scraper.mjs",
       "--mode", "scrape",
+      "--no-persist",
+      "--emit-rows-json",
       "--states", filters.state,
       "--years", String(group.year),
       "--months", group.months.join(","),
@@ -528,6 +659,7 @@ async function runScraperForFilters(filters, missingMonths) {
         year: group.year,
         months: group.months,
         success: true,
+        rows: extractScrapedRows(result.stdout),
         stdout: result.stdout,
         stderr: result.stderr,
       });
@@ -537,13 +669,13 @@ async function runScraperForFilters(filters, missingMonths) {
         year: group.year,
         months: group.months,
         success: false,
+        rows: extractScrapedRows(error.stdout),
         error: error.message,
         stderr: error.stderr,
       });
     }
   }
 
-  dataCache = null;
   return runs;
 }
 
@@ -567,9 +699,11 @@ function filterRowsIgnoringDate(rows, filters) {
 
 function summarizeScraperRuns(scraperRuns) {
   const failedRuns = scraperRuns.filter((run) => !run.success);
+  const rowsScraped = scraperRuns.reduce((count, run) => count + (run.rows?.length ?? 0), 0);
   return {
     autoTriggered: scraperRuns.length > 0,
     success: scraperRuns.length > 0 && failedRuns.length === 0,
+    rowsScraped,
     failedRuns: failedRuns.map((run) => ({
       year: run.year,
       months: run.months,
@@ -580,17 +714,31 @@ function summarizeScraperRuns(scraperRuns) {
       year: run.year,
       months: run.months,
       success: run.success,
+      rowsScraped: run.rows?.length ?? 0,
     })),
   };
 }
 
 function resolveDataStatus({ rows, missingMonths, scraper }) {
+  if (
+    scraper.autoTriggered &&
+    scraper.rowsScraped > 0 &&
+    scraper.failedRuns.length === 0 &&
+    missingMonths.length === 0
+  ) {
+    return "live";
+  }
   if (scraper.autoTriggered && scraper.failedRuns.length > 0) {
     return rows.length > 0 ? "stale" : "fetch_failed";
   }
   if (missingMonths.length > 0 && rows.length > 0) return "partial";
   if (missingMonths.length > 0) return "missing";
   return "complete";
+}
+
+function resolveImmediateDataStatus({ rows, missingMonths, liveRefresh }) {
+  if (liveRefresh?.status === "pending") return "refreshing";
+  return resolveDataStatus({ rows, missingMonths, scraper: summarizeScraperRuns([]) });
 }
 
 function summarize(rows) {
@@ -622,6 +770,125 @@ function freshness(rows) {
   return { latestMonth: latest, source: SOURCE_LABEL };
 }
 
+function dashboardPayload({
+  filters,
+  rows,
+  scraperRuns = [],
+  missingMonths,
+  llmFilters,
+  persistenceStatus = "saved",
+  liveRefresh = null,
+}) {
+  const scraper = summarizeScraperRuns(scraperRuns);
+  const resultRows = filters.ambiguousRtos ? [] : filterRows(rows, filters);
+  const status = liveRefresh?.status === "pending"
+    ? resolveImmediateDataStatus({ rows: resultRows, missingMonths, liveRefresh })
+    : resolveDataStatus({ rows: resultRows, missingMonths, scraper });
+  const summary = summarize(resultRows);
+
+  return {
+    filters,
+    dataStatus: status,
+    persistenceStatus,
+    summary: {
+      total: summary.total,
+      monthlyAverage: summary.monthlyAverage,
+      peakMonth: summary.peakMonth,
+      peakMonthCount: summary.peakMonthCount,
+    },
+    trend: summary.trend,
+    fuelBreakdown: summary.fuelBreakdown,
+    rows: resultRows,
+    freshness: freshness(rows),
+    scraper,
+    liveRefresh,
+    warnings: [
+      llmFilters?.decodeWarning,
+      liveRefresh?.status === "pending" ? `Refreshing ${liveRefresh.requiredMonths.join(", ")} from VAHAN.` : null,
+      liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may be missing recent-month data." : null,
+      scraper.failedRuns.length
+        ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
+        : null,
+      persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
+      status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
+      status === "partial" ? "Some requested months are missing from local data." : null,
+      filters.unresolvedLocation ? `Could not resolve location "${filters.unresolvedLocation}" from loaded data.` : null,
+      filters.ambiguousRtos ? "Location matched multiple RTOs. Choose one." : null,
+    ].filter(Boolean),
+  };
+}
+
+function liveRefreshInfo(job) {
+  return {
+    jobId: job.id,
+    status: job.status,
+    requiredMonths: job.requiredMonths,
+    error: job.error ?? null,
+  };
+}
+
+function startLiveRefreshJob({ filters, baseRows, recentGroups, llmFilters }) {
+  const id = String(nextRefreshJobId++);
+  const job = {
+    id,
+    status: "pending",
+    filters,
+    baseRows,
+    recentGroups,
+    requiredMonths: recentGroups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
+    llmFilters,
+    scraperRuns: [],
+    freshRows: [],
+    persistenceStatus: "saved",
+    error: null,
+    payload: null,
+    createdAt: Date.now(),
+  };
+  refreshJobs.set(id, job);
+
+  job.promise = (async () => {
+    try {
+      const runs = await runScraperForFilters(filters, recentGroups);
+      const freshRows = runs.flatMap((run) => run.rows ?? []);
+      job.scraperRuns = runs;
+      job.freshRows = freshRows;
+
+      if (freshRows.length > 0) {
+        const currentRows = await loadRows();
+        dataCache = mergeRegistrationRows(currentRows, freshRows);
+        job.persistenceStatus = persistScrapedRowsInBackground(freshRows);
+      }
+
+      const combinedRows = mergeRegistrationRows(baseRows, freshRows);
+      const missingMonths = findMissingMonths(filters, combinedRows);
+      job.status = runs.some((run) => !run.success) ? "failed" : "complete";
+      job.payload = dashboardPayload({
+        filters,
+        rows: combinedRows,
+        scraperRuns: runs,
+        missingMonths,
+        llmFilters,
+        persistenceStatus: job.persistenceStatus,
+        liveRefresh: liveRefreshInfo(job),
+      });
+    } catch (error) {
+      job.status = "failed";
+      job.error = error.message;
+      job.payload = dashboardPayload({
+        filters,
+        rows: baseRows,
+        scraperRuns: job.scraperRuns,
+        missingMonths: findMissingMonths(filters, baseRows),
+        llmFilters,
+        liveRefresh: liveRefreshInfo(job),
+      });
+      console.error(`[refresh:${id}] ${error.message}`);
+    }
+  })();
+
+  return job;
+}
+
 async function queryData(input) {
   let rows = await loadRows();
   const ruleFilters = decodeWithRules(input.query ?? "");
@@ -634,60 +901,21 @@ async function queryData(input) {
     }
   }
   let filters = resolveRto(mergeFilters(ruleFilters, llmFilters), rows);
-  let resultRows = filters.ambiguousRtos ? [] : filterRows(rows, filters);
-  const scraperRuns = [];
+  const immediateRows = storedRowsForImmediateQuery(rows);
+  const recentGroups = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos
+    ? recentMonthsForFilters(filters)
+    : [];
+  const liveRefreshJob = recentGroups.length
+    ? startLiveRefreshJob({ filters, baseRows: immediateRows, recentGroups, llmFilters })
+    : null;
 
-  // Detect missing months even if some data already exists
-  let missingMonths = findMissingMonths(filters, rows);
-
-  if (shouldAutoScrape(filters, resultRows, missingMonths)) {
-    console.log(`[query] Auto-scraping: state=${filters.state}, rto=${filters.rto ?? filters.rtoSearch ?? filters.locationText}, missing=${JSON.stringify(missingMonths)}`);
-    const runs = await runScraperForFilters(filters, missingMonths);
-    scraperRuns.push(...runs);
-
-    // Reload data and re-resolve
-    rows = await loadRows();
-    filters = resolveRto(
-      { ...filters, unresolvedLocation: null, ambiguousRtos: null, rto: filters.rto ?? null },
-      rows,
-    );
-    resultRows = filters.ambiguousRtos ? [] : filterRows(rows, filters);
-    missingMonths = findMissingMonths(filters, rows);
-  }
-
-  const scraper = summarizeScraperRuns(scraperRuns);
-  if (scraper.autoTriggered && scraper.failedRuns.length > 0 && resultRows.length === 0) {
-    const staleRows = filters.ambiguousRtos ? [] : filterRowsIgnoringDate(rows, filters);
-    if (staleRows.length > 0) resultRows = staleRows;
-  }
-
-  const dataStatus = resolveDataStatus({ rows: resultRows, missingMonths, scraper });
-  const summary = summarize(resultRows);
-  return {
+  return dashboardPayload({
     filters,
-    dataStatus,
-    summary: {
-      total: summary.total,
-      monthlyAverage: summary.monthlyAverage,
-      peakMonth: summary.peakMonth,
-      peakMonthCount: summary.peakMonthCount,
-    },
-    trend: summary.trend,
-    fuelBreakdown: summary.fuelBreakdown,
-    rows: resultRows,
-    freshness: freshness(rows),
-    scraper,
-    warnings: [
-      llmFilters?.decodeWarning,
-      scraper.failedRuns.length
-        ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
-        : null,
-      dataStatus === "stale" ? "Showing last known matching local data because the requested fresh data could not be fetched." : null,
-      dataStatus === "partial" ? "Some requested months are missing from local data." : null,
-      filters.unresolvedLocation ? `Could not resolve location "${filters.unresolvedLocation}" from loaded data.` : null,
-      filters.ambiguousRtos ? "Location matched multiple RTOs. Choose one." : null,
-    ].filter(Boolean),
-  };
+    rows: immediateRows,
+    missingMonths: findMissingMonths(filters, immediateRows),
+    llmFilters,
+    liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
+  });
 }
 
 async function readBody(request) {
@@ -729,6 +957,20 @@ const server = http.createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/api/query") {
       const body = await readBody(request);
       sendJson(response, 200, await queryData(body));
+      return;
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/query-refresh/")) {
+      const jobId = decodeURIComponent(url.pathname.slice("/api/query-refresh/".length));
+      const job = refreshJobs.get(jobId);
+      if (!job) {
+        sendJson(response, 404, { error: "Refresh job not found" });
+        return;
+      }
+      if (job.status === "pending") {
+        sendJson(response, 200, { liveRefresh: liveRefreshInfo(job) });
+        return;
+      }
+      sendJson(response, 200, job.payload ?? { liveRefresh: liveRefreshInfo(job) });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/registrations") {

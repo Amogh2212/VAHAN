@@ -117,6 +117,8 @@ function parseArgs(argv) {
     delayMs: DEFAULT_DELAY_MS,
     headed: false,
     resume: true,
+    persist: true,
+    emitRowsJson: false,
     dryRun: false,
     limit: null,
     states: [],
@@ -134,6 +136,10 @@ function parseArgs(argv) {
       args.headed = true;
     } else if (token === "--no-resume") {
       args.resume = false;
+    } else if (token === "--no-persist") {
+      args.persist = false;
+    } else if (token === "--emit-rows-json") {
+      args.emitRowsJson = true;
     } else if (token === "--dry-run") {
       args.dryRun = true;
     } else if (token.startsWith("--")) {
@@ -1060,7 +1066,8 @@ async function scrape(args) {
   const outputFile = path.join(args.outputDir, "vahan_fuel_monthly.csv");
   const errorFile = path.join(args.outputDir, "vahan_fuel_monthly_errors.jsonl");
   const summaryFile = path.join(args.outputDir, "vahan_fuel_monthly_summary.json");
-  const rows = args.resume ? await readExistingRows(outputFile) : [];
+  const rows = args.resume && args.persist ? await readExistingRows(outputFile) : [];
+  const scrapedRows = [];
   const done = new Set(
     rows.map((row) =>
       keyForItem({
@@ -1084,7 +1091,7 @@ async function scrape(args) {
     return;
   }
 
-  if (!rows.length || !(await exists(outputFile))) {
+  if (args.persist && (!rows.length || !(await exists(outputFile)))) {
     await writeFileWithRetry(outputFile, toCsv(rows));
   }
 
@@ -1131,12 +1138,15 @@ async function scrape(args) {
             });
           }
         }
-        const upsertResult = await upsertRegistrationRows(newRows);
-        neonSkipped = neonSkipped || upsertResult.skipped;
-        neonUpserted += upsertResult.count;
+        scrapedRows.push(...newRows);
         rows.push(...newRows);
         succeeded += newRows.length;
-        await writeFileWithRetry(outputFile, toCsv(rows));
+        if (args.persist) {
+          const upsertResult = await upsertRegistrationRows(newRows);
+          neonSkipped = neonSkipped || upsertResult.skipped;
+          neonUpserted += upsertResult.count;
+          await writeFileWithRetry(outputFile, toCsv(rows));
+        }
       } catch (error) {
         failed += reportItem.items.length;
         for (const item of reportItem.items) {
@@ -1156,25 +1166,30 @@ async function scrape(args) {
 
       await sleep(args.delayMs);
     }
-    await writeFileWithRetry(
-      summaryFile,
-      JSON.stringify(
-        {
-          source_url: SOURCE_URL,
-          output_file: outputFile,
-          error_file: errorFile,
-          total_rows: rows.length,
-          attempted_this_run: workItems.length,
-          succeeded_this_run: succeeded,
-          failed_this_run: failed,
-          neon_upserted_this_run: neonUpserted,
-          neon_skipped_this_run: neonSkipped,
-          completed_at: new Date().toISOString(),
-        },
-        null,
-        2,
-      ),
-    );
+    if (args.persist) {
+      await writeFileWithRetry(
+        summaryFile,
+        JSON.stringify(
+          {
+            source_url: SOURCE_URL,
+            output_file: outputFile,
+            error_file: errorFile,
+            total_rows: rows.length,
+            attempted_this_run: workItems.length,
+            succeeded_this_run: succeeded,
+            failed_this_run: failed,
+            neon_upserted_this_run: neonUpserted,
+            neon_skipped_this_run: neonSkipped,
+            completed_at: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
+      );
+    }
+    if (args.emitRowsJson) {
+      console.log(`VAHAN_SCRAPED_ROWS_JSON:${JSON.stringify(scrapedRows)}`);
+    }
     if (failed > 0) {
       throw new Error(`${failed} scrape item(s) failed. See ${errorFile}`);
     }
@@ -1183,8 +1198,12 @@ async function scrape(args) {
     await closePool();
   }
 
-  console.log(`Wrote ${rows.length} rows to ${outputFile}`);
-  console.log(`Wrote run summary to ${summaryFile}`);
+  if (args.persist) {
+    console.log(`Wrote ${rows.length} rows to ${outputFile}`);
+    console.log(`Wrote run summary to ${summaryFile}`);
+  } else {
+    console.log(`Scraped ${scrapedRows.length} rows without persistence`);
+  }
 }
 
 async function main() {
