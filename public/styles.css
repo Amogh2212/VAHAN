@@ -445,6 +445,30 @@ button:active {
   font-size: 13px;
 }
 
+#trend .bar {
+  grid-template-columns: 96px minmax(160px, 1fr) 100px;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+#trend .bar-track {
+  height: 22px;
+  border-radius: 8px;
+  background: hsla(220, 14%, 25%, 0.72);
+}
+
+#trend .bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  box-shadow: 0 0 18px hsla(176, 76%, 50%, 0.18);
+}
+
+#trend .bar strong,
+#trend .bar span:first-child {
+  font-size: 15px;
+}
+
 /* ── Fuel Breakdown ────────────────────────────────────────────────────── */
 .fuel-list {
   display: grid;
@@ -535,82 +559,146 @@ td:last-child {
   font-weight: 600;
 }
 
-/* Result row vertical chart */
+/* Result row grouped cards */
 .row-chart {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 18px;
 }
 
-.row-chart-scroll {
-  overflow-x: auto;
-  padding: 8px 2px 2px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
+.result-card-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.row-chart-plot {
+.zero-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.zero-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-from);
+}
+
+.result-card-grid {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(72px, 1fr);
-  align-items: end;
-  min-width: max-content;
-  height: 280px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 12px;
 }
 
-.row-chart-group {
+.result-card {
   display: grid;
-  grid-template-rows: 36px 1fr 44px;
-  gap: 8px;
-  height: 100%;
-  min-width: 72px;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-2);
+  transition: border-color 0.25s var(--ease-out), background 0.25s;
 }
 
-.row-chart-value {
-  align-self: end;
-  overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 11px;
+.result-card:hover {
+  border-color: var(--border-glow);
+  background: var(--bg-glass-hover);
+}
+
+.result-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.result-card-head span,
+.result-card-head small {
+  display: block;
+}
+
+.result-card-head span {
+  color: var(--text-primary);
+  font-size: 15px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  text-align: center;
-  text-overflow: ellipsis;
 }
 
-.row-chart-column {
-  display: grid;
-  align-items: end;
-  height: 100%;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--border-subtle);
-  background:
-    linear-gradient(to top, var(--border-subtle) 1px, transparent 1px) 0 25% / 100% 25%;
-}
-
-.row-chart-fill {
-  display: block;
-  min-height: 3px;
-  border-radius: 6px 6px 0 0;
-  background: var(--chart-bar);
-  transition: height 0.8s var(--ease-out);
-}
-
-.row-chart-label {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
+.result-card-head small {
+  margin-top: 4px;
   color: var(--text-secondary);
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-align: center;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
-.row-chart-label span {
+.result-card-head strong {
+  color: var(--accent-text);
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.result-card-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.result-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid hsla(220, 14%, 25%, 0.55);
+  border-radius: var(--radius-sm);
+  background: hsla(220, 18%, 10%, 0.35);
+}
+
+.result-card-row span {
+  min-width: 0;
   overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.result-card-row strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-card-row.is-zero {
+  opacity: 0.55;
+}
+
+.result-empty,
+.result-hidden {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.result-empty.small,
+.result-hidden {
+  font-size: 12px;
 }
 
 .row-chart + .normal-chart-label {

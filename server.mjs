@@ -526,7 +526,7 @@ function addMonths(year, month, offset) {
 
 function recentLiveMonthKeys(now = new Date()) {
   const current = { year: now.getFullYear(), month: now.getMonth() + 1 };
-  return [0, -1, -2].map((offset) => {
+  return [0, -1].map((offset) => {
     const value = addMonths(current.year, current.month, offset);
     return monthKey(value.year, value.month);
   });
@@ -544,21 +544,27 @@ function groupMonthKeys(keys) {
     .map(([year, months]) => ({ year, months: [...new Set(months)].sort((a, b) => a - b) }));
 }
 
-function recentMonthsForFilters(filters) {
+function requestedMonthKeys(filters) {
   if (!filters.from || !filters.to) return [];
-  const requested = new Set(monthsByYear(filters.from, filters.to).flatMap((group) =>
+  return monthsByYear(filters.from, filters.to).flatMap((group) =>
     group.months.map((month) => monthKey(group.year, month)),
-  ));
-  const recent = recentLiveMonthKeys().filter((key) => requested.has(key));
-  return groupMonthKeys(recent);
+  );
 }
 
-function isRecentLiveRow(row) {
-  return recentLiveMonthKeys().includes(monthKey(row.year, row.month));
-}
+function refreshMonthsForFilters(filters, rows) {
+  if (!filters.from || !filters.to) return [];
+  const requested = new Set(requestedMonthKeys(filters));
+  const refreshKeys = new Set();
 
-function storedRowsForImmediateQuery(rows) {
-  return rows.filter((row) => !isRecentLiveRow(row));
+  for (const group of findMissingMonths(filters, rows)) {
+    for (const month of group.months) refreshKeys.add(monthKey(group.year, month));
+  }
+
+  for (const key of recentLiveMonthKeys()) {
+    if (requested.has(key)) refreshKeys.add(key);
+  }
+
+  return groupMonthKeys([...refreshKeys]);
 }
 
 // Find which specific year+month combos are missing from the CSV for this location
@@ -804,8 +810,8 @@ function dashboardPayload({
     liveRefresh,
     warnings: [
       llmFilters?.decodeWarning,
-      liveRefresh?.status === "pending" ? `Refreshing ${liveRefresh.requiredMonths.join(", ")} from VAHAN.` : null,
-      liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may be missing recent-month data." : null,
+      liveRefresh?.status === "pending" ? `Showing saved data now. Fetching ${liveRefresh.requiredMonths.join(", ")} from VAHAN; the dashboard will update automatically.` : null,
+      liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may still be incomplete." : null,
       scraper.failedRuns.length
         ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
         : null,
@@ -827,15 +833,15 @@ function liveRefreshInfo(job) {
   };
 }
 
-function startLiveRefreshJob({ filters, baseRows, recentGroups, llmFilters }) {
+function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
   const id = String(nextRefreshJobId++);
   const job = {
     id,
     status: "pending",
     filters,
     baseRows,
-    recentGroups,
-    requiredMonths: recentGroups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
+    refreshGroups,
+    requiredMonths: refreshGroups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
     llmFilters,
     scraperRuns: [],
     freshRows: [],
@@ -848,7 +854,7 @@ function startLiveRefreshJob({ filters, baseRows, recentGroups, llmFilters }) {
 
   job.promise = (async () => {
     try {
-      const runs = await runScraperForFilters(filters, recentGroups);
+      const runs = await runScraperForFilters(filters, refreshGroups);
       const freshRows = runs.flatMap((run) => run.rows ?? []);
       job.scraperRuns = runs;
       job.freshRows = freshRows;
@@ -901,12 +907,12 @@ async function queryData(input) {
     }
   }
   let filters = resolveRto(mergeFilters(ruleFilters, llmFilters), rows);
-  const immediateRows = storedRowsForImmediateQuery(rows);
-  const recentGroups = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos
-    ? recentMonthsForFilters(filters)
+  const immediateRows = rows;
+  const refreshGroups = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
+    ? refreshMonthsForFilters(filters, rows)
     : [];
-  const liveRefreshJob = recentGroups.length
-    ? startLiveRefreshJob({ filters, baseRows: immediateRows, recentGroups, llmFilters })
+  const liveRefreshJob = refreshGroups.length
+    ? startLiveRefreshJob({ filters, baseRows: immediateRows, refreshGroups, llmFilters })
     : null;
 
   return dashboardPayload({
