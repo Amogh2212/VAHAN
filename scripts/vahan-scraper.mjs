@@ -110,6 +110,13 @@ const FUEL_ALIASES = new Map([
   ["PURE EV", "ELECTRIC(BOV)"],
 ]);
 
+const FILTER_CONTEXT_KEYS = [
+  "fuel_filter",
+  "vehicle_category_filter",
+  "norms_filter",
+  "vehicle_class_filter",
+];
+
 function parseArgs(argv) {
   const args = {
     mode: "scrape",
@@ -125,6 +132,9 @@ function parseArgs(argv) {
     years: [],
     months: [],
     fuels: [],
+    vehicleCategories: [],
+    norms: [],
+    vehicleClasses: [],
     rtos: [],
     channel: "",
   };
@@ -159,6 +169,9 @@ function parseArgs(argv) {
       else if (key === "years") args.years = expandNumbers(value);
       else if (key === "months") args.months = expandNumbers(value);
       else if (key === "fuels") args.fuels = splitList(value);
+      else if (key === "vehicle-categories") args.vehicleCategories = splitList(value);
+      else if (key === "norms") args.norms = splitList(value);
+      else if (key === "vehicle-classes") args.vehicleClasses = splitList(value);
       else if (key === "rtos") args.rtos = splitList(value);
       else if (key === "channel") args.channel = value;
       else throw new Error(`Unknown argument: ${token}`);
@@ -231,6 +244,7 @@ function toCsv(rows) {
     "rto",
     "fuel_segment",
     "fuel_type",
+    ...FILTER_CONTEXT_KEYS,
     "vehicle_count",
     "scraped_at",
     "source_url",
@@ -358,6 +372,23 @@ function normalizeLookup(value) {
 function normalizeFuelName(value) {
   const normalized = normalizeText(value).toUpperCase();
   return FUEL_ALIASES.get(normalized) ?? normalized;
+}
+
+function normalizeFilterName(value) {
+  return normalizeText(value).toUpperCase();
+}
+
+function contextValue(values) {
+  return values.length ? values.map(normalizeFilterName).sort().join("|") : "ALL";
+}
+
+function filterContext(args) {
+  return {
+    fuel_filter: contextValue(args.fuels.map(normalizeFuelName)),
+    vehicle_category_filter: contextValue(args.vehicleCategories),
+    norms_filter: contextValue(args.norms),
+    vehicle_class_filter: contextValue(args.vehicleClasses),
+  };
 }
 
 function fuelSegment(value) {
@@ -506,24 +537,24 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
           id: input?.id ?? "",
           text,
           checked: input?.checked ?? false,
-          wanted:
-            wantedSet.has(normalized) ||
-            [...wantedSet].some((wantedItem) => normalized.includes(wantedItem)),
+          wanted: wantedSet.has(normalized),
         };
       });
     },
     [...wanted],
   );
 
+  let changed = false;
   for (const match of matches) {
     if (!match.id) continue;
-    const checkbox = page.locator(`[id="${match.id}"]`);
     if (match.checked !== match.wanted) {
-      await checkbox.evaluate((input, checked) => {
-        input.checked = checked;
-        input.dispatchEvent(new Event("click", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-      }, match.wanted);
+      await page.locator(`[id="${match.id}"]`).evaluate((input) => {
+        const checkboxRoot = input.closest(".ui-chkbox");
+        const visibleBox = checkboxRoot?.querySelector(".ui-chkbox-box");
+        visibleBox?.click();
+      });
+      await page.waitForTimeout(200);
+      changed = true;
     }
   }
 
@@ -531,9 +562,23 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
   if (wantedLabels.length && !selected.length) {
     throw new Error(`Could not find ${tableId} checkbox for ${wantedLabels.join(", ")}`);
   }
+  return changed;
 }
 
-async function configureReport(page, { state, rto, year, fuels }) {
+async function applySideFilters(page) {
+  const filterRefresh = page.locator("#filterLayout button").filter({ hasText: /refresh/i }).first();
+  if (await filterRefresh.count()) {
+    await filterRefresh.evaluate((button) => button.click());
+  } else {
+    const refreshButtons = page.getByRole("button", { name: "Refresh" });
+    if ((await refreshButtons.count()) < 2) return;
+    await refreshButtons.nth(1).click();
+  }
+  await page.waitForLoadState("networkidle", { timeout: DEFAULT_TIMEOUT_MS }).catch(() => {});
+  await page.waitForTimeout(1500);
+}
+
+async function configureReport(page, { state, rto, year }) {
   await openDashboard(page);
   await selectPrimeOption(
     page,
@@ -610,7 +655,23 @@ async function configureReport(page, { state, rto, year, fuels }) {
     },
     String(year),
   );
-  if (fuels.length) await setPrimeCheckboxGroup(page, "fuel", fuels.map(normalizeFuelName));
+}
+
+async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, vehicleClasses }) {
+  const sideFiltersChanged = [
+    fuels.length ? await setPrimeCheckboxGroup(page, "fuel", fuels.map(normalizeFuelName)) : false,
+    vehicleCategories.length
+      ? await setPrimeCheckboxGroup(page, "VhCatg", vehicleCategories.map(normalizeFilterName))
+      : false,
+    norms.length ? await setPrimeCheckboxGroup(page, "norms", norms.map(normalizeFilterName)) : false,
+    vehicleClasses.length
+      ? await setPrimeCheckboxGroup(page, "VhClass", vehicleClasses.map(normalizeFilterName))
+      : false,
+  ].some(Boolean);
+
+  if (sideFiltersChanged) {
+    await applySideFilters(page);
+  }
 }
 
 async function refreshReport(page) {
@@ -697,6 +758,7 @@ async function extractReportRows(page) {
 async function scrapeReport(page, reportItem) {
   await configureReport(page, reportItem);
   await refreshReport(page);
+  await applyReportSideFilters(page, reportItem);
   return extractReportRows(page);
 }
 
@@ -978,6 +1040,7 @@ function buildWorkItems(args) {
   const states = args.states.length ? args.states : STATE_NAMES;
   const fuels = args.fuels;
   const rtos = args.rtos.length ? args.rtos : [""];
+  const context = filterContext(args);
 
   if (!args.years.length) {
     throw new Error("Pass --years, for example --years 2019-2026");
@@ -991,7 +1054,17 @@ function buildWorkItems(args) {
     for (const month of args.months) {
       for (const state of states) {
         for (const rto of rtos) {
-          items.push({ year, month, state, rto, fuels });
+          items.push({
+            year,
+            month,
+            state,
+            rto,
+            fuels,
+            vehicleCategories: args.vehicleCategories,
+            norms: args.norms,
+            vehicleClasses: args.vehicleClasses,
+            ...context,
+          });
         }
       }
     }
@@ -1002,13 +1075,28 @@ function buildWorkItems(args) {
 function buildReportItems(workItems) {
   const reports = new Map();
   for (const item of workItems) {
-    const key = [item.year, item.state, item.rto].join("||");
+    const key = [
+      item.year,
+      item.state,
+      item.rto,
+      item.fuel_filter,
+      item.vehicle_category_filter,
+      item.norms_filter,
+      item.vehicle_class_filter,
+    ].join("||");
     if (!reports.has(key)) {
       reports.set(key, {
         year: item.year,
         state: item.state,
         rto: item.rto,
         fuels: item.fuels,
+        vehicleCategories: item.vehicleCategories,
+        norms: item.norms,
+        vehicleClasses: item.vehicleClasses,
+        fuel_filter: item.fuel_filter,
+        vehicle_category_filter: item.vehicle_category_filter,
+        norms_filter: item.norms_filter,
+        vehicle_class_filter: item.vehicle_class_filter,
         items: [],
       });
     }
@@ -1018,7 +1106,17 @@ function buildReportItems(workItems) {
 }
 
 function keyForItem(item) {
-  return [item.year, item.month, item.state, item.rto || "All Vahan4 Running Office"].join("||");
+  return [
+    item.year,
+    item.month,
+    item.state,
+    item.rto || "All Vahan4 Running Office",
+    item.fuel_type ?? "",
+    item.fuel_filter ?? "ALL",
+    item.vehicle_category_filter ?? "ALL",
+    item.norms_filter ?? "ALL",
+    item.vehicle_class_filter ?? "ALL",
+  ].join("||");
 }
 
 async function readExistingRows(filePath) {
@@ -1076,6 +1174,10 @@ async function scrape(args) {
         state: row.state,
         rto: row.rto,
         fuel_type: row.fuel_type,
+        fuel_filter: row.fuel_filter,
+        vehicle_category_filter: row.vehicle_category_filter,
+        norms_filter: row.norms_filter,
+        vehicle_class_filter: row.vehicle_class_filter,
       }),
     ),
   );
@@ -1132,6 +1234,10 @@ async function scrape(args) {
               rto: item.rto || "All Vahan4 Running Office",
               fuel_segment: fuelSegment(reportRow.label),
               fuel_type: reportRow.label,
+              fuel_filter: reportItem.fuel_filter,
+              vehicle_category_filter: reportItem.vehicle_category_filter,
+              norms_filter: reportItem.norms_filter,
+              vehicle_class_filter: reportItem.vehicle_class_filter,
               vehicle_count: vehicleCount,
               scraped_at: new Date().toISOString(),
               source_url: SOURCE_URL,

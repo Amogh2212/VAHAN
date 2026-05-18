@@ -70,6 +70,10 @@ function renderFilters(filters) {
   const entries = [
     ["Fuel segment", filters.fuelSegment ?? "All"],
     ["Fuel type", filters.fuelType ?? "All"],
+    ["Fuel checkbox", filters.fuelFilters?.length ? filters.fuelFilters.join(", ") : "All"],
+    ["Vehicle category", filters.vehicleCategories?.length ? filters.vehicleCategories.join(", ") : "All"],
+    ["Norms", filters.norms?.length ? filters.norms.join(", ") : "All"],
+    ["Vehicle class", filters.vehicleClasses?.length ? filters.vehicleClasses.join(", ") : "All"],
     ["State", filters.state ?? "All loaded states"],
     ["RTO", filters.rto ?? filters.locationText ?? "All loaded RTOs"],
     ["From", filters.from ?? "-"],
