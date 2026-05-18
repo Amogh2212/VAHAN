@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file=.env server.mjs",
-    "start": "node --env-file=.env server.mjs",
+    "start": "node server.mjs",
     "data:tdc": "node scripts/download-tdc-history.mjs",
     "db:schema": "node --env-file=.env scripts/apply-neon-schema.mjs",
     "import:neon": "node --env-file=.env scripts/import-to-neon.mjs",
