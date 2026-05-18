@@ -21,6 +21,13 @@ const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
 const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
+const ALL_FILTER = "ALL";
+const FILTER_CONTEXT_FIELDS = [
+  "fuel_filter",
+  "vehicle_category_filter",
+  "norms_filter",
+  "vehicle_class_filter",
+];
 
 const MONTHS = new Map([
   ["jan", 1],
@@ -177,6 +184,52 @@ const STATE_ALIASES = new Map([
 // Keep backward compat: RTO_ALIASES is now just CITY_DB
 const RTO_ALIASES = CITY_DB;
 
+const FUEL_FILTER_ALIASES = [
+  { aliases: ["diesel"], value: "DIESEL", fuelSegment: "NON_EV", fuelType: "DIESEL" },
+  { aliases: ["petrol"], value: "PETROL", fuelSegment: "NON_EV", fuelType: "PETROL" },
+  { aliases: ["cng", "cng only"], value: "CNG ONLY", fuelSegment: "NON_EV", fuelType: "CNG" },
+  { aliases: ["electric bov", "electric(bov)", "battery operated vehicle"], value: "ELECTRIC(BOV)", fuelSegment: "EV", fuelType: "ELECTRIC" },
+  { aliases: ["plug in hybrid", "plug-in hybrid", "phev"], value: "PLUG-IN HYBRID EV", fuelSegment: "EV", fuelType: "PLUG-IN HYBRID EV" },
+  { aliases: ["pure ev"], value: "PURE EV", fuelSegment: "EV", fuelType: "PURE EV" },
+  { aliases: ["strong hybrid"], value: "STRONG HYBRID EV", fuelSegment: "EV", fuelType: "STRONG HYBRID EV" },
+];
+
+const VEHICLE_CATEGORY_ALIASES = [
+  { aliases: ["lmv", "light motor vehicle"], value: "LIGHT MOTOR VEHICLE" },
+  { aliases: ["hmv", "heavy motor vehicle"], value: "HEAVY MOTOR VEHICLE" },
+  { aliases: ["mmv", "medium motor vehicle"], value: "MEDIUM MOTOR VEHICLE" },
+  { aliases: ["four wheeler invalid carriage"], value: "FOUR WHEELER (Invalid Carriage)" },
+];
+
+const NORMS_ALIASES = [
+  { aliases: ["bs i", "bharat stage i"], value: "BHARAT STAGE I" },
+  { aliases: ["bs ii", "bharat stage ii"], value: "BHARAT STAGE II" },
+  { aliases: ["bs iii", "bharat stage iii"], value: "BHARAT STAGE III" },
+  { aliases: ["bs iv", "bharat stage iv"], value: "BHARAT STAGE IV" },
+  { aliases: ["bs vi", "bs 6", "bharat stage vi", "bharat stage 6"], value: "BHARAT STAGE VI" },
+  { aliases: ["euro 4"], value: "EURO 4" },
+  { aliases: ["euro 6"], value: "EURO 6" },
+  { aliases: ["not applicable"], value: "NOT APPLICABLE" },
+  { aliases: ["not available"], value: "NOT AVAILABLE" },
+];
+
+const VEHICLE_CLASS_ALIASES = [
+  { aliases: ["ambulance", "ambulances"], value: "AMBULANCE" },
+  { aliases: ["motor car", "car", "cars"], value: "MOTOR CAR" },
+  { aliases: ["motor cab", "cab", "taxi"], value: "MOTOR CAB" },
+  { aliases: ["bus", "buses"], value: "BUS" },
+  { aliases: ["school bus"], value: "SCHOOL BUS" },
+  { aliases: ["omni bus"], value: "OMNI BUS" },
+  { aliases: ["m-cycle/scooter", "motorcycle", "motor cycle", "scooter", "two wheeler"], value: "M-CYCLE/SCOOTER" },
+  { aliases: ["moped"], value: "MOPED" },
+  { aliases: ["goods carrier"], value: "GOODS CARRIER" },
+  { aliases: ["tractor"], value: "TRACTOR (COMMERCIAL)" },
+  { aliases: ["e-rickshaw", "erickshaw"], value: "E-RICKSHAW(P)" },
+  { aliases: ["tow truck"], value: "TOW TRUCK" },
+  { aliases: ["fire tenders", "fire tender"], value: "FIRE TENDERS" },
+  { aliases: ["trailer"], value: "TRAILER (AGRICULTURAL)" },
+];
+
 let dataCache = null;
 let persistenceQueue = Promise.resolve();
 let nextRefreshJobId = 1;
@@ -184,6 +237,44 @@ const refreshJobs = new Map();
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeLookup(value) {
+  return compact(value).toLowerCase();
+}
+
+function uniqueSorted(values) {
+  return [...new Set((values ?? []).filter(Boolean).map((value) => compact(value)))].sort((a, b) => a.localeCompare(b));
+}
+
+function filterContextValue(values) {
+  const normalized = uniqueSorted(values).map((value) => value.toUpperCase());
+  return normalized.length ? normalized.join("|") : ALL_FILTER;
+}
+
+function filterContext(filters = {}) {
+  return {
+    fuel_filter: filterContextValue(filters.fuelFilters),
+    vehicle_category_filter: filterContextValue(filters.vehicleCategories),
+    norms_filter: filterContextValue(filters.norms),
+    vehicle_class_filter: filterContextValue(filters.vehicleClasses),
+  };
+}
+
+function hasActiveContext(filters = {}) {
+  return Object.values(filterContext(filters)).some((value) => value !== ALL_FILTER);
+}
+
+function findFilterValues(text, definitions) {
+  const normalizedText = normalizeLookup(text);
+  return uniqueSorted(
+    definitions
+      .filter((definition) => definition.aliases.some((alias) => {
+        const normalizedAlias = normalizeLookup(alias);
+        return new RegExp(`\\b${normalizedAlias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalizedText);
+      }))
+      .map((definition) => definition.value),
+  );
 }
 
 function csvEscape(value) {
@@ -202,7 +293,17 @@ function toRegistrationsCsv(rows) {
 }
 
 function rowIdentity(row) {
-  return [row.year, row.month, row.state, row.rto, row.fuel_type].join("||");
+  return [
+    row.year,
+    row.month,
+    row.state,
+    row.rto,
+    row.fuel_type,
+    row.fuel_filter ?? ALL_FILTER,
+    row.vehicle_category_filter ?? ALL_FILTER,
+    row.norms_filter ?? ALL_FILTER,
+    row.vehicle_class_filter ?? ALL_FILTER,
+  ].join("||");
 }
 
 function mergeRegistrationRows(existingRows, freshRows) {
@@ -214,6 +315,10 @@ function mergeRegistrationRows(existingRows, freshRows) {
     a.month - b.month ||
     a.state.localeCompare(b.state) ||
     a.rto.localeCompare(b.rto) ||
+    String(a.fuel_filter ?? ALL_FILTER).localeCompare(String(b.fuel_filter ?? ALL_FILTER)) ||
+    String(a.vehicle_category_filter ?? ALL_FILTER).localeCompare(String(b.vehicle_category_filter ?? ALL_FILTER)) ||
+    String(a.norms_filter ?? ALL_FILTER).localeCompare(String(b.norms_filter ?? ALL_FILTER)) ||
+    String(a.vehicle_class_filter ?? ALL_FILTER).localeCompare(String(b.vehicle_class_filter ?? ALL_FILTER)) ||
     a.fuel_type.localeCompare(b.fuel_type),
   );
 }
@@ -375,6 +480,17 @@ function decodeWithRules(query) {
   if (/\bpetrol\b/i.test(text)) fuelType = "PETROL";
   if (/\bdiesel\b/i.test(text)) fuelType = "DIESEL";
   if (/\bcng\b/i.test(text)) fuelType = "CNG";
+  const fuelMatches = FUEL_FILTER_ALIASES.filter((definition) =>
+    definition.aliases.some((alias) => new RegExp(`\\b${normalizeLookup(alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text)),
+  );
+  const fuelFilters = uniqueSorted(fuelMatches.map((definition) => definition.value));
+  if (fuelMatches.length) {
+    fuelSegment = fuelSegment ?? fuelMatches[0].fuelSegment ?? null;
+    fuelType = fuelType ?? fuelMatches[0].fuelType ?? null;
+  }
+  const vehicleCategories = findFilterValues(text, VEHICLE_CATEGORY_ALIASES);
+  const norms = findFilterValues(text, NORMS_ALIASES);
+  const vehicleClasses = findFilterValues(text, VEHICLE_CLASS_ALIASES);
 
   let state = null;
   for (const [alias, stateName] of STATE_ALIASES) {
@@ -402,6 +518,10 @@ function decodeWithRules(query) {
   return {
     fuelSegment,
     fuelType,
+    fuelFilters,
+    vehicleCategories,
+    norms,
+    vehicleClasses,
     state,
     rto,
     locationText,
@@ -419,7 +539,8 @@ async function decodeWithGemini(query) {
     "Normalize and extract filters from this Indian VAHAN vehicle registration query.",
     "Correct obvious spelling mistakes in Indian city/state/RTO names before extracting filters.",
     "Examples: bengluru means Bengaluru/Bangalore, gurgao means Gurugram/Gurgaon, mumabi means Mumbai.",
-    "Return only compact JSON with keys: fuelSegment, fuelType, state, rtoText, locationText, locationType, from, to, metric, confidence.",
+    "Return only compact JSON with keys: fuelSegment, fuelType, fuelFilters, vehicleCategories, norms, vehicleClasses, state, rtoText, locationText, locationType, from, to, metric, confidence.",
+    "Use exact VAHAN labels for checkbox filters when obvious, for example AMBULANCE, MOTOR CAR, LIGHT MOTOR VEHICLE, BHARAT STAGE VI, DIESEL.",
     "Use official VAHAN-style state names when possible. For city/RTO queries, set state and rtoText to the likely RTO search text.",
     "Use YYYY-MM for dates. Use metric='registrations'. Never invent counts.",
     "If the user names an Indian city/RTO, infer the Indian state only when you are confident. If unsure, use null values and confidence below 0.6.",
@@ -449,6 +570,10 @@ function normalizeGeminiFilters(filters) {
   }
   return {
     ...filters,
+    fuelFilters: uniqueSorted(filters.fuelFilters),
+    vehicleCategories: uniqueSorted(filters.vehicleCategories),
+    norms: uniqueSorted(filters.norms),
+    vehicleClasses: uniqueSorted(filters.vehicleClasses),
     rto: filters.rto ?? filters.rtoText ?? null,
     locationText: filters.locationText ?? filters.rtoText ?? null,
   };
@@ -461,6 +586,10 @@ function mergeFilters(ruleFilters, llmFilters) {
   return {
     fuelSegment: ruleFilters.fuelSegment ?? llmFilters.fuelSegment ?? null,
     fuelType: ruleFilters.fuelType ?? llmFilters.fuelType ?? null,
+    fuelFilters: uniqueSorted([...(ruleFilters.fuelFilters ?? []), ...(llmFilters.fuelFilters ?? [])]),
+    vehicleCategories: uniqueSorted([...(ruleFilters.vehicleCategories ?? []), ...(llmFilters.vehicleCategories ?? [])]),
+    norms: uniqueSorted([...(ruleFilters.norms ?? []), ...(llmFilters.norms ?? [])]),
+    vehicleClasses: uniqueSorted([...(ruleFilters.vehicleClasses ?? []), ...(llmFilters.vehicleClasses ?? [])]),
     state: ruleHasLocation ? ruleFilters.state ?? llmFilters.state ?? null : llmFilters.state ?? null,
     rto: ruleHasLocation ? ruleFilters.rto ?? llmFilters.rto ?? llmFilters.rtoText ?? null : llmFilters.rto ?? llmFilters.rtoText ?? null,
     locationText: ruleHasLocation ? ruleFilters.locationText ?? llmFilters.locationText ?? null : llmFilters.locationText ?? llmFilters.rtoText ?? null,
@@ -576,6 +705,7 @@ function findMissingMonths(filters, rows) {
   const stateFilter = filters.state;
   const rtoFilter = filters.rto; // resolved formal RTO name (or null)
   const rtoSearch = filters.rtoSearch ?? filters.rto; // search needle
+  const requestedContext = filterContext(filters);
 
   // Get all year-month keys present in CSV for this location
   const loadedKeys = new Set();
@@ -588,6 +718,7 @@ function findMissingMonths(filters, rows) {
     } else if (!rtoFilter && !rtoSearch) {
       if (row.rto !== ALL_RTO) continue;
     }
+    if (!rowMatchesContext(row, requestedContext)) continue;
     loadedKeys.add(`${row.year}-${row.month}`);
   }
 
@@ -600,6 +731,10 @@ function findMissingMonths(filters, rows) {
     }
   }
   return missing;
+}
+
+function rowMatchesContext(row, requestedContext) {
+  return FILTER_CONTEXT_FIELDS.every((field) => String(row[field] ?? ALL_FILTER) === requestedContext[field]);
 }
 
 function hasRequiredScrapeFilters(filters) {
@@ -654,6 +789,10 @@ async function runScraperForFilters(filters, missingMonths) {
       "--months", group.months.join(","),
     ];
     if (rto) args.push("--rtos", rto);
+    if (filters.fuelFilters?.length) args.push("--fuels", filters.fuelFilters.join(","));
+    if (filters.vehicleCategories?.length) args.push("--vehicle-categories", filters.vehicleCategories.join(","));
+    if (filters.norms?.length) args.push("--norms", filters.norms.join(","));
+    if (filters.vehicleClasses?.length) args.push("--vehicle-classes", filters.vehicleClasses.join(","));
     console.log(`[auto-scrape] ${filters.state} / ${rto} / ${group.year} months=${group.months.join(",")}`);
     try {
       const result = await execFileAsync(process.execPath, args, {
@@ -686,6 +825,7 @@ async function runScraperForFilters(filters, missingMonths) {
 }
 
 function filterRows(rows, filters) {
+  const requestedContext = filterContext(filters);
   return rows.filter((row) => {
     const key = monthKey(row.year, row.month);
     if (filters.from && key < filters.from) return false;
@@ -695,6 +835,7 @@ function filterRows(rows, filters) {
     if (filters.state && !filters.rto && !filters.rtoSearch && row.rto !== ALL_RTO) return false;
     if (filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
     if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
+    if (!rowMatchesContext(row, requestedContext)) return false;
     return true;
   });
 }
