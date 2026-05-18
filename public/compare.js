@@ -11,6 +11,7 @@ const locationModeBtn = document.querySelector("#locationMode");
 const deltaSummary = document.querySelector("#deltaSummary");
 const leftResultMeta = document.querySelector("#leftResultMeta");
 const rightResultMeta = document.querySelector("#rightResultMeta");
+const verticalBarChart = document.querySelector("#verticalBarChart");
 const doubleBarChart = document.querySelector("#doubleBarChart");
 
 const modeConfig = {
@@ -110,6 +111,7 @@ function renderDoubleBars(leftData, rightData) {
   const months = [...new Set([...leftTrend.keys(), ...rightTrend.keys()])].sort((a, b) => a.localeCompare(b));
 
   if (!months.length) {
+    verticalBarChart.innerHTML = '<p class="compare-empty">No monthly comparison data is available for these queries.</p>';
     doubleBarChart.innerHTML = '<p class="compare-empty">No monthly comparison data is available for these queries.</p>';
     return;
   }
@@ -119,7 +121,41 @@ function renderDoubleBars(leftData, rightData) {
     ...months.flatMap((month) => [leftTrend.get(month) ?? 0, rightTrend.get(month) ?? 0]),
   );
 
+  verticalBarChart.innerHTML = `
+    <div class="double-bar-legend">
+      <span><i class="legend-swatch left"></i>Left query</span>
+      <span><i class="legend-swatch right"></i>Right query</span>
+    </div>
+    <div class="vertical-bar-scroll" role="img" aria-label="Vertical monthly comparison chart">
+      <div class="vertical-bar-plot">
+        ${months
+          .map((month) => {
+            const leftCount = leftTrend.get(month) ?? 0;
+            const rightCount = rightTrend.get(month) ?? 0;
+            const leftHeight = (leftCount / max) * 100;
+            const rightHeight = (rightCount / max) * 100;
+
+            return `
+              <div class="vertical-bar-group">
+                <div class="vertical-bar-values">
+                  <span>${fmt.format(leftCount)}</span>
+                  <span>${fmt.format(rightCount)}</span>
+                </div>
+                <div class="vertical-bar-columns">
+                  <span class="vertical-bar-fill left" style="height:${leftHeight}%"></span>
+                  <span class="vertical-bar-fill right" style="height:${rightHeight}%"></span>
+                </div>
+                <div class="vertical-bar-label">${month}</div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+
   doubleBarChart.innerHTML = `
+    <div class="normal-chart-label">Normal form representation</div>
     <div class="double-bar-legend">
       <span><i class="legend-swatch left"></i>Left query</span>
       <span><i class="legend-swatch right"></i>Right query</span>
@@ -192,6 +228,7 @@ async function runCompare(event) {
   compareBtn.disabled = true;
   compareBtn.textContent = "Comparing...";
   deltaSummary.textContent = "Loading both queries...";
+  verticalBarChart.innerHTML = '<p class="compare-empty">Building vertical comparison chart...</p>';
   doubleBarChart.innerHTML = '<p class="compare-empty">Building comparison chart...</p>';
 
   const left = leftQuery.value.trim();
@@ -212,6 +249,7 @@ async function runCompare(event) {
     `;
   } catch (error) {
     deltaSummary.textContent = error.message;
+    verticalBarChart.innerHTML = `<p class="compare-empty">${error.message}</p>`;
     doubleBarChart.innerHTML = `<p class="compare-empty">${error.message}</p>`;
     setText("leftStatus", "Error");
     setText("rightStatus", "Error");
