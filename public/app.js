@@ -19,6 +19,14 @@ function setText(id, value) {
   el.textContent = value;
 }
 
+function escapeAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function animateCounter(el, target) {
   const start = parseInt(el.textContent.replace(/[^\d]/g, "")) || 0;
   if (start === target) return;
@@ -89,6 +97,46 @@ function renderFuelBreakdown(items) {
     `,
     )
     .join("");
+}
+
+function renderRowChart(rows, dataStatus) {
+  const el = document.querySelector("#rowChart");
+  if (!rows.length) {
+    const message =
+      dataStatus === "fetch_failed"
+        ? "Could not fetch fresh VAHAN data for this query."
+        : "No rows matched this query.";
+    el.innerHTML = `<p style="color:var(--text-muted)">${message}</p>`;
+    return;
+  }
+
+  const max = Math.max(1, ...rows.map((row) => row.vehicle_count));
+  el.innerHTML = `
+    <div class="row-chart-scroll" role="img" aria-label="Vertical chart of returned result rows">
+      <div class="row-chart-plot">
+        ${rows
+          .map((row, i) => {
+            const month = `${row.year}-${String(row.month).padStart(2, "0")}`;
+            const height = (row.vehicle_count / max) * 100;
+            const title = `${month} | ${row.state} | ${row.rto} | ${row.fuel_type} | ${fmt.format(row.vehicle_count)}`;
+
+            return `
+              <div class="row-chart-group" title="${escapeAttribute(title)}" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.02}s both">
+                <div class="row-chart-value">${fmt.format(row.vehicle_count)}</div>
+                <div class="row-chart-column">
+                  <span class="row-chart-fill" style="height:${height}%"></span>
+                </div>
+                <div class="row-chart-label">
+                  <span>${month}</span>
+                  <span>${row.fuel_type}</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
 }
 
 function renderRows(rows, dataStatus) {
@@ -165,6 +213,7 @@ function render(data) {
   renderFilters(data.filters);
   renderTrend(data.trend);
   renderFuelBreakdown(data.fuelBreakdown);
+  renderRowChart(data.rows, data.dataStatus);
   renderRows(data.rows, data.dataStatus);
 
   // Remove loading state
