@@ -9,7 +9,9 @@ const submitBtn = document.querySelector("#submitBtn");
 const app = document.querySelector("#app");
 
 const fmt = new Intl.NumberFormat("en-IN");
+const monthFmt = new Intl.DateTimeFormat("en", { month: "short", year: "numeric" });
 let activeRefreshJobId = null;
+let showZeroResultRows = false;
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -25,6 +27,24 @@ function escapeAttribute(value) {
     .replaceAll('"', "&quot;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+}
+
+function escapeHtml(value) {
+  return escapeAttribute(value);
+}
+
+function rowMonth(row) {
+  return `${row.year}-${String(row.month).padStart(2, "0")}`;
+}
+
+function displayMonth(value) {
+  const [year, month] = String(value).split("-").map(Number);
+  if (!year || !month) return value;
+  return monthFmt.format(new Date(year, month - 1, 1));
+}
+
+function displayMonthList(items) {
+  return (items ?? []).map(displayMonth).join(", ");
 }
 
 function animateCounter(el, target) {
@@ -71,7 +91,7 @@ function renderTrend(trend) {
     .map(
       (item, i) => `
       <div class="bar" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.04}s both">
-        <span>${item.month}</span>
+        <span>${displayMonth(item.month)}</span>
         <span class="bar-track"><span class="bar-fill" style="width:${(item.count / max) * 100}%"></span></span>
         <strong>${fmt.format(item.count)}</strong>
       </div>
@@ -99,70 +119,85 @@ function renderFuelBreakdown(items) {
     .join("");
 }
 
-function renderRowChart(rows, dataStatus) {
+function renderResultCards(rows, dataStatus) {
   const el = document.querySelector("#rowChart");
   if (!rows.length) {
     const message =
       dataStatus === "fetch_failed"
         ? "Could not fetch fresh VAHAN data for this query."
         : "No rows matched this query.";
-    el.innerHTML = `<p style="color:var(--text-muted)">${message}</p>`;
+    el.innerHTML = `<p class="result-empty">${message}</p>`;
     return;
   }
 
-  const max = Math.max(1, ...rows.map((row) => row.vehicle_count));
-  el.innerHTML = `
-    <div class="row-chart-scroll" role="img" aria-label="Vertical chart of returned result rows">
-      <div class="row-chart-plot">
-        ${rows
-          .map((row, i) => {
-            const month = `${row.year}-${String(row.month).padStart(2, "0")}`;
-            const height = (row.vehicle_count / max) * 100;
-            const title = `${month} | ${row.state} | ${row.rto} | ${row.fuel_type} | ${fmt.format(row.vehicle_count)}`;
+  const groups = new Map();
+  for (const row of rows) {
+    const month = rowMonth(row);
+    if (!groups.has(month)) groups.set(month, []);
+    groups.get(month).push(row);
+  }
 
-            return `
-              <div class="row-chart-group" title="${escapeAttribute(title)}" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.02}s both">
-                <div class="row-chart-value">${fmt.format(row.vehicle_count)}</div>
-                <div class="row-chart-column">
-                  <span class="row-chart-fill" style="height:${height}%"></span>
-                </div>
-                <div class="row-chart-label">
-                  <span>${month}</span>
-                  <span>${row.fuel_type}</span>
-                </div>
-              </div>
-            `;
-          })
-          .join("")}
-      </div>
+  const cards = [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, monthRows], index) => {
+      const visibleRows = showZeroResultRows
+        ? monthRows
+        : monthRows.filter((row) => row.vehicle_count !== 0);
+      const hiddenZeroCount = monthRows.length - visibleRows.length;
+      const total = monthRows.reduce((sum, row) => sum + row.vehicle_count, 0);
+      const location = [monthRows[0]?.state, monthRows[0]?.rto].filter(Boolean).join(" | ");
+
+      return `
+        <article class="result-card" style="animation: fadeSlideIn 0.4s var(--ease-out) ${index * 0.03}s both">
+          <div class="result-card-head">
+            <div>
+              <span>${displayMonth(month)}</span>
+              <small>${escapeHtml(location)}</small>
+            </div>
+            <strong>${fmt.format(total)}</strong>
+          </div>
+          <div class="result-card-rows">
+            ${
+              visibleRows.length
+                ? visibleRows
+                    .sort((a, b) => b.vehicle_count - a.vehicle_count || a.fuel_type.localeCompare(b.fuel_type))
+                    .map((row) => `
+                      <div class="result-card-row ${row.vehicle_count === 0 ? "is-zero" : ""}">
+                        <span>${escapeHtml(row.fuel_type)}</span>
+                        <strong>${fmt.format(row.vehicle_count)}</strong>
+                      </div>
+                    `)
+                    .join("")
+                : `<p class="result-empty small">Only zero-count rows for this month.</p>`
+            }
+            ${
+              hiddenZeroCount > 0
+                ? `<p class="result-hidden">${hiddenZeroCount} zero-count row${hiddenZeroCount === 1 ? "" : "s"} hidden</p>`
+                : ""
+            }
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  el.innerHTML = `
+    <div class="result-card-toolbar">
+      <span>${fmt.format(groups.size)} month${groups.size === 1 ? "" : "s"} returned</span>
+      <label class="zero-toggle">
+        <input id="zeroRowsToggle" type="checkbox" ${showZeroResultRows ? "checked" : ""} />
+        <span>Show zero rows</span>
+      </label>
+    </div>
+    <div class="result-card-grid">
+      ${cards}
     </div>
   `;
-}
 
-function renderRows(rows, dataStatus) {
-  const el = document.querySelector("#rows");
-  if (!rows.length) {
-    const message =
-      dataStatus === "fetch_failed"
-        ? "Could not fetch fresh VAHAN data for this query."
-        : "No rows matched this query.";
-    el.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:24px">${message}</td></tr>`;
-    return;
-  }
-  el.innerHTML = rows
-    .map(
-      (row) => `
-      <tr>
-        <td>${row.year}-${String(row.month).padStart(2, "0")}</td>
-        <td>${row.state}</td>
-        <td>${row.rto}</td>
-        <td>${row.fuel_segment}</td>
-        <td>${row.fuel_type}</td>
-        <td>${fmt.format(row.vehicle_count)}</td>
-      </tr>
-    `,
-    )
-    .join("");
+  document.querySelector("#zeroRowsToggle")?.addEventListener("change", (event) => {
+    showZeroResultRows = event.target.checked;
+    renderResultCards(rows, dataStatus);
+  });
 }
 
 function renderWarnings(items) {
@@ -184,12 +219,12 @@ function render(data) {
   setText(
     "peak",
     data.summary.peakMonth
-      ? `${data.summary.peakMonth} (${fmt.format(data.summary.peakMonthCount)})`
+      ? `${displayMonth(data.summary.peakMonth)} (${fmt.format(data.summary.peakMonthCount)})`
       : "-",
   );
 
   document.querySelector("#freshness").textContent =
-    `${data.freshness.source}. Latest loaded month: ${data.freshness.latestMonth ?? "not available"}. Status: ${data.dataStatus ?? "complete"}. Save: ${data.persistenceStatus ?? "saved"}.`;
+    `${data.freshness.source}. Latest loaded month: ${data.freshness.latestMonth ? displayMonth(data.freshness.latestMonth) : "not available"}. Status: ${data.dataStatus ?? "complete"}. Save: ${data.persistenceStatus ?? "saved"}.`;
 
   const scraperMessage = data.scraper?.autoTriggered
     ? data.scraper.success
@@ -204,7 +239,7 @@ function render(data) {
         : data.dataStatus === "live"
           ? ["Showing freshly scraped VAHAN data while it is saved in the background."]
         : data.dataStatus === "refreshing"
-          ? [`Showing stored historical data while refreshing ${data.liveRefresh?.requiredMonths?.join(", ") ?? "recent months"} from VAHAN.`]
+          ? [`Showing saved data now. Missing or latest months (${displayMonthList(data.liveRefresh?.requiredMonths) || "requested months"}) are being fetched from VAHAN; the dashboard will update automatically.`]
         : data.dataStatus === "partial"
           ? ["Some requested months are missing from the local dataset."]
           : [];
@@ -213,8 +248,7 @@ function render(data) {
   renderFilters(data.filters);
   renderTrend(data.trend);
   renderFuelBreakdown(data.fuelBreakdown);
-  renderRowChart(data.rows, data.dataStatus);
-  renderRows(data.rows, data.dataStatus);
+  renderResultCards(data.rows, data.dataStatus);
 
   // Remove loading state
   app.classList.remove("loading");
@@ -274,7 +308,7 @@ form.addEventListener("submit", async (event) => {
   submitBtn.disabled = true;
   submitBtn.querySelector(".btn-text").textContent = "Working…";
   renderWarnings([
-    "Working on it. Stored historical data will appear first if recent months need a live VAHAN refresh.",
+    "Working on it. Saved data will appear first, then missing or latest months will refresh from VAHAN.",
   ]);
   try {
     await runQuery(input.value);
