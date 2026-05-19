@@ -4,6 +4,7 @@ import process from "node:process";
 import { chromium } from "playwright";
 import { closePool } from "../lib/db.mjs";
 import { upsertRegistrationRows } from "../lib/registrations.mjs";
+import { toCatalogRto } from "../lib/rto-resolver.mjs";
 
 const SOURCE_URL =
   "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml";
@@ -183,7 +184,7 @@ function parseArgs(argv) {
 }
 
 function validateArgs(args) {
-  if (!["discover", "scrape"].includes(args.mode)) {
+  if (!["discover", "scrape", "rto-catalog"].includes(args.mode)) {
     throw new Error(`Unsupported mode: ${args.mode}`);
   }
   if (!Number.isFinite(args.delayMs) || args.delayMs < 0) {
@@ -655,6 +656,77 @@ async function configureReport(page, { state, rto, year }) {
     },
     String(year),
   );
+}
+
+async function selectStateForCatalog(page, state) {
+  await selectPrimeOption(
+    page,
+    {
+      description: "state",
+      fastIds: ["j_idt41_input"],
+      labelPatterns: [/state/i],
+      knownOptions: [state, "Assam", "Maharashtra", "Delhi"],
+      optionPatterns: [/andhra pradesh|assam|maharashtra|uttar pradesh/i],
+      minOptions: 10,
+    },
+    state,
+  );
+}
+
+async function extractRtoOptions(page) {
+  const control = await findSelectControl(page, {
+    description: "RTO",
+    fastIds: ["selectedRto_input"],
+    labelPatterns: [/rto|office|running office/i],
+    knownOptions: ["All Vahan4 Running Office"],
+    minOptions: 2,
+  });
+
+  return page.locator(control.selector).evaluate((select) =>
+    [...select.options]
+      .map((option) => option.textContent.replace(/\s+/g, " ").trim())
+      .filter(Boolean),
+  );
+}
+
+async function buildRtoCatalog(args) {
+  await ensureDir(args.outputDir);
+  const outputFile = path.join(args.outputDir, "rto_catalog.json");
+  const states = args.states.length ? args.states : STATE_NAMES;
+
+  const browser = await launchBrowser(args);
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+  });
+  const page = await context.newPage();
+
+  try {
+    await openDashboard(page);
+    const catalogStates = [];
+    for (const [index, state] of states.entries()) {
+      console.log(`[${index + 1}/${states.length}] Reading RTOs for ${state}`);
+      await selectStateForCatalog(page, state);
+      const labels = await extractRtoOptions(page);
+      const rtos = labels
+        .filter((label) => label !== "All Vahan4 Running Office")
+        .map(toCatalogRto)
+        .sort((a, b) => a.label.localeCompare(b.label));
+      catalogStates.push({ state, rtos });
+      await sleep(args.delayMs);
+    }
+
+    const catalog = {
+      source_url: SOURCE_URL,
+      updated_at: new Date().toISOString(),
+      states: catalogStates,
+    };
+    await writeFileWithRetry(outputFile, JSON.stringify(catalog, null, 2));
+    console.log(`Wrote ${outputFile}`);
+  } finally {
+    await browser.close();
+  }
 }
 
 async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, vehicleClasses }) {
@@ -1327,6 +1399,8 @@ async function main() {
       await discoverDashboard(page, args.outputDir);
     } else if (args.mode === "scrape") {
       await scrape(args);
+    } else if (args.mode === "rto-catalog") {
+      await buildRtoCatalog(args);
     } else {
       throw new Error(`Unsupported mode: ${args.mode}`);
     }
