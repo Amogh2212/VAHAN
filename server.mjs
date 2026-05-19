@@ -9,13 +9,23 @@ import { hasDatabaseUrl } from "./lib/db.mjs";
 import {
   REGISTRATION_HEADERS,
   loadRegistrationRowsFromDb,
+  queryAvailableMonths,
+  queryRegistrationFreshness,
+  queryRegistrationRows,
+  queryRtos,
   readRegistrationsCsv,
   upsertRegistrationRows,
 } from "./lib/registrations.mjs";
+import {
+  buildRtoCatalogFromRows,
+  loadRtoCatalog,
+  resolveRtoWithCatalog,
+} from "./lib/rto-resolver.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_fuel_monthly.csv");
+const RTO_CATALOG_FILE = path.join(__dirname, "data", "vahan", "rto_catalog.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
 const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
@@ -28,6 +38,7 @@ const FILTER_CONTEXT_FIELDS = [
   "norms_filter",
   "vehicle_class_filter",
 ];
+let rtoCatalogCache = null;
 
 const MONTHS = new Map([
   ["jan", 1],
@@ -363,6 +374,40 @@ async function loadRows() {
   return dataCache;
 }
 
+async function loadCatalog(rows = []) {
+  if (!rtoCatalogCache) {
+    const fileCatalog = await loadRtoCatalog(RTO_CATALOG_FILE);
+    const rowCatalog = hasDatabaseUrl()
+      ? buildRtoCatalogFromRows((await queryRtos()).map((item) => ({ state: item.state, rto: item.rto })))
+      : buildRtoCatalogFromRows(rows);
+    rtoCatalogCache = mergeRtoCatalogs(fileCatalog, rowCatalog);
+  }
+  return rtoCatalogCache;
+}
+
+function mergeRtoCatalogs(primary, fallback) {
+  const byState = new Map();
+  for (const catalog of [fallback, primary]) {
+    for (const stateGroup of catalog?.states ?? []) {
+      if (!stateGroup.state) continue;
+      if (!byState.has(stateGroup.state)) byState.set(stateGroup.state, new Map());
+      const rtos = byState.get(stateGroup.state);
+      for (const rto of stateGroup.rtos ?? []) {
+        if (rto?.label) rtos.set(rto.label, rto);
+      }
+    }
+  }
+  return {
+    updated_at: primary?.updated_at ?? fallback?.updated_at ?? null,
+    states: [...byState.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([state, rtos]) => ({
+        state,
+        rtos: [...rtos.values()].sort((a, b) => a.label.localeCompare(b.label)),
+      })),
+  };
+}
+
 async function persistScrapedRows(rows) {
   if (!rows.length) return;
 
@@ -600,8 +645,12 @@ function mergeFilters(ruleFilters, llmFilters) {
   };
 }
 
-function resolveRto(filters, rows) {
+function resolveRto(filters, rows, catalog = null) {
   const rtoNeedle = filters.rto ?? filters.rtoSearch;
+
+  if (catalog) {
+    return resolveRtoWithCatalog(filters, catalog, rows);
+  }
 
   // No RTO specified at all — check if we have a locationText from CITY_DB
   if (!rtoNeedle) {
@@ -694,6 +743,38 @@ function refreshMonthsForFilters(filters, rows) {
   }
 
   return groupMonthKeys([...refreshKeys]);
+}
+
+async function refreshMonthsForFiltersFromDb(filters) {
+  if (!filters.from || !filters.to) return [];
+  const requested = new Set(requestedMonthKeys(filters));
+  const loaded = new Set(
+    (await queryAvailableMonths(filters)).map((row) => monthKey(row.year, row.month)),
+  );
+  const refreshKeys = new Set();
+
+  for (const key of requested) {
+    if (!loaded.has(key)) refreshKeys.add(key);
+  }
+
+  for (const key of recentLiveMonthKeys()) {
+    if (requested.has(key)) refreshKeys.add(key);
+  }
+
+  return groupMonthKeys([...refreshKeys]);
+}
+
+async function findMissingMonthsFromDb(filters) {
+  if (!filters.from || !filters.to) return [];
+  const loaded = new Set(
+    (await queryAvailableMonths(filters)).map((row) => monthKey(row.year, row.month)),
+  );
+  return monthsByYear(filters.from, filters.to)
+    .map((group) => ({
+      year: group.year,
+      months: group.months.filter((month) => !loaded.has(monthKey(group.year, month))),
+    }))
+    .filter((group) => group.months.length > 0);
 }
 
 // Find which specific year+month combos are missing from the CSV for this location
@@ -917,6 +998,11 @@ function freshness(rows) {
   return { latestMonth: latest, source: SOURCE_LABEL };
 }
 
+async function freshnessFromDb() {
+  const stats = await queryRegistrationFreshness();
+  return { latestMonth: stats.latestMonth, source: SOURCE_LABEL, rowCount: stats.rowCount };
+}
+
 function dashboardPayload({
   filters,
   rows,
@@ -925,9 +1011,11 @@ function dashboardPayload({
   llmFilters,
   persistenceStatus = "saved",
   liveRefresh = null,
+  preFiltered = false,
+  freshnessInfo = null,
 }) {
   const scraper = summarizeScraperRuns(scraperRuns);
-  const resultRows = filters.ambiguousRtos ? [] : filterRows(rows, filters);
+  const resultRows = filters.ambiguousRtos ? [] : preFiltered ? rows : filterRows(rows, filters);
   const status = liveRefresh?.status === "pending"
     ? resolveImmediateDataStatus({ rows: resultRows, missingMonths, liveRefresh })
     : resolveDataStatus({ rows: resultRows, missingMonths, scraper });
@@ -946,7 +1034,7 @@ function dashboardPayload({
     trend: summary.trend,
     fuelBreakdown: summary.fuelBreakdown,
     rows: resultRows,
-    freshness: freshness(rows),
+    freshness: freshnessInfo ?? freshness(rows),
     scraper,
     liveRefresh,
     warnings: [
@@ -959,6 +1047,10 @@ function dashboardPayload({
       persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
       status === "partial" ? "Some requested months are missing from local data." : null,
+      filters.correctedByGemini ? "Gemini helped interpret the location or filters; counts still come only from VAHAN data." : null,
+      filters.rtoResolution?.status === "resolved" && filters.rtoResolution.query
+        ? `Resolved ${filters.rtoResolution.query} to ${filters.rtoResolution.rto} using the VAHAN RTO catalog.`
+        : null,
       filters.unresolvedLocation ? `Could not resolve location "${filters.unresolvedLocation}" from loaded data.` : null,
       filters.ambiguousRtos ? "Location matched multiple RTOs. Choose one." : null,
     ].filter(Boolean),
@@ -1001,8 +1093,12 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
       job.freshRows = freshRows;
 
       if (freshRows.length > 0) {
-        const currentRows = await loadRows();
-        dataCache = mergeRegistrationRows(currentRows, freshRows);
+        if (hasDatabaseUrl()) {
+          dataCache = null;
+        } else {
+          const currentRows = await loadRows();
+          dataCache = mergeRegistrationRows(currentRows, freshRows);
+        }
         job.persistenceStatus = persistScrapedRowsInBackground(freshRows);
       }
 
@@ -1017,6 +1113,8 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         llmFilters,
         persistenceStatus: job.persistenceStatus,
         liveRefresh: liveRefreshInfo(job),
+        preFiltered: hasDatabaseUrl(),
+        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
       });
     } catch (error) {
       job.status = "failed";
@@ -1028,6 +1126,8 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         missingMonths: findMissingMonths(filters, baseRows),
         llmFilters,
         liveRefresh: liveRefreshInfo(job),
+        preFiltered: hasDatabaseUrl(),
+        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
       });
       console.error(`[refresh:${id}] ${error.message}`);
     }
@@ -1037,20 +1137,36 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
 }
 
 async function queryData(input) {
-  let rows = await loadRows();
+  const useDatabase = hasDatabaseUrl();
+  let rows = useDatabase ? [] : await loadRows();
+  const catalog = await loadCatalog(rows);
   const ruleFilters = decodeWithRules(input.query ?? "");
   let llmFilters = null;
-  if (!ruleFilters.state && !ruleFilters.rto && !ruleFilters.locationText) {
+  const ruleHasAnyLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
+  const needsGemini =
+    !ruleHasAnyLocation ||
+    !ruleFilters.from ||
+    !ruleFilters.to;
+  if (needsGemini) {
     try {
       llmFilters = normalizeGeminiFilters(await decodeWithGemini(input.query ?? ""));
     } catch (error) {
       llmFilters = { decodeWarning: error.message };
     }
   }
-  let filters = resolveRto(mergeFilters(ruleFilters, llmFilters), rows);
-  const immediateRows = rows;
+  let filters = resolveRto(mergeFilters(ruleFilters, llmFilters), rows, catalog);
+  const immediateRows = useDatabase && !filters.ambiguousRtos
+    ? await queryRegistrationRows(filters)
+    : rows;
+  const missingMonths = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
+    ? useDatabase
+      ? await findMissingMonthsFromDb(filters)
+      : findMissingMonths(filters, rows)
+    : [];
   const refreshGroups = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? refreshMonthsForFilters(filters, rows)
+    ? useDatabase
+      ? await refreshMonthsForFiltersFromDb(filters)
+      : refreshMonthsForFilters(filters, rows)
     : [];
   const liveRefreshJob = refreshGroups.length
     ? startLiveRefreshJob({ filters, baseRows: immediateRows, refreshGroups, llmFilters })
@@ -1059,9 +1175,11 @@ async function queryData(input) {
   return dashboardPayload({
     filters,
     rows: immediateRows,
-    missingMonths: findMissingMonths(filters, immediateRows),
+    missingMonths,
     llmFilters,
     liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
+    preFiltered: useDatabase,
+    freshnessInfo: useDatabase ? await freshnessFromDb() : null,
   });
 }
 
@@ -1121,30 +1239,80 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/registrations") {
-      const rows = await loadRows();
+      const useDatabase = hasDatabaseUrl();
+      const rows = useDatabase ? [] : await loadRows();
+      const catalog = await loadCatalog(rows);
       const filters = resolveRto({
         state: url.searchParams.get("state") || null,
         rto: url.searchParams.get("rto") || null,
+        locationText: url.searchParams.get("locationText") || null,
         fuelSegment: url.searchParams.get("fuelSegment") || null,
         fuelType: url.searchParams.get("fuelType") || null,
         from: url.searchParams.get("from") || null,
         to: url.searchParams.get("to") || null,
-      }, rows);
-      const resultRows = filterRows(rows, filters);
+      }, rows, catalog);
+      const resultRows = useDatabase && !filters.ambiguousRtos
+        ? await queryRegistrationRows(filters)
+        : filterRows(rows, filters);
       const summary = summarize(resultRows);
-      sendJson(response, 200, { filters, summary, trend: summary.trend, fuelBreakdown: summary.fuelBreakdown, rows: resultRows, freshness: freshness(rows) });
+      sendJson(response, 200, {
+        filters,
+        summary,
+        trend: summary.trend,
+        fuelBreakdown: summary.fuelBreakdown,
+        rows: resultRows,
+        freshness: useDatabase ? await freshnessFromDb() : freshness(rows),
+      });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/metadata/rtos") {
-      const rows = await loadRows();
+      const useDatabase = hasDatabaseUrl();
+      const rows = useDatabase ? [] : await loadRows();
+      const catalog = await loadCatalog(rows);
       const state = url.searchParams.get("state");
-      const rtos = [...new Set(rows.filter((row) => !state || row.state === state).map((row) => row.rto))].sort();
-      sendJson(response, 200, { rtos });
+      const catalogRtos = (catalog.states ?? [])
+        .filter((stateGroup) => !state || stateGroup.state === state)
+        .flatMap((stateGroup) => stateGroup.rtos.map((rto) => rto.label));
+      const rowRtos = useDatabase
+        ? (await queryRtos(state)).map((row) => row.rto)
+        : rows.filter((row) => !state || row.state === state).map((row) => row.rto);
+      const rtos = [...new Set([...catalogRtos, ...rowRtos])].sort();
+      sendJson(response, 200, { rtos, catalogUpdatedAt: catalog.updated_at });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/metadata/rto-resolve") {
+      const rows = hasDatabaseUrl() ? [] : await loadRows();
+      const catalog = await loadCatalog(rows);
+      const filters = resolveRto({
+        state: url.searchParams.get("state") || null,
+        rto: url.searchParams.get("rto") || null,
+        rtoText: url.searchParams.get("rtoText") || null,
+        locationText: url.searchParams.get("q") || url.searchParams.get("locationText") || null,
+      }, rows, catalog);
+      sendJson(response, 200, {
+        query: url.searchParams.get("q") || url.searchParams.get("locationText") || url.searchParams.get("rtoText") || null,
+        state: filters.state ?? null,
+        status: filters.rtoResolution?.status ?? "none",
+        rto: filters.rto ?? null,
+        candidates: filters.rtoResolution?.candidates ?? [],
+        resolution: filters.rtoResolution ?? null,
+      });
       return;
     }
     if (request.method === "GET" && url.pathname === "/health") {
+      if (hasDatabaseUrl()) {
+        const dbFreshness = await freshnessFromDb();
+        sendJson(response, 200, {
+          status: "ok",
+          storage: "postgres",
+          rowCount: dbFreshness.rowCount,
+          latestMonth: dbFreshness.latestMonth,
+          source: dbFreshness.source,
+        });
+        return;
+      }
       const rows = await loadRows();
-      sendJson(response, 200, { status: "ok", rowCount: rows.length, ...freshness(rows) });
+      sendJson(response, 200, { status: "ok", storage: "csv", rowCount: rows.length, ...freshness(rows) });
       return;
     }
     await serveStatic(request, response);

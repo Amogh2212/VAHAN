@@ -7,11 +7,21 @@ const input = document.querySelector("#queryInput");
 const warnings = document.querySelector("#warnings");
 const submitBtn = document.querySelector("#submitBtn");
 const app = document.querySelector("#app");
+const appFrame = document.querySelector(".app-frame");
+const sidebarShell = document.querySelector("#sidebarShell");
+const sidebarTrigger = document.querySelector("#sidebarTrigger");
+const featureSidebar = document.querySelector("#featureSidebar");
+const downloadCsvBtn = document.querySelector("#downloadCsvBtn");
+const downloadPdfBtn = document.querySelector("#downloadPdfBtn");
+const downloadMenu = document.querySelector(".download-menu");
+const downloadMenuBtn = document.querySelector("#downloadMenuBtn");
 
 const fmt = new Intl.NumberFormat("en-IN");
 const monthFmt = new Intl.DateTimeFormat("en", { month: "short", year: "numeric" });
 let activeRefreshJobId = null;
 let showZeroResultRows = false;
+let latestQuery = "";
+let latestData = null;
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -47,6 +57,48 @@ function displayMonthList(items) {
   return (items ?? []).map(displayMonth).join(", ");
 }
 
+function formatTimestamp(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-IN");
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function slugifyFilename(value) {
+  return (
+    String(value ?? "vahan-report")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "vahan-report"
+  );
+}
+
+function filterEntries(filters = {}) {
+  return [
+    ["Fuel segment", filters.fuelSegment ?? "All"],
+    ["Fuel type", filters.fuelType ?? "All"],
+    ["Fuel checkbox", filters.fuelFilters?.length ? filters.fuelFilters.join(", ") : "All"],
+    ["Vehicle category", filters.vehicleCategories?.length ? filters.vehicleCategories.join(", ") : "All"],
+    ["Norms", filters.norms?.length ? filters.norms.join(", ") : "All"],
+    ["Vehicle class", filters.vehicleClasses?.length ? filters.vehicleClasses.join(", ") : "All"],
+    ["State", filters.state ?? "All loaded states"],
+    ["RTO", filters.rto ?? filters.locationText ?? "All loaded RTOs"],
+    ["RTO resolution", filters.rtoResolution?.status ?? "not needed"],
+    ["From", filters.from ?? "-"],
+    ["To", filters.to ?? "-"],
+  ];
+}
+
+function setExportButtonsEnabled(enabled) {
+  downloadCsvBtn.disabled = !enabled;
+  downloadPdfBtn.disabled = !enabled;
+}
+
 function animateCounter(el, target) {
   const start = parseInt(el.textContent.replace(/[^\d]/g, "")) || 0;
   if (start === target) return;
@@ -67,19 +119,7 @@ function animateCounter(el, target) {
 
 function renderFilters(filters) {
   const el = document.querySelector("#filters");
-  const entries = [
-    ["Fuel segment", filters.fuelSegment ?? "All"],
-    ["Fuel type", filters.fuelType ?? "All"],
-    ["Fuel checkbox", filters.fuelFilters?.length ? filters.fuelFilters.join(", ") : "All"],
-    ["Vehicle category", filters.vehicleCategories?.length ? filters.vehicleCategories.join(", ") : "All"],
-    ["Norms", filters.norms?.length ? filters.norms.join(", ") : "All"],
-    ["Vehicle class", filters.vehicleClasses?.length ? filters.vehicleClasses.join(", ") : "All"],
-    ["State", filters.state ?? "All loaded states"],
-    ["RTO", filters.rto ?? filters.locationText ?? "All loaded RTOs"],
-    ["From", filters.from ?? "-"],
-    ["To", filters.to ?? "-"],
-  ];
-  el.innerHTML = entries
+  el.innerHTML = filterEntries(filters)
     .map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`)
     .join("");
 }
@@ -215,6 +255,8 @@ function renderWarnings(items) {
 /* ── Main Render ────────────────────────────────────────────────────────── */
 
 function render(data) {
+  latestData = data;
+  setExportButtonsEnabled(Boolean(latestData));
   // Animate counters
   animateCounter(document.querySelector("#total"), data.summary.total);
   animateCounter(document.querySelector("#average"), data.summary.monthlyAverage);
@@ -258,10 +300,187 @@ function render(data) {
   app.classList.remove("loading");
 }
 
+function buildReportCsv(data, query) {
+  const lines = [];
+  const generatedAt = new Date().toISOString();
+  const metadata = [
+    ["Report", "VAHAN Registration Dashboard"],
+    ["Query", query],
+    ["Generated at", generatedAt],
+    ["Source", data.freshness?.source ?? ""],
+    ["Latest loaded month", data.freshness?.latestMonth ?? ""],
+    ["Data status", data.dataStatus ?? ""],
+    ["Save status", data.persistenceStatus ?? ""],
+    ["Total registrations", data.summary?.total ?? 0],
+    ["Monthly average", data.summary?.monthlyAverage ?? 0],
+    ["Peak month", data.summary?.peakMonth ?? ""],
+    ["Peak month count", data.summary?.peakMonthCount ?? 0],
+    ["Rows returned", data.rows?.length ?? 0],
+  ];
+
+  lines.push(["Metadata", "Value"].map(csvCell).join(","));
+  for (const item of metadata) lines.push(item.map(csvCell).join(","));
+  lines.push("");
+  lines.push(["Parsed filter", "Value"].map(csvCell).join(","));
+  for (const item of filterEntries(data.filters)) lines.push(item.map(csvCell).join(","));
+  lines.push("");
+  if (data.warnings?.length) {
+    lines.push(["Warnings"].map(csvCell).join(","));
+    for (const warning of data.warnings) lines.push([warning].map(csvCell).join(","));
+    lines.push("");
+  }
+
+  const headers = [
+    "year",
+    "month",
+    "state",
+    "rto",
+    "fuel_segment",
+    "fuel_type",
+    "fuel_filter",
+    "vehicle_category_filter",
+    "norms_filter",
+    "vehicle_class_filter",
+    "vehicle_count",
+    "scraped_at",
+    "source_url",
+  ];
+  lines.push(headers.map(csvCell).join(","));
+  for (const row of data.rows ?? []) {
+    lines.push(headers.map((header) => csvCell(row[header])).join(","));
+  }
+  return lines.join("\r\n");
+}
+
+function downloadBlob(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadCurrentCsv() {
+  if (!latestData) return;
+  const filename = `${slugifyFilename(latestQuery)}-${new Date().toISOString().slice(0, 10)}.csv`;
+  downloadBlob(filename, buildReportCsv(latestData, latestQuery), "text/csv;charset=utf-8");
+}
+
+function tableRows(items, columns) {
+  if (!items?.length) {
+    return `<tr><td colspan="${columns.length}">No data available.</td></tr>`;
+  }
+  return items
+    .map((item) => `
+      <tr>
+        ${columns.map((column) => `<td>${escapeHtml(column.render ? column.render(item) : item[column.key])}</td>`).join("")}
+      </tr>
+    `)
+    .join("");
+}
+
+function openPrintableReport() {
+  if (!latestData) return;
+  const data = latestData;
+  const reportWindow = window.open("", "_blank");
+  if (!reportWindow) {
+    renderWarnings(["Allow pop-ups to open the printable report."]);
+    return;
+  }
+
+  const filterTable = filterEntries(data.filters)
+    .map(([key, value]) => `<tr><th>${escapeHtml(key)}</th><td>${escapeHtml(value)}</td></tr>`)
+    .join("");
+  const trendRows = tableRows(data.trend, [
+    { key: "month", render: (item) => displayMonth(item.month) },
+    { key: "count", render: (item) => fmt.format(item.count) },
+  ]);
+  const fuelRows = tableRows(data.fuelBreakdown, [
+    { key: "fuelType" },
+    { key: "count", render: (item) => fmt.format(item.count) },
+  ]);
+  const resultRows = tableRows(data.rows, [
+    { key: "year" },
+    { key: "month" },
+    { key: "state" },
+    { key: "rto" },
+    { key: "fuel_type" },
+    { key: "vehicle_count", render: (item) => fmt.format(item.vehicle_count) },
+    { key: "scraped_at", render: (item) => formatTimestamp(item.scraped_at) },
+  ]);
+
+  reportWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>VAHAN Report</title>
+        <style>
+          body { margin: 32px; color: #172033; font-family: Inter, Arial, sans-serif; line-height: 1.45; }
+          h1 { margin: 0 0 6px; font-size: 28px; }
+          h2 { margin: 28px 0 10px; font-size: 16px; text-transform: uppercase; letter-spacing: 0.06em; color: #526070; }
+          p { margin: 4px 0; color: #526070; }
+          .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+          .metric { border: 1px solid #d7dee8; border-radius: 8px; padding: 12px; }
+          .metric span { display: block; color: #667085; font-size: 11px; text-transform: uppercase; }
+          .metric strong { display: block; margin-top: 6px; font-size: 20px; color: #101828; }
+          table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 12px; }
+          th, td { border: 1px solid #d7dee8; padding: 7px 8px; text-align: left; vertical-align: top; }
+          th { background: #f3f6fa; color: #344054; }
+          .source { border-top: 2px solid #12b886; padding-top: 12px; margin-top: 16px; }
+          .warnings { color: #9a6700; }
+          @media print {
+            body { margin: 18mm; }
+            button { display: none; }
+            .summary { grid-template-columns: repeat(2, 1fr); }
+            table { break-inside: auto; }
+            tr { break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>VAHAN Registration Report</h1>
+        <p><strong>Query:</strong> ${escapeHtml(latestQuery)}</p>
+        <p><strong>Generated:</strong> ${escapeHtml(formatTimestamp(new Date().toISOString()))}</p>
+        <div class="source">
+          <p><strong>Source:</strong> ${escapeHtml(data.freshness?.source ?? "")}</p>
+          <p><strong>Latest loaded month:</strong> ${escapeHtml(data.freshness?.latestMonth ? displayMonth(data.freshness.latestMonth) : "not available")}</p>
+          <p><strong>Status:</strong> ${escapeHtml(data.dataStatus ?? "complete")}</p>
+        </div>
+        <div class="summary">
+          <div class="metric"><span>Total registrations</span><strong>${fmt.format(data.summary.total)}</strong></div>
+          <div class="metric"><span>Monthly average</span><strong>${fmt.format(data.summary.monthlyAverage)}</strong></div>
+          <div class="metric"><span>Peak month</span><strong>${escapeHtml(data.summary.peakMonth ? displayMonth(data.summary.peakMonth) : "-")}</strong></div>
+          <div class="metric"><span>Rows</span><strong>${fmt.format(data.rows.length)}</strong></div>
+        </div>
+        ${data.warnings?.length ? `<h2>Warnings</h2><p class="warnings">${data.warnings.map(escapeHtml).join("<br>")}</p>` : ""}
+        <h2>Parsed Filters</h2>
+        <table><tbody>${filterTable}</tbody></table>
+        <h2>Monthly Trend</h2>
+        <table><thead><tr><th>Month</th><th>Registrations</th></tr></thead><tbody>${trendRows}</tbody></table>
+        <h2>Fuel Breakdown</h2>
+        <table><thead><tr><th>Fuel type</th><th>Registrations</th></tr></thead><tbody>${fuelRows}</tbody></table>
+        <h2>Result Rows</h2>
+        <table>
+          <thead><tr><th>Year</th><th>Month</th><th>State</th><th>RTO</th><th>Fuel type</th><th>Count</th><th>Scraped at</th></tr></thead>
+          <tbody>${resultRows}</tbody>
+        </table>
+        <script>window.addEventListener("load", () => { window.print(); });</script>
+      </body>
+    </html>
+  `);
+  reportWindow.document.close();
+}
+
 /* ── API Call ────────────────────────────────────────────────────────────── */
 
 async function runQuery(query) {
   activeRefreshJobId = null;
+  latestQuery = query;
   const response = await fetch("/api/query", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -309,6 +528,7 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   activeRefreshJobId = null;
   app.classList.add("loading");
+  setExportButtonsEnabled(false);
   submitBtn.disabled = true;
   submitBtn.querySelector(".btn-text").textContent = "Working…";
   renderWarnings([
@@ -325,5 +545,57 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+downloadCsvBtn.addEventListener("click", downloadCurrentCsv);
+downloadPdfBtn.addEventListener("click", openPrintableReport);
+downloadMenu?.addEventListener("mouseenter", () => downloadMenuBtn?.setAttribute("aria-expanded", "true"));
+downloadMenu?.addEventListener("mouseleave", () => downloadMenuBtn?.setAttribute("aria-expanded", "false"));
+downloadMenu?.addEventListener("focusin", () => downloadMenuBtn?.setAttribute("aria-expanded", "true"));
+downloadMenu?.addEventListener("focusout", (event) => {
+  if (!downloadMenu.contains(event.relatedTarget)) {
+    downloadMenuBtn?.setAttribute("aria-expanded", "false");
+  }
+});
+
+if (appFrame && sidebarTrigger && featureSidebar) {
+  let closeSidebarTimer = null;
+
+  const openSidebar = () => {
+    clearTimeout(closeSidebarTimer);
+    appFrame.classList.add("sidebar-open");
+    sidebarTrigger.setAttribute("aria-expanded", "true");
+  };
+
+  const closeSidebar = () => {
+    closeSidebarTimer = setTimeout(() => {
+      const activeElement = document.activeElement;
+      if (
+        sidebarTrigger.matches(":hover, :focus-visible") ||
+        featureSidebar.matches(":hover") ||
+        featureSidebar.contains(activeElement)
+      ) {
+        return;
+      }
+      appFrame.classList.remove("sidebar-open");
+      sidebarTrigger.setAttribute("aria-expanded", "false");
+    }, 120);
+  };
+
+  sidebarTrigger.setAttribute("aria-haspopup", "true");
+  sidebarTrigger.setAttribute("aria-expanded", "false");
+  sidebarTrigger.addEventListener("mouseenter", openSidebar);
+  sidebarTrigger.addEventListener("pointerenter", openSidebar);
+  sidebarTrigger.addEventListener("focus", openSidebar);
+  sidebarTrigger.addEventListener("mouseleave", closeSidebar);
+  sidebarTrigger.addEventListener("pointerleave", closeSidebar);
+  sidebarTrigger.addEventListener("blur", closeSidebar);
+  featureSidebar.addEventListener("mouseenter", openSidebar);
+  featureSidebar.addEventListener("pointerenter", openSidebar);
+  featureSidebar.addEventListener("mouseleave", closeSidebar);
+  featureSidebar.addEventListener("pointerleave", closeSidebar);
+  featureSidebar.addEventListener("focusin", openSidebar);
+  featureSidebar.addEventListener("focusout", closeSidebar);
+}
+
 // Run default query on load
+setExportButtonsEnabled(false);
 runQuery(input.value);

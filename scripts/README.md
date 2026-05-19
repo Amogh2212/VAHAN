@@ -51,6 +51,23 @@ node scripts/vahan-scraper.mjs --mode discover --headed --channel chrome
 npm run scrape:vahan:sample
 ```
 
+## RTO Catalog
+
+Build the local RTO catalog from the official VAHAN state/RTO dropdowns:
+
+```powershell
+npm run scrape:vahan:rto-catalog
+```
+
+For a focused refresh:
+
+```powershell
+node scripts/vahan-scraper.mjs --mode rto-catalog --states Uttarakhand,Uttar Pradesh
+```
+
+The dashboard uses this catalog after Gemini/rule parsing to convert city or
+RTO text into the exact VAHAN dropdown label before filtering or scraping.
+
 When `DATABASE_URL` is present in `.env`, successful scrape rows are upserted
 into Neon and also written to the local CSV files. If `DATABASE_URL` is absent,
 the scraper continues to write CSV only.
