@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Explore state-wise EV registration share across India and drill into available VAHAN RTO data." />
+    <title>VAHAN EV Map</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-frame map-app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div>
+            <strong>VAHAN</strong>
+            <small>Features</small>
+          </div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
+              </svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+          <a class="feature-link" href="/compare.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" />
+              </svg>
+            </span>
+            <span>Compare data</span>
+          </a>
+          <a class="feature-link active" href="/map.html" aria-current="page">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" />
+                <path d="M9 3v15M15 6v15" />
+              </svg>
+            </span>
+            <span>Map view</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="shell map-shell" id="mapApp">
+        <section class="compare-topbar map-topbar">
+          <div class="hero-title-row">
+            <div class="sidebar-shell" id="sidebarShell">
+              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
+                <span class="sidebar-mark trigger-mark">V</span>
+              </button>
+            </div>
+            <div class="compare-intro">
+              <p class="eyebrow">VAHAN EV Map</p>
+              <h1>India EV registration intensity</h1>
+              <p class="compare-empty" id="coverageText">Loading saved VAHAN coverage.</p>
+            </div>
+          </div>
+          <div class="compare-actions">
+            <a class="back-link" href="/">Dashboard</a>
+            <button type="button" class="secondary-action" id="resetMapBtn">Reset view</button>
+          </div>
+        </section>
+
+        <section class="panel map-filter-panel">
+          <form id="mapFilters" class="map-filter-form" autocomplete="off">
+            <label class="map-query-field">
+              <span class="eyebrow">Map query</span>
+              <input id="mapQueryInput" name="query" value="EV share across all states in Dec 2025" />
+            </label>
+            <label>
+              <span class="eyebrow">From</span>
+              <input id="mapFrom" name="from" value="2025-12" />
+            </label>
+            <label>
+              <span class="eyebrow">To</span>
+              <input id="mapTo" name="to" value="2025-12" />
+            </label>
+            <label>
+              <span class="eyebrow">Fuel type</span>
+              <select id="mapFuelType" name="fuelType">
+                <option value="">All fuels</option>
+                <option value="ELECTRIC">Electric</option>
+                <option value="PURE EV">Pure EV</option>
+                <option value="DIESEL">Diesel</option>
+                <option value="PETROL">Petrol</option>
+              </select>
+            </label>
+            <label>
+              <span class="eyebrow">Vehicle class</span>
+              <select id="mapVehicleClass" name="vehicleClasses">
+                <option value="">All classes</option>
+                <option value="FORK LIFT">Fork lift</option>
+                <option value="E-RICKSHAW(P)">E-rickshaw</option>
+                <option value="MOTOR CAR">Motor car</option>
+                <option value="BUS">Bus</option>
+              </select>
+            </label>
+            <button type="submit" id="applyMapFilters">Apply</button>
+            <button type="button" id="fetchAllStatesBtn">Fetch all states</button>
+          </form>
+          <p class="map-fetch-status" id="mapFetchStatus">Saved rows render instantly. Fetch all states starts a live VAHAN job for the selected range.</p>
+          <div class="map-fetch-progress" id="mapFetchProgress" hidden>
+            <div class="map-progress-head">
+              <span id="mapProgressLabel">Preparing fetch</span>
+              <strong id="mapProgressCount">0 / 0</strong>
+            </div>
+            <div class="map-progress-track" aria-hidden="true">
+              <span id="mapProgressFill"></span>
+            </div>
+            <div class="map-progress-columns">
+              <div>
+                <span class="eyebrow">Fetching now</span>
+                <p id="mapCurrentState">Waiting for scraper</p>
+              </div>
+              <div>
+                <span class="eyebrow">States left</span>
+                <p id="mapRemainingStates">Not started</p>
+              </div>
+            </div>
+            <div class="map-progress-list" id="mapProgressList" aria-label="State fetch progress"></div>
+          </div>
+        </section>
+
+        <section class="map-layout">
+          <article class="panel map-panel">
+            <div class="panel-head map-panel-head">
+              <h2>EV share by state</h2>
+              <div class="map-legend" aria-label="EV share legend">
+                <span class="is-empty">No data</span>
+                <span class="level-1">0-5%</span>
+                <span class="level-2">5-15%</span>
+                <span class="level-3">15-30%</span>
+                <span class="level-4">30%+</span>
+              </div>
+            </div>
+            <div class="map-stage" id="mapStage">
+              <svg id="indiaMap" class="india-map" viewBox="0 0 620 760" role="img" aria-label="India state EV registration map"></svg>
+              <div class="map-tooltip" id="mapTooltip" hidden></div>
+            </div>
+          </article>
+
+          <aside class="panel map-detail-panel" id="mapDetail">
+            <div class="panel-head">
+              <h2 id="selectedStateTitle">Select a state</h2>
+            </div>
+            <div class="map-state-summary" id="stateSummary">
+              <p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>
+            </div>
+            <div class="map-rto-list" id="rtoList"></div>
+          </aside>
+        </section>
+      </main>
+    </div>
+    <script src="/india-states.js"></script>
+    <script src="/map.js"></script>
+  </body>
+</html>

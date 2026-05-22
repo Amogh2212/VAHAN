@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-19T11:09:03.522Z",
+  "attempt": 3,
+  "error": "page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "report": {
+    "year": 2025,
+    "months": [
+      12
+    ],
+    "state": "Andaman & Nicobar Island",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260519_163903_andaman-nicobar-island_2025_all-rtos_attempt3.png",
+    "html": "data\\vahan\\failures\\20260519_163903_andaman-nicobar-island_2025_all-rtos_attempt3.html"
+  }
+}

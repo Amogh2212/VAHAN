@@ -8,14 +8,58 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="compare-page">
-    <main class="shell">
+    <div class="app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div>
+            <strong>VAHAN</strong>
+            <small>Features</small>
+          </div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
+              </svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+          <a class="feature-link active" href="/compare.html" aria-current="page">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" />
+              </svg>
+            </span>
+            <span>Compare data</span>
+          </a>
+          <a class="feature-link" href="/map.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" />
+                <path d="M9 3v15M15 6v15" />
+              </svg>
+            </span>
+            <span>Map view</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="shell">
       <section class="compare-topbar">
         <div class="compare-intro">
-          <p class="eyebrow">VAHAN Compare View</p>
-          <h1>Compare two data slices</h1>
-          <p class="compare-empty" id="modeHelp">
-            Compare the same place across two months, or two places in the same month.
-          </p>
+          <div class="hero-title-row compare-title-row">
+            <button type="button" class="sidebar-trigger compare-logo-button" id="sidebarTrigger" aria-label="Open feature menu">
+              <span class="sidebar-mark trigger-mark">V</span>
+            </button>
+            <div>
+              <p class="eyebrow">VAHAN Compare View</p>
+              <h1>Compare two data slices</h1>
+              <p class="compare-empty" id="modeHelp">
+                Compare the same place across two months, or two places in the same month.
+              </p>
+            </div>
+          </div>
         </div>
         <div class="compare-actions">
           <a class="back-link" href="/">Back to dashboard</a>
@@ -31,11 +75,11 @@
           <div class="compare-grid">
             <label>
               <span class="eyebrow">Left query</span>
-              <input id="leftQuery" name="leftQuery" value="EV registrations in Maharashtra from Jan 2024 to Jan 2024" />
+              <input id="leftQuery" name="leftQuery" value="diesel fork lift registrations in Maharashtra from Jan 2024 to Jan 2024" />
             </label>
             <label>
               <span class="eyebrow">Right query</span>
-              <input id="rightQuery" name="rightQuery" value="EV registrations in Gujarat from Jan 2024 to Jan 2024" />
+              <input id="rightQuery" name="rightQuery" value="diesel fork lift registrations in Maharashtra from Feb 2024 to Feb 2024" />
             </label>
           </div>
           <div class="compare-actions">
@@ -73,6 +117,7 @@
             <span class="status-pill" id="leftStatus">Waiting</span>
           </div>
           <p class="compare-empty" id="leftQueryLabel">No query run yet.</p>
+          <div class="compare-warnings" id="leftWarnings" hidden></div>
           <div class="result-meta">
             <div class="metric"><span>Total</span><strong id="leftTotal">-</strong></div>
             <div class="metric"><span>Average</span><strong id="leftAverage">-</strong></div>
@@ -97,6 +142,7 @@
             <span class="status-pill" id="rightStatus">Waiting</span>
           </div>
           <p class="compare-empty" id="rightQueryLabel">No query run yet.</p>
+          <div class="compare-warnings" id="rightWarnings" hidden></div>
           <div class="result-meta">
             <div class="metric"><span>Total</span><strong id="rightTotal">-</strong></div>
             <div class="metric"><span>Average</span><strong id="rightAverage">-</strong></div>
@@ -116,6 +162,7 @@
         </article>
       </section>
     </main>
+    </div>
     <script src="/compare.js"></script>
   </body>
 </html>

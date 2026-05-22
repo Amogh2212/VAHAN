@@ -1,0 +1,934 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-20T18:52:28.262Z",
+  "attempt": 3,
+  "error": "Could not find VAHAN report table after refresh. Table samples: [[[\"FOUR WHEELER (Invalid Carriage)\"],[\"LIGHT MOTOR VEHICLE\"],[\"MEDIUM MOTOR VEHICLE\"]],[[\"BHARAT STAGE I\"],[\"BHARAT STAGE II\"],[\"BHARAT STAGE III\"]],[[\"BIO-CNG/BIO-GAS\"],[\"BIO-DIESEL(B100)\"],[\"BIO-METHANE\"]],[[\"M-CYCLE/SCOOTER\"],[\"M-CYCLE/SCOOTER-WITH SIDE CAR\"],[\"MOPED\"]],[[],[\"S No\",\"Vehicle Class\",\"Vehicle Category Group\"],[\"FOUR WHEELER\"]]]",
+  "report": {
+    "year": 2024,
+    "months": [
+      4,
+      5,
+      6,
+      7
+    ],
+    "state": "Himachal Pradesh",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "VAHAN SEWA| DASHBOARD",
+  "bodyTextSample": " Home\nType:\nIn Thousand\nIn Lakh\nIn Crore\nActual Value\nActual Value\nState:\nAll Vahan4 Running States (36/36)\nAndaman & Nicobar Island(5)\nAndhra Pradesh(84)\nArunachal Pradesh(29)\nAssam(35)\nBihar(48)\nChhattisgarh(31)\nChandigarh(1)\nUT of DNH and DD(3)\nDelhi(16)\nGoa(13)\nGujarat(37)\nHimachal Pradesh(98)\nHaryana(104)\nJharkhand(25)\nJammu and Kashmir(21)\nKarnataka(68)\nKerala(87)\nLadakh(3)\nLakshadweep(9)\nMaharashtra(59)\nMeghalaya(14)\nManipur(17)\nMadhya Pradesh(53)\nMizoram(12)\nNagaland(9)\nOdisha(39)\nPunjab(96)\nPuducherry(8)\nRajasthan(60)\nSikkim(9)\nTelangana(57)\nTamil Nadu(148)\nTripura(9)\nUttarakhand(21)\nUttar Pradesh(77)\nWest Bengal(59)\nAll Vahan4 Running States (36/36)\nRTO:\nAll Vahan4 Running Office(98/98)\nHRTC BAIJNATH - HP113( 18-DEC-2017 )\nHRTC BILASPUR - HP105( 18-DEC-2017 )\nHRTC CHAMBA - HP115( 18-DEC-2017 )\nHRTC DEHRA - HP114( 11-DEC-2017 )\nHRTC DHARAMSHALA - HP111( 20-NOV-2017 )\nHRTC HAMIRPUR - HP119( 11-DEC-2017 )\nHRTC JASSUR - HP107( 18-DEC-2017 )\nHRTC KULLU - HP104( 18-DEC-2017 )\nHRTC MANDI - HP106( 18-DEC-2017 )\nHRTC NAHAN - HP110( 18-DEC-2017 )\nHRTC NALAGARH - HP109( 11-DEC-2017 )\nHRTC PALAMPUR - HP112( 18-DEC-2017 )\nHRTC RAMPUR - HP122( 18-DEC-2017 )\nHRTC SARKAGHAT - HP116( 18-DEC-2017 )\nHRTC SHIMLA(RURAL) - HP121( 18-DEC-2017 )\nHRTC SUNDERNAGAR - HP117( 18-DEC-2017 )\nHRTC TARADEVI - HP103( 18-DEC-2017 )\nHRTC UNA - HP108( 11-DEC-2017 )\nRLA AMB - HP19( 07-JUL-2017 )\nRLA ANI - HP35( 15-JUL-2017 )\nRLA ARKI - HP11( 07-JUL-2017 )\nRLA BADDI - HP127( 26-OCT-2024 )\nRLA BAIJNATH - HP53( 30-JUN-2017 )\nRLA BALH - HP82( 19-JUL-2017 )\nRLA BALICHOWKI - HP123( 25-JUN-2022 )\nRLA BANGANA - HP78( 22-JUL-2017 )\nRLA BANJAR - HP49( 15-JUL-2017 )\nRLA BARSAR - HP21( 10-JUL-2017 )\nRLA BHARMOUR - HP46( 12-JUL-2017 )\nRLA BHORANJ - HP74( 10-JUL-2017 )\nRLA BILASPUR - HP24( 12-JUN-2017 )\nRLA CHAMBA - HP48( 12-JUN-2017 )\nRLA CHOPAL - HP8( 21-JUN-2017 )\nRLA CHURAH - HP44( 07-JUL-2017 )\nRLA CHUWARI - HP57( 07-JUL-2017 )\nRLA DALHOUSIE - HP47( 05-JUL-2017 )\nRLA DEHRA - HP36( 12-JUL-2017 )\nRLA DHARAMPUR - HP86( 19-JUL-2017 )\nRLA DHARAMSHALA - HP39( 22-MAY-2017 )\nRLA DHEERA - HP96( 05-MAR-2018 )\nRLA DODRA KAWAR - HP77( 21-JUN-2017 )\nRLA FATHEPUR - HP88( 26-DEC-2016 )\nRLA GAGRET - HP101( 19-NOV-2019 )\nRLA GHUMARVI - HP23( 05-JUL-2017 )\nRLA GOHAR - HP32( 15-JUL-2017 )\nRLA HAMIRPUR - HP22( 12-JUN-2017 )\nRLA HAROLI - HP80( 15-JUL-2017 )\nRLA INDORA - HP97( 19-FEB-2018 )\nRLA JAISINGPUR - HP56( 30-JUN-2017 )\nRLA JAWALAJI - HP83( 19-JUL-2017 )\nRLA JAWALI - HP54( 15-JUL-2017 )\nRLA JHANDUTTA - HP89( 13-JUN-2017 )\nRLA JOGINDER NAGAR - HP29( 15-JUL-2017 )\nRLA JUBBAL - HP75( 10-FEB-2023 )\nRLA KAFFOTA - HP125( 25-NOV-2022 )\nRLA KALPA - HP25( 12-JUN-2017 )\nRLA KANDAGHAT - HP13( 19-JUL-2017 )\nRLA KANGRA - HP40( 01-JUL-2017 )\nRLA KARSOG - HP30( 15-JUL-2017 )\nRLA KASAULI - HP98( 25-JUN-2021 )\nRLA KAZA - HP41( 17-JUL-2017 )\nRLA KELANG - HP42( 12-JUN-2017 )\nRLA KOTKHAI - HP99( 10-FEB-2023 )\nRLA KOTLI - HP102( 12-MAR-2022 )\nRLA KULU - HP34( 12-JUN-2017 )\nRLA KUMARSAIN - HP95( 26-JUL-2017 )\nRLA KUPVI - HP126( 10-FEB-2023 )\nRLA MANALI - HP58( 05-JUL-2017 )\nRLA MANDI - HP33( 12-JUN-2017 )\nRLA NADAUN - HP55( 05-JUL-2017 )\nRLA NAGROTA BAGWAN - HP94( 29-SEP-2017 )\nRLA NAHAN - HP18( 12-JUN-2017 )\nRLA NALAGARH - HP12( 21-JUN-2017 )\nRLA NICHAR - HP26( 21-JUN-2017 )\nRLA NIRMAND - HP124( 05-SEP-2022 )\nRLA NURPUR - HP38( 12-JUL-2017 )\nRLA PACHHAD - HP100( 19-NOV-2019 )\nRLA PADDHAR - HP76( 05-JUL-2017 )\nRLA PALAMPUR - HP37( 01-JUL-2017 )\nRLA PANGI - HP45( 22-JUL-2017 )\nRLA PAONTA SAHIB - HP17( 05-JUL-2017 )\nRLA PARWANOO - HP15( 22-JUL-2017 )\nRLA POOH - HP27( 21-JUN-2017 )\nRLA RAJGARH - HP16( 10-JUL-2017 )\nRLA RAMPUR BUSHAR - HP6( 21-JUN-2017 )\nRLA ROHRU - HP10( 21-JUN-2017 )\nRLA SALOONI - HP81( 20-JUN-2017 )\nRLA SANGRAH - HP79( 10-JUL-2017 )\nRLA SARKAGHAT - HP28( 15-JUL-2017 )\nRLA SHAHPUR - HP90( 15-MAR-2017 )\nRLA SHILLAI - HP85( 10-JUL-2017 )\nRLA SHIMLA HP-03/HP-07(URBAN) - HP3( 22-MAY-2017 )\nRLA SHIMLA(RURAL) - HP51( 12-JUN-2017 )\nRLA SHRI NAINA DEVI JI SWARGHAT - HP91( 28-JUL-2017 )\nRLA SO",
+  "controls": [
+    {
+      "id": "j_idt28_input",
+      "name": "j_idt28_input",
+      "selector": "[id=\"j_idt28_input\"]",
+      "nearbyText": "j_idt28_input j_idt28_input In ThousandIn LakhIn CroreActual Value",
+      "optionCount": 4,
+      "options": [
+        {
+          "label": "In Thousand",
+          "value": "T"
+        },
+        {
+          "label": "In Lakh",
+          "value": "L"
+        },
+        {
+          "label": "In Crore",
+          "value": "C"
+        },
+        {
+          "label": "Actual Value",
+          "value": "A"
+        }
+      ]
+    },
+    {
+      "id": "j_idt36_input",
+      "name": "j_idt36_input",
+      "selector": "[id=\"j_idt36_input\"]",
+      "nearbyText": "j_idt36_input j_idt36_input All Vahan4 Running States (36/36)Andaman & Nicobar Island(5)Andhra Pradesh(84)Arunachal Pradesh(29)Assam(35)Bihar(48)Chhattisgarh(31)Chandigarh(1)UT of DNH and DD(3)Delhi(16)Goa(13)Gujarat(37)Himachal Pradesh(98)Haryana(104)Jharkhand(25)Jammu and Kashmir(21)Karnataka(68)Kerala(87)Ladakh(3)Lakshadwee",
+      "optionCount": 37,
+      "options": [
+        {
+          "label": "All Vahan4 Running States (36/36)",
+          "value": "-1"
+        },
+        {
+          "label": "Andaman & Nicobar Island(5)",
+          "value": "AN"
+        },
+        {
+          "label": "Andhra Pradesh(84)",
+          "value": "AP"
+        },
+        {
+          "label": "Arunachal Pradesh(29)",
+          "value": "AR"
+        },
+        {
+          "label": "Assam(35)",
+          "value": "AS"
+        },
+        {
+          "label": "Bihar(48)",
+          "value": "BR"
+        },
+        {
+          "label": "Chhattisgarh(31)",
+          "value": "CG"
+        },
+        {
+          "label": "Chandigarh(1)",
+          "value": "CH"
+        },
+        {
+          "label": "UT of DNH and DD(3)",
+          "value": "DD"
+        },
+        {
+          "label": "Delhi(16)",
+          "value": "DL"
+        },
+        {
+          "label": "Goa(13)",
+          "value": "GA"
+        },
+        {
+          "label": "Gujarat(37)",
+          "value": "GJ"
+        },
+        {
+          "label": "Himachal Pradesh(98)",
+          "value": "HP"
+        },
+        {
+          "label": "Haryana(104)",
+          "value": "HR"
+        },
+        {
+          "label": "Jharkhand(25)",
+          "value": "JH"
+        },
+        {
+          "label": "Jammu and Kashmir(21)",
+          "value": "JK"
+        },
+        {
+          "label": "Karnataka(68)",
+          "value": "KA"
+        },
+        {
+          "label": "Kerala(87)",
+          "value": "KL"
+        },
+        {
+          "label": "Ladakh(3)",
+          "value": "LA"
+        },
+        {
+          "label": "Lakshadweep(9)",
+          "value": "LD"
+        },
+        {
+          "label": "Maharashtra(59)",
+          "value": "MH"
+        },
+        {
+          "label": "Meghalaya(14)",
+          "value": "ML"
+        },
+        {
+          "label": "Manipur(17)",
+          "value": "MN"
+        },
+        {
+          "label": "Madhya Pradesh(53)",
+          "value": "MP"
+        },
+        {
+          "label": "Mizoram(12)",
+          "value": "MZ"
+        },
+        {
+          "label": "Nagaland(9)",
+          "value": "NL"
+        },
+        {
+          "label": "Odisha(39)",
+          "value": "OR"
+        },
+        {
+          "label": "Punjab(96)",
+          "value": "PB"
+        },
+        {
+          "label": "Puducherry(8)",
+          "value": "PY"
+        },
+        {
+          "label": "Rajasthan(60)",
+          "value": "RJ"
+        },
+        {
+          "label": "Sikkim(9)",
+          "value": "SK"
+        },
+        {
+          "label": "Telangana(57)",
+          "value": "TG"
+        },
+        {
+          "label": "Tamil Nadu(148)",
+          "value": "TN"
+        },
+        {
+          "label": "Tripura(9)",
+          "value": "TR"
+        },
+        {
+          "label": "Uttarakhand(21)",
+          "value": "UK"
+        },
+        {
+          "label": "Uttar Pradesh(77)",
+          "value": "UP"
+        },
+        {
+          "label": "West Bengal(59)",
+          "value": "WB"
+        }
+      ]
+    },
+    {
+      "id": "selectedRto_input",
+      "name": "selectedRto_input",
+      "selector": "[id=\"selectedRto_input\"]",
+      "nearbyText": "selectedRto_input selectedRto_input All Vahan4 Running Office(98/98)HRTC BAIJNATH - HP113( 18-DEC-2017 )HRTC BILASPUR - HP105( 18-DEC-2017 )HRTC CHAMBA - HP115( 18-DEC-2017 )HRTC DEHRA - HP114( 11-DEC-2017 )HRTC DHARAMSHALA - HP111( 20-NOV-2017 )HRTC HAMIRPUR - HP119( 11-DEC-2017 )HRTC JASSUR - HP107( 18-DEC-2017 )HRTC KULLU - HP104(",
+      "optionCount": 117,
+      "options": [
+        {
+          "label": "All Vahan4 Running Office(98/98)",
+          "value": "-1"
+        },
+        {
+          "label": "HRTC BAIJNATH - HP113( 18-DEC-2017 )",
+          "value": "113"
+        },
+        {
+          "label": "HRTC BILASPUR - HP105( 18-DEC-2017 )",
+          "value": "105"
+        },
+        {
+          "label": "HRTC CHAMBA - HP115( 18-DEC-2017 )",
+          "value": "115"
+        },
+        {
+          "label": "HRTC DEHRA - HP114( 11-DEC-2017 )",
+          "value": "114"
+        },
+        {
+          "label": "HRTC DHARAMSHALA - HP111( 20-NOV-2017 )",
+          "value": "111"
+        },
+        {
+          "label": "HRTC HAMIRPUR - HP119( 11-DEC-2017 )",
+          "value": "119"
+        },
+        {
+          "label": "HRTC JASSUR - HP107( 18-DEC-2017 )",
+          "value": "107"
+        },
+        {
+          "label": "HRTC KULLU - HP104( 18-DEC-2017 )",
+          "value": "104"
+        },
+        {
+          "label": "HRTC MANDI - HP106( 18-DEC-2017 )",
+          "value": "106"
+        },
+        {
+          "label": "HRTC NAHAN - HP110( 18-DEC-2017 )",
+          "value": "110"
+        },
+        {
+          "label": "HRTC NALAGARH - HP109( 11-DEC-2017 )",
+          "value": "109"
+        },
+        {
+          "label": "HRTC PALAMPUR - HP112( 18-DEC-2017 )",
+          "value": "112"
+        },
+        {
+          "label": "HRTC RAMPUR - HP122( 18-DEC-2017 )",
+          "value": "122"
+        },
+        {
+          "label": "HRTC SARKAGHAT - HP116( 18-DEC-2017 )",
+          "value": "116"
+        },
+        {
+          "label": "HRTC SHIMLA(RURAL) - HP121( 18-DEC-2017 )",
+          "value": "121"
+        },
+        {
+          "label": "HRTC SUNDERNAGAR - HP117( 18-DEC-2017 )",
+          "value": "117"
+        },
+        {
+          "label": "HRTC TARADEVI - HP103( 18-DEC-2017 )",
+          "value": "103"
+        },
+        {
+          "label": "HRTC UNA - HP108( 11-DEC-2017 )",
+          "value": "108"
+        },
+        {
+          "label": "RLA AMB - HP19( 07-JUL-2017 )",
+          "value": "19"
+        },
+        {
+          "label": "RLA ANI - HP35( 15-JUL-2017 )",
+          "value": "35"
+        },
+        {
+          "label": "RLA ARKI - HP11( 07-JUL-2017 )",
+          "value": "11"
+        },
+        {
+          "label": "RLA BADDI - HP127( 26-OCT-2024 )",
+          "value": "127"
+        },
+        {
+          "label": "RLA BAIJNATH - HP53( 30-JUN-2017 )",
+          "value": "53"
+        },
+        {
+          "label": "RLA BALH - HP82( 19-JUL-2017 )",
+          "value": "82"
+        },
+        {
+          "label": "RLA BALICHOWKI - HP123( 25-JUN-2022 )",
+          "value": "123"
+        },
+        {
+          "label": "RLA BANGANA - HP78( 22-JUL-2017 )",
+          "value": "78"
+        },
+        {
+          "label": "RLA BANJAR - HP49( 15-JUL-2017 )",
+          "value": "49"
+        },
+        {
+          "label": "RLA BARSAR - HP21( 10-JUL-2017 )",
+          "value": "21"
+        },
+        {
+          "label": "RLA BHARMOUR - HP46( 12-JUL-2017 )",
+          "value": "46"
+        },
+        {
+          "label": "RLA BHORANJ - HP74( 10-JUL-2017 )",
+          "value": "74"
+        },
+        {
+          "label": "RLA BILASPUR - HP24( 12-JUN-2017 )",
+          "value": "24"
+        },
+        {
+          "label": "RLA CHAMBA - HP48( 12-JUN-2017 )",
+          "value": "48"
+        },
+        {
+          "label": "RLA CHOPAL - HP8( 21-JUN-2017 )",
+          "value": "8"
+        },
+        {
+          "label": "RLA CHURAH - HP44( 07-JUL-2017 )",
+          "value": "44"
+        },
+        {
+          "label": "RLA CHUWARI - HP57( 07-JUL-2017 )",
+          "value": "57"
+        },
+        {
+          "label": "RLA DALHOUSIE - HP47( 05-JUL-2017 )",
+          "value": "47"
+        },
+        {
+          "label": "RLA DEHRA - HP36( 12-JUL-2017 )",
+          "value": "36"
+        },
+        {
+          "label": "RLA DHARAMPUR - HP86( 19-JUL-2017 )",
+          "value": "86"
+        },
+        {
+          "label": "RLA DHARAMSHALA - HP39( 22-MAY-2017 )",
+          "value": "39"
+        },
+        {
+          "label": "RLA DHEERA - HP96( 05-MAR-2018 )",
+          "value": "96"
+        },
+        {
+          "label": "RLA DODRA KAWAR - HP77( 21-JUN-2017 )",
+          "value": "77"
+        },
+        {
+          "label": "RLA FATHEPUR - HP88( 26-DEC-2016 )",
+          "value": "88"
+        },
+        {
+          "label": "RLA GAGRET - HP101( 19-NOV-2019 )",
+          "value": "101"
+        },
+        {
+          "label": "RLA GHUMARVI - HP23( 05-JUL-2017 )",
+          "value": "23"
+        },
+        {
+          "label": "RLA GOHAR - HP32( 15-JUL-2017 )",
+          "value": "32"
+        },
+        {
+          "label": "RLA HAMIRPUR - HP22( 12-JUN-2017 )",
+          "value": "22"
+        },
+        {
+          "label": "RLA HAROLI - HP80( 15-JUL-2017 )",
+          "value": "80"
+        },
+        {
+          "label": "RLA INDORA - HP97( 19-FEB-2018 )",
+          "value": "97"
+        },
+        {
+          "label": "RLA JAISINGPUR - HP56( 30-JUN-2017 )",
+          "value": "56"
+        },
+        {
+          "label": "RLA JAWALAJI - HP83( 19-JUL-2017 )",
+          "value": "83"
+        },
+        {
+          "label": "RLA JAWALI - HP54( 15-JUL-2017 )",
+          "value": "54"
+        },
+        {
+          "label": "RLA JHANDUTTA - HP89( 13-JUN-2017 )",
+          "value": "89"
+        },
+        {
+          "label": "RLA JOGINDER NAGAR - HP29( 15-JUL-2017 )",
+          "value": "29"
+        },
+        {
+          "label": "RLA JUBBAL - HP75( 10-FEB-2023 )",
+          "value": "75"
+        },
+        {
+          "label": "RLA KAFFOTA - HP125( 25-NOV-2022 )",
+          "value": "125"
+        },
+        {
+          "label": "RLA KALPA - HP25( 12-JUN-2017 )",
+          "value": "25"
+        },
+        {
+          "label": "RLA KANDAGHAT - HP13( 19-JUL-2017 )",
+          "value": "13"
+        },
+        {
+          "label": "RLA KANGRA - HP40( 01-JUL-2017 )",
+          "value": "40"
+        },
+        {
+          "label": "RLA KARSOG - HP30( 15-JUL-2017 )",
+          "value": "30"
+        },
+        {
+          "label": "RLA KASAULI - HP98( 25-JUN-2021 )",
+          "value": "98"
+        },
+        {
+          "label": "RLA KAZA - HP41( 17-JUL-2017 )",
+          "value": "41"
+        },
+        {
+          "label": "RLA KELANG - HP42( 12-JUN-2017 )",
+          "value": "42"
+        },
+        {
+          "label": "RLA KOTKHAI - HP99( 10-FEB-2023 )",
+          "value": "99"
+        },
+        {
+          "label": "RLA KOTLI - HP102( 12-MAR-2022 )",
+          "value": "102"
+        },
+        {
+          "label": "RLA KULU - HP34( 12-JUN-2017 )",
+          "value": "34"
+        },
+        {
+          "label": "RLA KUMARSAIN - HP95( 26-JUL-2017 )",
+          "value": "95"
+        },
+        {
+          "label": "RLA KUPVI - HP126( 10-FEB-2023 )",
+          "value": "126"
+        },
+        {
+          "label": "RLA MANALI - HP58( 05-JUL-2017 )",
+          "value": "58"
+        },
+        {
+          "label": "RLA MANDI - HP33( 12-JUN-2017 )",
+          "value": "33"
+        },
+        {
+          "label": "RLA NADAUN - HP55( 05-JUL-2017 )",
+          "value": "55"
+        },
+        {
+          "label": "RLA NAGROTA BAGWAN - HP94( 29-SEP-2017 )",
+          "value": "94"
+        },
+        {
+          "label": "RLA NAHAN - HP18( 12-JUN-2017 )",
+          "value": "18"
+        },
+        {
+          "label": "RLA NALAGARH - HP12( 21-JUN-2017 )",
+          "value": "12"
+        },
+        {
+          "label": "RLA NICHAR - HP26( 21-JUN-2017 )",
+          "value": "26"
+        },
+        {
+          "label": "RLA NIRMAND - HP124( 05-SEP-2022 )",
+          "value": "124"
+        },
+        {
+          "label": "RLA NURPUR - HP38( 12-JUL-2017 )",
+          "value": "38"
+        },
+        {
+          "label": "RLA PACHHAD - HP100( 19-NOV-2019 )",
+          "value": "100"
+        },
+        {
+          "label": "RLA PADDHAR - HP76( 05-JUL-2017 )",
+          "value": "76"
+        },
+        {
+          "label": "RLA PALAMPUR - HP37( 01-JUL-2017 )",
+          "value": "37"
+        },
+        {
+          "label": "RLA PANGI - HP45( 22-JUL-2017 )",
+          "value": "45"
+        },
+        {
+          "label": "RLA PAONTA SAHIB - HP17( 05-JUL-2017 )",
+          "value": "17"
+        },
+        {
+          "label": "RLA PARWANOO - HP15( 22-JUL-2017 )",
+          "value": "15"
+        },
+        {
+          "label": "RLA POOH - HP27( 21-JUN-2017 )",
+          "value": "27"
+        },
+        {
+          "label": "RLA RAJGARH - HP16( 10-JUL-2017 )",
+          "value": "16"
+        },
+        {
+          "label": "RLA RAMPUR BUSHAR - HP6( 21-JUN-2017 )",
+          "value": "6"
+        },
+        {
+          "label": "RLA ROHRU - HP10( 21-JUN-2017 )",
+          "value": "10"
+        },
+        {
+          "label": "RLA SALOONI - HP81( 20-JUN-2017 )",
+          "value": "81"
+        },
+        {
+          "label": "RLA SANGRAH - HP79( 10-JUL-2017 )",
+          "value": "79"
+        },
+        {
+          "label": "RLA SARKAGHAT - HP28( 15-JUL-2017 )",
+          "value": "28"
+        },
+        {
+          "label": "RLA SHAHPUR - HP90( 15-MAR-2017 )",
+          "value": "90"
+        },
+        {
+          "label": "RLA SHILLAI - HP85( 10-JUL-2017 )",
+          "value": "85"
+        },
+        {
+          "label": "RLA SHIMLA HP-03/HP-07(URBAN) - HP3( 22-MAY-2017 )",
+          "value": "3"
+        },
+        {
+          "label": "RLA SHIMLA(RURAL) - HP51( 12-JUN-2017 )",
+          "value": "51"
+        },
+        {
+          "label": "RLA SHRI NAINA DEVI JI SWARGHAT - HP91( 28-JUL-2017 )",
+          "value": "91"
+        },
+        {
+          "label": "RLA SOLAN - HP14( 12-JUN-2017 )",
+          "value": "14"
+        },
+        {
+          "label": "RLA SUJANPUR - HP84( 10-JUL-2017 )",
+          "value": "84"
+        },
+        {
+          "label": "RLA SUNDARNAGAR - HP31( 15-JUL-2017 )",
+          "value": "31"
+        },
+        {
+          "label": "RLA SUNNI - HP128( 17-MAR-2026 )",
+          "value": "128"
+        },
+        {
+          "label": "RLA THEOG - HP9( 21-JUN-2017 )",
+          "value": "9"
+        },
+        {
+          "label": "RLA THUNAG - HP87( 02-MAY-2017 )",
+          "value": "87"
+        },
+        {
+          "label": "RLA UDAIPUR - HP43( 05-JUL-2017 )",
+          "value": "43"
+        },
+        {
+          "label": "RLA UNA - HP20( 12-JUN-2017 )",
+          "value": "20"
+        },
+        {
+          "label": "RTO BADDI(NALAGARH) - HP93( 05-JUN-2017 )",
+          "value": "93"
+        },
+        {
+          "label": "RTO BILASPUR - HP69( 11-OCT-2017 )",
+          "value": "69"
+        },
+        {
+          "label": "RTO CHAMBA - HP73( 13-OCT-2017 )",
+          "value": "73"
+        },
+        {
+          "label": "RTO Dehra - HP129( 11-MAY-2026 )",
+          "value": "129"
+        },
+        {
+          "label": "RTO DHARAMSHALA - HP68( 29-SEP-2017 )",
+          "value": "68"
+        },
+        {
+          "label": "RTO HAMIRPUR - HP67( 06-OCT-2017 )",
+          "value": "67"
+        },
+        {
+          "label": "RTO KULLU - HP66( 20-SEP-2017 )",
+          "value": "66"
+        },
+        {
+          "label": "RTO MANDI - HP65( 22-SEP-2017 )",
+          "value": "65"
+        },
+        {
+          "label": "RTO NAHAN - HP71( 18-OCT-2017 )",
+          "value": "71"
+        },
+        {
+          "label": "RTO RAMPUR - HP92( 30-MAY-2017 )",
+          "value": "92"
+        },
+        {
+          "label": "RTO SHIMLA - HP63( 14-AUG-2017 )",
+          "value": "63"
+        },
+        {
+          "label": "RTO SOLAN - HP64( 27-SEP-2017 )",
+          "value": "64"
+        },
+        {
+          "label": "RTO UNA - HP72( 25-OCT-2017 )",
+          "value": "72"
+        },
+        {
+          "label": "STA SHIMLA - HP62( 21-JUN-2017 )",
+          "value": "62"
+        }
+      ]
+    },
+    {
+      "id": "yaxisVar_input",
+      "name": "yaxisVar_input",
+      "selector": "[id=\"yaxisVar_input\"]",
+      "nearbyText": "yaxisVar_input yaxisVar_input Vehicle CategoryVehicle ClassNormsFuelMakerRto",
+      "optionCount": 6,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Fuel",
+          "value": "Fuel"
+        },
+        {
+          "label": "Maker",
+          "value": "Maker"
+        },
+        {
+          "label": "Rto",
+          "value": "Rto"
+        }
+      ]
+    },
+    {
+      "id": "xaxisVar_input",
+      "name": "xaxisVar_input",
+      "selector": "[id=\"xaxisVar_input\"]",
+      "nearbyText": "xaxisVar_input xaxisVar_input Vehicle CategoryVehicle ClassNormsVehicle Category GroupFinancial YearCalendar YearMonth Wise",
+      "optionCount": 7,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Vehicle Category Group",
+          "value": "VCG"
+        },
+        {
+          "label": "Financial Year",
+          "value": "Financial Year"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "Calendar Year"
+        },
+        {
+          "label": "Month Wise",
+          "value": "Month Wise"
+        }
+      ]
+    },
+    {
+      "id": "selectedYearType_input",
+      "name": "selectedYearType_input",
+      "selector": "[id=\"selectedYearType_input\"]",
+      "nearbyText": "selectedYearType_input selectedYearType_input SelectFinancial YearCalendar Year",
+      "optionCount": 3,
+      "options": [
+        {
+          "label": "Select",
+          "value": ""
+        },
+        {
+          "label": "Financial Year",
+          "value": "F"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "id": "selectedYear_input",
+      "name": "selectedYear_input",
+      "selector": "[id=\"selectedYear_input\"]",
+      "nearbyText": "selectedYear_input selectedYear_input Select Year202620252024202320222021202020192018201720162015201420132012201120102009200820072006200520042003",
+      "optionCount": 25,
+      "options": [
+        {
+          "label": "Select Year",
+          "value": ""
+        },
+        {
+          "label": "2026",
+          "value": "2026"
+        },
+        {
+          "label": "2025",
+          "value": "2025"
+        },
+        {
+          "label": "2024",
+          "value": "2024"
+        },
+        {
+          "label": "2023",
+          "value": "2023"
+        },
+        {
+          "label": "2022",
+          "value": "2022"
+        },
+        {
+          "label": "2021",
+          "value": "2021"
+        },
+        {
+          "label": "2020",
+          "value": "2020"
+        },
+        {
+          "label": "2019",
+          "value": "2019"
+        },
+        {
+          "label": "2018",
+          "value": "2018"
+        },
+        {
+          "label": "2017",
+          "value": "2017"
+        },
+        {
+          "label": "2016",
+          "value": "2016"
+        },
+        {
+          "label": "2015",
+          "value": "2015"
+        },
+        {
+          "label": "2014",
+          "value": "2014"
+        },
+        {
+          "label": "2013",
+          "value": "2013"
+        },
+        {
+          "label": "2012",
+          "value": "2012"
+        },
+        {
+          "label": "2011",
+          "value": "2011"
+        },
+        {
+          "label": "2010",
+          "value": "2010"
+        },
+        {
+          "label": "2009",
+          "value": "2009"
+        },
+        {
+          "label": "2008",
+          "value": "2008"
+        },
+        {
+          "label": "2007",
+          "value": "2007"
+        },
+        {
+          "label": "2006",
+          "value": "2006"
+        },
+        {
+          "label": "2005",
+          "value": "2005"
+        },
+        {
+          "label": "2004",
+          "value": "2004"
+        },
+        {
+          "label": "2003",
+          "value": "2003"
+        }
+      ]
+    },
+    {
+      "id": "vchgroupTable:selectCatgGrp_input",
+      "name": "vchgroupTable:selectCatgGrp_input",
+      "selector": "[id=\"vchgroupTable:selectCatgGrp_input\"]",
+      "nearbyText": "vchgroupTable:selectCatgGrp_input vchgroupTable:selectCatgGrp_input TWO WHEELERTHREE WHEELERFOUR WHEELERAMBULANCE/HEARSESCONSTRUCTION EQUIPMENT VEHICLEGOODS VEHICLESPUBLIC SERVICE VEHICLESPECIAL CATEGORY VEHICLESTRAILERTRACTOR",
+      "optionCount": 10,
+      "options": [
+        {
+          "label": "TWO WHEELER",
+          "value": "2W|1,2,3,4,5,51,52,53|2WIC,2WN,2WT"
+        },
+        {
+          "label": "THREE WHEELER",
+          "value": "3W|6,54,55,57,58|3WN,3WT"
+        },
+        {
+          "label": "FOUR WHEELER",
+          "value": "4W|5,7,15,23,31,56,70,71,93|4WIC,LMV,MMV,HMV"
+        },
+        {
+          "label": "AMBULANCE/HEARSES",
+          "value": "AH|76,77,85|2WT,LPV,MPV,HPV,LGV,MGV,HGV"
+        },
+        {
+          "label": "CONSTRUCTION EQUIPMENT VEHICLE",
+          "value": "CE|22,25,26,29,87,88,92|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "GOODS VEHICLES",
+          "value": "GV|59,64,79,84|LGV,MGV,HGV"
+        },
+        {
+          "label": "PUBLIC SERVICE VEHICLE",
+          "value": "PS|69,73,75,78,86|LPV,MPV,HPV"
+        },
+        {
+          "label": "SPECIAL CATEGORY VEHICLES",
+          "value": "SC|8,9,10,11,12,14,17,18,19,20,21,24,27,32,62,65,66,67,68,80,81,83|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "TRAILER",
+          "value": "TL|16,28,30,82,89,91,94|LMV,HMV,MMV,LGV,MGV,HGV"
+        },
+        {
+          "label": "TRACTOR",
+          "value": "TR|13,63,90|LMV,MMV,LGV,MGV,HGV,OTH"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260521_002227_himachal-pradesh_2024_all-rtos_attempt3.png",
+    "html": "data\\vahan\\failures\\20260521_002227_himachal-pradesh_2024_all-rtos_attempt3.html"
+  }
+}

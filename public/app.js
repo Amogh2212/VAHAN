@@ -1,5 +1,5 @@
 /* ========================================================================
-   VAHAN Dashboard — Frontend Logic
+   VAHAN Dashboard - Frontend Logic
    ======================================================================== */
 
 const form = document.querySelector("#queryForm");
@@ -23,7 +23,7 @@ let showZeroResultRows = false;
 let latestQuery = "";
 let latestData = null;
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
+/* Helpers */
 
 function setText(id, value) {
   const el = document.querySelector(`#${id}`);
@@ -115,12 +115,12 @@ function animateCounter(el, target) {
   requestAnimationFrame(tick);
 }
 
-/* ── Renderers ──────────────────────────────────────────────────────────── */
+/* Renderers */
 
 function renderFilters(filters) {
   const el = document.querySelector("#filters");
   el.innerHTML = filterEntries(filters)
-    .map(([key, value]) => `<dt>${key}</dt><dd>${value}</dd>`)
+    .map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`)
     .join("");
 }
 
@@ -135,7 +135,7 @@ function renderTrend(trend) {
     .map(
       (item, i) => `
       <div class="bar" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.04}s both">
-        <span>${displayMonth(item.month)}</span>
+        <span>${escapeHtml(displayMonth(item.month))}</span>
         <span class="bar-track"><span class="bar-fill" style="width:${(item.count / max) * 100}%"></span></span>
         <strong>${fmt.format(item.count)}</strong>
       </div>
@@ -155,7 +155,7 @@ function renderFuelBreakdown(items) {
     .map(
       (item, i) => `
       <div class="fuel-item" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.03}s both">
-        <span>${item.fuelType}</span>
+        <span>${escapeHtml(item.fuelType)}</span>
         <strong>${fmt.format(item.count)}</strong>
       </div>
     `,
@@ -248,11 +248,11 @@ function renderWarnings(items) {
   const uniqueItems = [...new Set((items ?? []).filter(Boolean))];
   warnings.hidden = !uniqueItems.length;
   warnings.innerHTML = uniqueItems.length
-    ? uniqueItems.map((item) => `<div>${item}</div>`).join("")
+    ? uniqueItems.map((item) => `<div>${escapeHtml(item)}</div>`).join("")
     : "";
 }
 
-/* ── Main Render ────────────────────────────────────────────────────────── */
+/* Main Render */
 
 function render(data) {
   latestData = data;
@@ -476,7 +476,7 @@ function openPrintableReport() {
   reportWindow.document.close();
 }
 
-/* ── API Call ────────────────────────────────────────────────────────────── */
+/* API Call */
 
 async function runQuery(query) {
   activeRefreshJobId = null;
@@ -486,7 +486,10 @@ async function runQuery(query) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ query }),
   });
-  if (!response.ok) throw new Error(`Query failed: ${response.status}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `Query failed: ${response.status}`);
+  }
   const data = await response.json();
   render(data);
   if (data.liveRefresh?.status === "pending" && data.liveRefresh.jobId) {
@@ -522,20 +525,27 @@ async function pollLiveRefresh(jobId) {
   }
 }
 
-/* ── Events ─────────────────────────────────────────────────────────────── */
+/* Events */
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   activeRefreshJobId = null;
+  const query = input.value.trim();
+  if (!query) {
+    renderWarnings(["Enter a query before running the dashboard."]);
+    input.focus();
+    return;
+  }
+  input.value = query;
   app.classList.add("loading");
   setExportButtonsEnabled(false);
   submitBtn.disabled = true;
-  submitBtn.querySelector(".btn-text").textContent = "Working…";
+  submitBtn.querySelector(".btn-text").textContent = "Working...";
   renderWarnings([
     "Working on it. Saved data will appear first, then missing or latest months will refresh from VAHAN.",
   ]);
   try {
-    await runQuery(input.value);
+    await runQuery(query);
   } catch (error) {
     renderWarnings([error.message]);
     app.classList.remove("loading");
@@ -598,4 +608,6 @@ if (appFrame && sidebarTrigger && featureSidebar) {
 
 // Run default query on load
 setExportButtonsEnabled(false);
+const initialQuery = new URLSearchParams(window.location.search).get("query");
+if (initialQuery) input.value = initialQuery;
 runQuery(input.value);

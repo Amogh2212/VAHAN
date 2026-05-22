@@ -13,29 +13,41 @@ const leftResultMeta = document.querySelector("#leftResultMeta");
 const rightResultMeta = document.querySelector("#rightResultMeta");
 const verticalBarChart = document.querySelector("#verticalBarChart");
 const doubleBarChart = document.querySelector("#doubleBarChart");
+const appFrame = document.querySelector(".app-frame");
+const sidebarTrigger = document.querySelector("#sidebarTrigger");
+const featureSidebar = document.querySelector("#featureSidebar");
 
 const modeConfig = {
   month: {
     help: "Use the same state or RTO in both queries and change only the month or date range.",
-    hint: "Example: compare EV registrations in Maharashtra for Jan 2024 and Feb 2024.",
-    left: "EV registrations in Maharashtra from Jan 2024 to Jan 2024",
-    right: "EV registrations in Maharashtra from Feb 2024 to Feb 2024",
+    hint: "Example: compare Maharashtra fork lift diesel registrations for Jan 2024 and Feb 2024.",
+    left: "diesel fork lift registrations in Maharashtra from Jan 2024 to Jan 2024",
+    right: "diesel fork lift registrations in Maharashtra from Feb 2024 to Feb 2024",
   },
   location: {
     help: "Use two different states or RTOs for the same month, so the location difference is obvious.",
-    hint: "Example: compare EV registrations in Gujarat and Karnataka for Jan 2024.",
-    left: "EV registrations in Gujarat from Jan 2024 to Jan 2024",
-    right: "EV registrations in Karnataka from Jan 2024 to Jan 2024",
+    hint: "Example: compare e-rickshaw registrations in Delhi and Haryana for Jan 2025.",
+    left: "e-rickshaw registrations in Delhi from Jan 2025 to Jan 2025",
+    right: "e-rickshaw registrations in Haryana from Jan 2025 to Jan 2025",
   },
 };
 
 let currentMode = "month";
 let leftDirty = false;
 let rightDirty = false;
+let activeCompareRun = 0;
 
 function setText(id, value) {
   const el = document.querySelector(`#${id}`);
   if (el) el.textContent = value;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function extractBracketMeta(query) {
@@ -67,6 +79,51 @@ function formatPct(value) {
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
+function displayMonthList(items) {
+  return (items ?? []).join(", ");
+}
+
+function dataWarnings(data) {
+  const statusMessages = {
+    fetch_failed: "Fresh data could not be fetched, and no saved rows matched this query.",
+    stale: "Showing saved data because live VAHAN refresh failed.",
+    refreshing: `Showing saved data while VAHAN refresh runs for ${displayMonthList(data.liveRefresh?.requiredMonths) || "the requested months"}.`,
+    partial: "Some requested months are missing from saved data.",
+    missing: "No saved rows cover the requested months yet.",
+    live: "Fresh VAHAN rows are displayed while they are saved.",
+  };
+  const scraperMessage = data.scraper?.failedRuns?.length
+    ? `Live VAHAN fetch failed for ${data.scraper.failedRuns.length} run(s).`
+    : null;
+  return [...new Set([statusMessages[data.dataStatus], scraperMessage, ...(data.warnings ?? [])].filter(Boolean))];
+}
+
+function statusLabel(data) {
+  if (data.liveRefresh?.status === "pending") return "Refreshing";
+  if (data.dataStatus === "fetch_failed") return "Fetch failed";
+  if (data.dataStatus === "stale") return "Stale";
+  if (data.dataStatus === "partial") return "Partial";
+  if (data.dataStatus === "missing") return "Missing";
+  if (data.dataStatus === "live") return "Live";
+  return "Loaded";
+}
+
+function statusClass(data) {
+  if (data.liveRefresh?.status === "pending") return "pending";
+  if (["fetch_failed", "missing"].includes(data.dataStatus)) return "error";
+  if (["stale", "partial"].includes(data.dataStatus)) return "warning";
+  if (data.dataStatus === "live") return "success";
+  return "ready";
+}
+
+function renderSideWarnings(prefix, data) {
+  const el = document.querySelector(`#${prefix}Warnings`);
+  if (!el) return;
+  const warnings = dataWarnings(data);
+  el.hidden = warnings.length === 0;
+  el.innerHTML = warnings.map((item) => `<div>${escapeHtml(item)}</div>`).join("");
+}
+
 function renderBars(target, items, emptyText) {
   const el = document.querySelector(target);
   if (!items.length) {
@@ -78,7 +135,7 @@ function renderBars(target, items, emptyText) {
     .map(
       (item) => `
         <div class="bar">
-          <span>${item.month ?? item.fuelType}</span>
+          <span>${escapeHtml(item.month ?? item.fuelType)}</span>
           <span class="bar-track"><span class="bar-fill" style="width:${(item.count / max) * 100}%"></span></span>
           <strong>${fmt.format(item.count)}</strong>
         </div>
@@ -97,7 +154,7 @@ function renderFuel(target, items, emptyText) {
     .map(
       (item) => `
         <div class="fuel-item">
-          <span>${item.fuelType}</span>
+          <span>${escapeHtml(item.fuelType)}</span>
           <strong>${fmt.format(item.count)}</strong>
         </div>
       `,
@@ -135,7 +192,7 @@ function renderDoubleBars(leftData, rightData) {
             const leftHeight = (leftCount / max) * 100;
             const rightHeight = (rightCount / max) * 100;
 
-            return `
+          return `
               <div class="vertical-bar-group">
                 <div class="vertical-bar-values">
                   <span>${fmt.format(leftCount)}</span>
@@ -145,7 +202,7 @@ function renderDoubleBars(leftData, rightData) {
                   <span class="vertical-bar-fill left" style="height:${leftHeight}%"></span>
                   <span class="vertical-bar-fill right" style="height:${rightHeight}%"></span>
                 </div>
-                <div class="vertical-bar-label">${month}</div>
+                <div class="vertical-bar-label">${escapeHtml(month)}</div>
               </div>
             `;
           })
@@ -168,9 +225,9 @@ function renderDoubleBars(leftData, rightData) {
           const leftWidth = (leftCount / max) * 100;
           const rightWidth = (rightCount / max) * 100;
 
-          return `
+            return `
             <div class="double-bar-row">
-              <div class="double-bar-label">${month}</div>
+              <div class="double-bar-label">${escapeHtml(month)}</div>
               <div class="double-bar-pair">
                 <div class="double-bar-track">
                   <span class="double-bar-fill left" style="width:${leftWidth}%"></span>
@@ -191,16 +248,24 @@ function renderDoubleBars(leftData, rightData) {
   `;
 }
 
-function renderSide(prefix, query, data, status = "Ready") {
-  setText(`${prefix}Status`, status);
+function renderSide(prefix, query, data, status = statusLabel(data)) {
+  const statusEl = document.querySelector(`#${prefix}Status`);
+  if (statusEl) {
+    statusEl.textContent = status;
+    statusEl.className = `status-pill ${statusClass(data)}`;
+  }
   setText(`${prefix}QueryLabel`, `${query}${extractBracketMeta(query)}`);
   setText(`${prefix}ResultMeta`, extractBracketMeta(query));
   setText(`${prefix}Total`, fmt.format(data.summary.total));
   setText(`${prefix}Average`, fmt.format(data.summary.monthlyAverage));
   setText(`${prefix}Peak`, data.summary.peakMonth ? `${data.summary.peakMonth}` : "-");
   setText(`${prefix}Rows`, fmt.format(data.rows.length));
-  renderBars(`#${prefix}Trend`, data.trend, "No monthly trend for this query.");
-  renderFuel(`#${prefix}Fuel`, data.fuelBreakdown, "No fuel breakdown for this query.");
+  renderSideWarnings(prefix, data);
+  const emptyText = data.dataStatus === "fetch_failed"
+    ? "Could not fetch fresh data for this query."
+    : "No monthly trend for this query.";
+  renderBars(`#${prefix}Trend`, data.trend, emptyText);
+  renderFuel(`#${prefix}Fuel`, data.fuelBreakdown, data.dataStatus === "fetch_failed" ? emptyText : "No fuel breakdown for this query.");
 }
 
 async function fetchQuery(query) {
@@ -210,9 +275,21 @@ async function fetchQuery(query) {
     body: JSON.stringify({ query }),
   });
   if (!response.ok) {
-    throw new Error(`Query failed: ${response.status}`);
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `Query failed: ${response.status}`);
   }
   return response.json();
+}
+
+async function pollQueryRefresh(jobId) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    const response = await fetch(`/api/query-refresh/${encodeURIComponent(jobId)}`);
+    if (!response.ok) throw new Error(`Live refresh failed: ${response.status}`);
+    const data = await response.json();
+    if (data.liveRefresh?.status !== "pending") return data;
+  }
+  throw new Error("Live VAHAN refresh is still running. Compare again in a few minutes for the latest data.");
 }
 
 function computeDelta(left, right) {
@@ -223,8 +300,42 @@ function computeDelta(left, right) {
   return { diff, pct };
 }
 
+function renderDelta(leftData, rightData) {
+  const { diff, pct } = computeDelta(leftData, rightData);
+  const warningCount = dataWarnings(leftData).length + dataWarnings(rightData).length;
+  deltaSummary.innerHTML = `
+    <div><strong>Difference:</strong> ${formatChange(diff)} registrations</div>
+    <div><strong>Change:</strong> ${formatPct(pct)}</div>
+    <div><strong>Left:</strong> ${fmt.format(leftData.summary.total)} total (${escapeHtml(leftData.dataStatus ?? "complete")})</div>
+    <div><strong>Right:</strong> ${fmt.format(rightData.summary.total)} total (${escapeHtml(rightData.dataStatus ?? "complete")})</div>
+    ${warningCount ? `<div><strong>Warnings:</strong> ${fmt.format(warningCount)} data note${warningCount === 1 ? "" : "s"} shown below.</div>` : ""}
+  `;
+}
+
+async function refreshPendingCompare(runId, leftQueryText, rightQueryText, leftData, rightData) {
+  const leftFinalPromise = leftData.liveRefresh?.status === "pending" && leftData.liveRefresh.jobId
+    ? pollQueryRefresh(leftData.liveRefresh.jobId)
+    : Promise.resolve(leftData);
+  const rightFinalPromise = rightData.liveRefresh?.status === "pending" && rightData.liveRefresh.jobId
+    ? pollQueryRefresh(rightData.liveRefresh.jobId)
+    : Promise.resolve(rightData);
+
+  try {
+    const [leftFinal, rightFinal] = await Promise.all([leftFinalPromise, rightFinalPromise]);
+    if (activeCompareRun !== runId) return;
+    renderSide("left", leftQueryText, leftFinal);
+    renderSide("right", rightQueryText, rightFinal);
+    renderDoubleBars(leftFinal, rightFinal);
+    renderDelta(leftFinal, rightFinal);
+  } catch (error) {
+    if (activeCompareRun !== runId) return;
+    deltaSummary.textContent = error.message;
+  }
+}
+
 async function runCompare(event) {
   event.preventDefault();
+  const runId = ++activeCompareRun;
   compareBtn.disabled = true;
   compareBtn.textContent = "Comparing...";
   deltaSummary.textContent = "Loading both queries...";
@@ -233,26 +344,39 @@ async function runCompare(event) {
 
   const left = leftQuery.value.trim();
   const right = rightQuery.value.trim();
+  leftQuery.value = left;
+  rightQuery.value = right;
 
   try {
+    if (!left || !right) {
+      throw new Error("Enter both queries before comparing.");
+    }
     const [leftData, rightData] = await Promise.all([fetchQuery(left), fetchQuery(right)]);
-    renderSide("left", left, leftData, "Loaded");
-    renderSide("right", right, rightData, "Loaded");
+    if (activeCompareRun !== runId) return;
+    renderSide("left", left, leftData);
+    renderSide("right", right, rightData);
     renderDoubleBars(leftData, rightData);
+    renderDelta(leftData, rightData);
 
-    const { diff, pct } = computeDelta(leftData, rightData);
-    deltaSummary.innerHTML = `
-      <div><strong>Difference:</strong> ${formatChange(diff)} registrations</div>
-      <div><strong>Change:</strong> ${formatPct(pct)}</div>
-      <div><strong>Left:</strong> ${fmt.format(leftData.summary.total)} total</div>
-      <div><strong>Right:</strong> ${fmt.format(rightData.summary.total)} total</div>
-    `;
+    if (leftData.liveRefresh?.status === "pending" || rightData.liveRefresh?.status === "pending") {
+      refreshPendingCompare(runId, left, right, leftData, rightData);
+    }
   } catch (error) {
     deltaSummary.textContent = error.message;
-    verticalBarChart.innerHTML = `<p class="compare-empty">${error.message}</p>`;
-    doubleBarChart.innerHTML = `<p class="compare-empty">${error.message}</p>`;
-    setText("leftStatus", "Error");
-    setText("rightStatus", "Error");
+    const message = escapeHtml(error.message);
+    verticalBarChart.innerHTML = `<p class="compare-empty">${message}</p>`;
+    doubleBarChart.innerHTML = `<p class="compare-empty">${message}</p>`;
+    const fallbackData = {
+      dataStatus: "fetch_failed",
+      warnings: [error.message],
+      scraper: { failedRuns: [] },
+      summary: { total: 0, monthlyAverage: 0 },
+      rows: [],
+      trend: [],
+      fuelBreakdown: [],
+    };
+    renderSide("left", left || "Left query", fallbackData, "Error");
+    renderSide("right", right || "Right query", fallbackData, "Error");
   } finally {
     compareBtn.disabled = false;
     compareBtn.textContent = "Compare";
@@ -268,6 +392,40 @@ rightQuery.addEventListener("input", () => {
   rightDirty = true;
 });
 compareForm.addEventListener("submit", runCompare);
+
+if (appFrame && sidebarTrigger && featureSidebar) {
+  let closeSidebarTimer = null;
+
+  const openSidebar = () => {
+    clearTimeout(closeSidebarTimer);
+    appFrame.classList.add("sidebar-open");
+    sidebarTrigger.setAttribute("aria-expanded", "true");
+  };
+
+  const closeSidebar = () => {
+    closeSidebarTimer = setTimeout(() => {
+      const activeElement = document.activeElement;
+      if (sidebarTrigger.matches(":hover, :focus-visible") || featureSidebar.matches(":hover") || featureSidebar.contains(activeElement)) return;
+      appFrame.classList.remove("sidebar-open");
+      sidebarTrigger.setAttribute("aria-expanded", "false");
+    }, 120);
+  };
+
+  sidebarTrigger.setAttribute("aria-haspopup", "true");
+  sidebarTrigger.setAttribute("aria-expanded", "false");
+  sidebarTrigger.addEventListener("mouseenter", openSidebar);
+  sidebarTrigger.addEventListener("pointerenter", openSidebar);
+  sidebarTrigger.addEventListener("focus", openSidebar);
+  sidebarTrigger.addEventListener("mouseleave", closeSidebar);
+  sidebarTrigger.addEventListener("pointerleave", closeSidebar);
+  sidebarTrigger.addEventListener("blur", closeSidebar);
+  featureSidebar.addEventListener("mouseenter", openSidebar);
+  featureSidebar.addEventListener("pointerenter", openSidebar);
+  featureSidebar.addEventListener("mouseleave", closeSidebar);
+  featureSidebar.addEventListener("pointerleave", closeSidebar);
+  featureSidebar.addEventListener("focusin", openSidebar);
+  featureSidebar.addEventListener("focusout", closeSidebar);
+}
 
 setMode("month");
 runCompare(new Event("submit"));

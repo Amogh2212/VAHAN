@@ -1,0 +1,600 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-20T05:56:52.402Z",
+  "attempt": 1,
+  "error": "Could not find VAHAN report table after refresh. Table samples: [[[\"FOUR WHEELER (Invalid Carriage)\"],[\"LIGHT MOTOR VEHICLE\"],[\"MEDIUM MOTOR VEHICLE\"]],[[\"BHARAT STAGE I\"],[\"BHARAT STAGE II\"],[\"BHARAT STAGE III\"]],[[\"BIO-CNG/BIO-GAS\"],[\"BIO-DIESEL(B100)\"],[\"BIO-METHANE\"]],[[\"M-CYCLE/SCOOTER\"],[\"M-CYCLE/SCOOTER-WITH SIDE CAR\"],[\"MOPED\"]],[[],[\"S No\",\"Vehicle Class\",\"Vehicle Category Group\"],[\"FOUR WHEELER\"]]]",
+  "report": {
+    "year": 2025,
+    "months": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "state": "Chhattisgarh",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "VAHAN SEWA| DASHBOARD",
+  "bodyTextSample": " Home\nType:\nIn Thousand\nIn Lakh\nIn Crore\nActual Value\nActual Value\nState:\nAll Vahan4 Running States (36/36)\nAndaman & Nicobar Island(5)\nAndhra Pradesh(84)\nArunachal Pradesh(29)\nAssam(35)\nBihar(48)\nChhattisgarh(31)\nChandigarh(1)\nUT of DNH and DD(3)\nDelhi(16)\nGoa(13)\nGujarat(37)\nHimachal Pradesh(98)\nHaryana(104)\nJharkhand(25)\nJammu and Kashmir(21)\nKarnataka(68)\nKerala(87)\nLadakh(3)\nLakshadweep(9)\nMaharashtra(59)\nMeghalaya(14)\nManipur(17)\nMadhya Pradesh(53)\nMizoram(12)\nNagaland(9)\nOdisha(39)\nPunjab(96)\nPuducherry(8)\nRajasthan(60)\nSikkim(9)\nTelangana(57)\nTamil Nadu(148)\nTripura(9)\nUttarakhand(21)\nUttar Pradesh(77)\nWest Bengal(59)\nAll Vahan4 Running States (36/36)\nRTO:\nAll Vahan4 Running Office(31/31)\nAIG(F/P) PHQ - CG3( 22-APR-2025 )\nAmbikapur RTO - CG15( 27-DEC-2018 )\nBAIKUNTHPUR DTO - CG16( 20-DEC-2018 )\nBaloda Bazar DTO - CG22( 20-SEP-2018 )\nBalod DTO - CG24( 04-SEP-2018 )\nBalrampur DTO - CG30( 21-DEC-2018 )\nBemetara DTO - CG25( 20-SEP-2018 )\nBijapur DTO - CG20( 07-AUG-2018 )\nBilaspur RTO - CG10( 29-AUG-2018 )\nDantewada DTO - CG18( 27-AUG-2018 )\nDhamtari DTO - CG5( 31-AUG-2018 )\nDURG RTO - CG7( 01-OCT-2018 )\nGariyaband DTO - CG23( 04-SEP-2018 )\nGaurela-Pendra-Marwahi DTO - CG31( 09-APR-2021 )\nJAGDALPUR RTO - CG17( 01-OCT-2018 )\nJanjgir Champa DTO - CG11( 27-AUG-2018 )\nJashpur DTO - CG14( 21-DEC-2018 )\nKANKER DTO - CG19( 22-SEP-2018 )\nKAWARDHA DTO - CG9( 20-SEP-2018 )\nKONDAGAON DTO - CG27( 22-SEP-2018 )\nKorba DTO - CG12( 25-AUG-2018 )\nMahasamund DTO - CG6( 27-MAR-2018 )\nMungeli DTO - CG28( 27-JUL-2018 )\nNarayanpur DTO - CG21( 07-AUG-2018 )\nRaigarh DTO - CG13( 27-AUG-2018 )\nRaipur RTO - CG4( 28-SEP-2018 )\nRajnandgaon ARTO - CG8( 30-AUG-2018 )\nRTA TC NAWA RAIPUR - CG998( 06-JUL-2020 )\nState Transport Authority - CG99( 01-JAN-2019 )\nSukma DTO - CG26( 04-SEP-2018 )\nSurajpur DTO - CG29( 20-DEC-2018 )\nAll Vahan4 Running Office(31/31)\nY-Axis:\nVehicle Category\nVehicle Class\nNorms\nFuel\nMaker\nRto\nVehicle Class\nX-Axis:\nVehicle Category\nVehicle Class\nNorms\nVehicle Category Group\nFinancial Year\nCalendar Year\nMonth Wise\nVehicle Category Group\nYear Type:\nSelect\nFinancial Year\nCalendar Year\nCalendar Year\nYear:\nSelect Year\n2026\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n2025\nRefresh\nVehicle Class Wise Vehicle Category Group Data For All State (2026)\nTWO WHEELER\nTHREE WHEELER\nFOUR WHEELER\nAMBULANCE/HEARSES\nCONSTRUCTION EQUIPMENT VEHICLE\nGOODS VEHICLES\nPUBLIC SERVICE VEHICLE\nSPECIAL CATEGORY VEHICLES\nTRAILER\nTRACTOR\nFOUR WHEELER\n \n\t\n \n\t\n \n\t\n \n\t\n \n\t\n \n\t\n \n\n\n \nS No\t\n \n                      Vehicle Class                       \t\n \nVehicle Category Group\n\n \nFOUR WHEELER\n\n \n      4WIC      \t\n \n      LMV      \t\n \n      MMV      \t\n \n      HMV      \t\n \n      TOTAL      \n\t\t\t\t\t\t\n\nS No\n\t\n                      Vehicle Class                       \n\t\nVehicle Category Group\n\n\nFOUR WHEELER\n\n\n      4WIC      \n\t\n      LMV      \n\t\n      MMV      \n\t\n      HMV      \n\t\n      TOTAL      \n\n\n1\n\t\nADAPTED VEHICLE\n\t\n1,249\n\t\n3\n\t\n0\n\t\n0\n\t\n1,252\n\n\n2\n\t\nMOTOR CAB\n\t\n0\n\t\n5,038\n\t\n0\n\t\n0\n\t\n5,038\n\n\n3\n\t\nMOTOR CAR\n\t\n0\n\t\n18,88,066\n\t\n0\n\t\n0\n\t\n18,88,066\n\n\n4\n\t\nOMNI BUS (PRIVATE USE)\n\t\n0\n\t\n4,040\n\t\n8\n\t\n142\n\t\n4,190\n\n\n5\n\t\nPRIVATE SERVICE VEHICLE (INDIVIDUAL USE)\n\t\n0\n\t\n816\n\t\n8\n\t\n5\n\t\n829\n\n\n6\n\t\nQUADRICYCLE (PRIVATE)\n\t\n0\n\t\n3\n\t\n0\n\t\n0\n\t\n3\nF\nP\n1\nN\nE",
+  "controls": [
+    {
+      "id": "j_idt28_input",
+      "name": "j_idt28_input",
+      "selector": "[id=\"j_idt28_input\"]",
+      "nearbyText": "j_idt28_input j_idt28_input In ThousandIn LakhIn CroreActual Value",
+      "optionCount": 4,
+      "options": [
+        {
+          "label": "In Thousand",
+          "value": "T"
+        },
+        {
+          "label": "In Lakh",
+          "value": "L"
+        },
+        {
+          "label": "In Crore",
+          "value": "C"
+        },
+        {
+          "label": "Actual Value",
+          "value": "A"
+        }
+      ]
+    },
+    {
+      "id": "j_idt36_input",
+      "name": "j_idt36_input",
+      "selector": "[id=\"j_idt36_input\"]",
+      "nearbyText": "j_idt36_input j_idt36_input All Vahan4 Running States (36/36)Andaman & Nicobar Island(5)Andhra Pradesh(84)Arunachal Pradesh(29)Assam(35)Bihar(48)Chhattisgarh(31)Chandigarh(1)UT of DNH and DD(3)Delhi(16)Goa(13)Gujarat(37)Himachal Pradesh(98)Haryana(104)Jharkhand(25)Jammu and Kashmir(21)Karnataka(68)Kerala(87)Ladakh(3)Lakshadwee",
+      "optionCount": 37,
+      "options": [
+        {
+          "label": "All Vahan4 Running States (36/36)",
+          "value": "-1"
+        },
+        {
+          "label": "Andaman & Nicobar Island(5)",
+          "value": "AN"
+        },
+        {
+          "label": "Andhra Pradesh(84)",
+          "value": "AP"
+        },
+        {
+          "label": "Arunachal Pradesh(29)",
+          "value": "AR"
+        },
+        {
+          "label": "Assam(35)",
+          "value": "AS"
+        },
+        {
+          "label": "Bihar(48)",
+          "value": "BR"
+        },
+        {
+          "label": "Chhattisgarh(31)",
+          "value": "CG"
+        },
+        {
+          "label": "Chandigarh(1)",
+          "value": "CH"
+        },
+        {
+          "label": "UT of DNH and DD(3)",
+          "value": "DD"
+        },
+        {
+          "label": "Delhi(16)",
+          "value": "DL"
+        },
+        {
+          "label": "Goa(13)",
+          "value": "GA"
+        },
+        {
+          "label": "Gujarat(37)",
+          "value": "GJ"
+        },
+        {
+          "label": "Himachal Pradesh(98)",
+          "value": "HP"
+        },
+        {
+          "label": "Haryana(104)",
+          "value": "HR"
+        },
+        {
+          "label": "Jharkhand(25)",
+          "value": "JH"
+        },
+        {
+          "label": "Jammu and Kashmir(21)",
+          "value": "JK"
+        },
+        {
+          "label": "Karnataka(68)",
+          "value": "KA"
+        },
+        {
+          "label": "Kerala(87)",
+          "value": "KL"
+        },
+        {
+          "label": "Ladakh(3)",
+          "value": "LA"
+        },
+        {
+          "label": "Lakshadweep(9)",
+          "value": "LD"
+        },
+        {
+          "label": "Maharashtra(59)",
+          "value": "MH"
+        },
+        {
+          "label": "Meghalaya(14)",
+          "value": "ML"
+        },
+        {
+          "label": "Manipur(17)",
+          "value": "MN"
+        },
+        {
+          "label": "Madhya Pradesh(53)",
+          "value": "MP"
+        },
+        {
+          "label": "Mizoram(12)",
+          "value": "MZ"
+        },
+        {
+          "label": "Nagaland(9)",
+          "value": "NL"
+        },
+        {
+          "label": "Odisha(39)",
+          "value": "OR"
+        },
+        {
+          "label": "Punjab(96)",
+          "value": "PB"
+        },
+        {
+          "label": "Puducherry(8)",
+          "value": "PY"
+        },
+        {
+          "label": "Rajasthan(60)",
+          "value": "RJ"
+        },
+        {
+          "label": "Sikkim(9)",
+          "value": "SK"
+        },
+        {
+          "label": "Telangana(57)",
+          "value": "TG"
+        },
+        {
+          "label": "Tamil Nadu(148)",
+          "value": "TN"
+        },
+        {
+          "label": "Tripura(9)",
+          "value": "TR"
+        },
+        {
+          "label": "Uttarakhand(21)",
+          "value": "UK"
+        },
+        {
+          "label": "Uttar Pradesh(77)",
+          "value": "UP"
+        },
+        {
+          "label": "West Bengal(59)",
+          "value": "WB"
+        }
+      ]
+    },
+    {
+      "id": "selectedRto_input",
+      "name": "selectedRto_input",
+      "selector": "[id=\"selectedRto_input\"]",
+      "nearbyText": "selectedRto_input selectedRto_input All Vahan4 Running Office(31/31)AIG(F/P) PHQ - CG3( 22-APR-2025 )Ambikapur RTO - CG15( 27-DEC-2018 )BAIKUNTHPUR DTO - CG16( 20-DEC-2018 )Baloda Bazar DTO - CG22( 20-SEP-2018 )Balod DTO - CG24( 04-SEP-2018 )Balrampur DTO - CG30( 21-DEC-2018 )Bemetara DTO - CG25( 20-SEP-2018 )Bijapur DTO - CG20( 07-AU",
+      "optionCount": 32,
+      "options": [
+        {
+          "label": "All Vahan4 Running Office(31/31)",
+          "value": "-1"
+        },
+        {
+          "label": "AIG(F/P) PHQ - CG3( 22-APR-2025 )",
+          "value": "3"
+        },
+        {
+          "label": "Ambikapur RTO - CG15( 27-DEC-2018 )",
+          "value": "15"
+        },
+        {
+          "label": "BAIKUNTHPUR DTO - CG16( 20-DEC-2018 )",
+          "value": "16"
+        },
+        {
+          "label": "Baloda Bazar DTO - CG22( 20-SEP-2018 )",
+          "value": "22"
+        },
+        {
+          "label": "Balod DTO - CG24( 04-SEP-2018 )",
+          "value": "24"
+        },
+        {
+          "label": "Balrampur DTO - CG30( 21-DEC-2018 )",
+          "value": "30"
+        },
+        {
+          "label": "Bemetara DTO - CG25( 20-SEP-2018 )",
+          "value": "25"
+        },
+        {
+          "label": "Bijapur DTO - CG20( 07-AUG-2018 )",
+          "value": "20"
+        },
+        {
+          "label": "Bilaspur RTO - CG10( 29-AUG-2018 )",
+          "value": "10"
+        },
+        {
+          "label": "Dantewada DTO - CG18( 27-AUG-2018 )",
+          "value": "18"
+        },
+        {
+          "label": "Dhamtari DTO - CG5( 31-AUG-2018 )",
+          "value": "5"
+        },
+        {
+          "label": "DURG RTO - CG7( 01-OCT-2018 )",
+          "value": "7"
+        },
+        {
+          "label": "Gariyaband DTO - CG23( 04-SEP-2018 )",
+          "value": "23"
+        },
+        {
+          "label": "Gaurela-Pendra-Marwahi DTO - CG31( 09-APR-2021 )",
+          "value": "31"
+        },
+        {
+          "label": "JAGDALPUR RTO - CG17( 01-OCT-2018 )",
+          "value": "17"
+        },
+        {
+          "label": "Janjgir Champa DTO - CG11( 27-AUG-2018 )",
+          "value": "11"
+        },
+        {
+          "label": "Jashpur DTO - CG14( 21-DEC-2018 )",
+          "value": "14"
+        },
+        {
+          "label": "KANKER DTO - CG19( 22-SEP-2018 )",
+          "value": "19"
+        },
+        {
+          "label": "KAWARDHA DTO - CG9( 20-SEP-2018 )",
+          "value": "9"
+        },
+        {
+          "label": "KONDAGAON DTO - CG27( 22-SEP-2018 )",
+          "value": "27"
+        },
+        {
+          "label": "Korba DTO - CG12( 25-AUG-2018 )",
+          "value": "12"
+        },
+        {
+          "label": "Mahasamund DTO - CG6( 27-MAR-2018 )",
+          "value": "6"
+        },
+        {
+          "label": "Mungeli DTO - CG28( 27-JUL-2018 )",
+          "value": "28"
+        },
+        {
+          "label": "Narayanpur DTO - CG21( 07-AUG-2018 )",
+          "value": "21"
+        },
+        {
+          "label": "Raigarh DTO - CG13( 27-AUG-2018 )",
+          "value": "13"
+        },
+        {
+          "label": "Raipur RTO - CG4( 28-SEP-2018 )",
+          "value": "4"
+        },
+        {
+          "label": "Rajnandgaon ARTO - CG8( 30-AUG-2018 )",
+          "value": "8"
+        },
+        {
+          "label": "RTA TC NAWA RAIPUR - CG998( 06-JUL-2020 )",
+          "value": "998"
+        },
+        {
+          "label": "State Transport Authority - CG99( 01-JAN-2019 )",
+          "value": "99"
+        },
+        {
+          "label": "Sukma DTO - CG26( 04-SEP-2018 )",
+          "value": "26"
+        },
+        {
+          "label": "Surajpur DTO - CG29( 20-DEC-2018 )",
+          "value": "29"
+        }
+      ]
+    },
+    {
+      "id": "yaxisVar_input",
+      "name": "yaxisVar_input",
+      "selector": "[id=\"yaxisVar_input\"]",
+      "nearbyText": "yaxisVar_input yaxisVar_input Vehicle CategoryVehicle ClassNormsFuelMakerRto",
+      "optionCount": 6,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Fuel",
+          "value": "Fuel"
+        },
+        {
+          "label": "Maker",
+          "value": "Maker"
+        },
+        {
+          "label": "Rto",
+          "value": "Rto"
+        }
+      ]
+    },
+    {
+      "id": "xaxisVar_input",
+      "name": "xaxisVar_input",
+      "selector": "[id=\"xaxisVar_input\"]",
+      "nearbyText": "xaxisVar_input xaxisVar_input Vehicle CategoryVehicle ClassNormsVehicle Category GroupFinancial YearCalendar YearMonth Wise",
+      "optionCount": 7,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Vehicle Category Group",
+          "value": "VCG"
+        },
+        {
+          "label": "Financial Year",
+          "value": "Financial Year"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "Calendar Year"
+        },
+        {
+          "label": "Month Wise",
+          "value": "Month Wise"
+        }
+      ]
+    },
+    {
+      "id": "selectedYearType_input",
+      "name": "selectedYearType_input",
+      "selector": "[id=\"selectedYearType_input\"]",
+      "nearbyText": "selectedYearType_input selectedYearType_input SelectFinancial YearCalendar Year",
+      "optionCount": 3,
+      "options": [
+        {
+          "label": "Select",
+          "value": ""
+        },
+        {
+          "label": "Financial Year",
+          "value": "F"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "id": "selectedYear_input",
+      "name": "selectedYear_input",
+      "selector": "[id=\"selectedYear_input\"]",
+      "nearbyText": "selectedYear_input selectedYear_input Select Year202620252024202320222021202020192018201720162015201420132012201120102009200820072006200520042003",
+      "optionCount": 25,
+      "options": [
+        {
+          "label": "Select Year",
+          "value": ""
+        },
+        {
+          "label": "2026",
+          "value": "2026"
+        },
+        {
+          "label": "2025",
+          "value": "2025"
+        },
+        {
+          "label": "2024",
+          "value": "2024"
+        },
+        {
+          "label": "2023",
+          "value": "2023"
+        },
+        {
+          "label": "2022",
+          "value": "2022"
+        },
+        {
+          "label": "2021",
+          "value": "2021"
+        },
+        {
+          "label": "2020",
+          "value": "2020"
+        },
+        {
+          "label": "2019",
+          "value": "2019"
+        },
+        {
+          "label": "2018",
+          "value": "2018"
+        },
+        {
+          "label": "2017",
+          "value": "2017"
+        },
+        {
+          "label": "2016",
+          "value": "2016"
+        },
+        {
+          "label": "2015",
+          "value": "2015"
+        },
+        {
+          "label": "2014",
+          "value": "2014"
+        },
+        {
+          "label": "2013",
+          "value": "2013"
+        },
+        {
+          "label": "2012",
+          "value": "2012"
+        },
+        {
+          "label": "2011",
+          "value": "2011"
+        },
+        {
+          "label": "2010",
+          "value": "2010"
+        },
+        {
+          "label": "2009",
+          "value": "2009"
+        },
+        {
+          "label": "2008",
+          "value": "2008"
+        },
+        {
+          "label": "2007",
+          "value": "2007"
+        },
+        {
+          "label": "2006",
+          "value": "2006"
+        },
+        {
+          "label": "2005",
+          "value": "2005"
+        },
+        {
+          "label": "2004",
+          "value": "2004"
+        },
+        {
+          "label": "2003",
+          "value": "2003"
+        }
+      ]
+    },
+    {
+      "id": "vchgroupTable:selectCatgGrp_input",
+      "name": "vchgroupTable:selectCatgGrp_input",
+      "selector": "[id=\"vchgroupTable:selectCatgGrp_input\"]",
+      "nearbyText": "vchgroupTable:selectCatgGrp_input vchgroupTable:selectCatgGrp_input TWO WHEELERTHREE WHEELERFOUR WHEELERAMBULANCE/HEARSESCONSTRUCTION EQUIPMENT VEHICLEGOODS VEHICLESPUBLIC SERVICE VEHICLESPECIAL CATEGORY VEHICLESTRAILERTRACTOR",
+      "optionCount": 10,
+      "options": [
+        {
+          "label": "TWO WHEELER",
+          "value": "2W|1,2,3,4,5,51,52,53|2WIC,2WN,2WT"
+        },
+        {
+          "label": "THREE WHEELER",
+          "value": "3W|6,54,55,57,58|3WN,3WT"
+        },
+        {
+          "label": "FOUR WHEELER",
+          "value": "4W|5,7,15,23,31,56,70,71,93|4WIC,LMV,MMV,HMV"
+        },
+        {
+          "label": "AMBULANCE/HEARSES",
+          "value": "AH|76,77,85|2WT,LPV,MPV,HPV,LGV,MGV,HGV"
+        },
+        {
+          "label": "CONSTRUCTION EQUIPMENT VEHICLE",
+          "value": "CE|22,25,26,29,87,88,92|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "GOODS VEHICLES",
+          "value": "GV|59,64,79,84|LGV,MGV,HGV"
+        },
+        {
+          "label": "PUBLIC SERVICE VEHICLE",
+          "value": "PS|69,73,75,78,86|LPV,MPV,HPV"
+        },
+        {
+          "label": "SPECIAL CATEGORY VEHICLES",
+          "value": "SC|8,9,10,11,12,14,17,18,19,20,21,24,27,32,62,65,66,67,68,80,81,83|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "TRAILER",
+          "value": "TL|16,28,30,82,89,91,94|LMV,HMV,MMV,LGV,MGV,HGV"
+        },
+        {
+          "label": "TRACTOR",
+          "value": "TR|13,63,90|LMV,MMV,LGV,MGV,HGV,OTH"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260520_112652_chhattisgarh_2025_all-rtos_attempt1.png",
+    "html": "data\\vahan\\failures\\20260520_112652_chhattisgarh_2025_all-rtos_attempt1.html"
+  }
+}

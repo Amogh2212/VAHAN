@@ -32,6 +32,7 @@ const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 const ALL_FILTER = "ALL";
+const LIVE_REFRESH_DISABLED = /^(1|true|yes)$/i.test(process.env.VAHAN_DISABLE_LIVE_REFRESH ?? "");
 const FILTER_CONTEXT_FIELDS = [
   "fuel_filter",
   "vehicle_category_filter",
@@ -39,6 +40,55 @@ const FILTER_CONTEXT_FIELDS = [
   "vehicle_class_filter",
 ];
 let rtoCatalogCache = null;
+
+const INDIA_STATES = [
+  "Andaman and Nicobar Islands",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chandigarh",
+  "Chhattisgarh",
+  "Dadra and Nagar Haveli",
+  "Daman and Diu",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jammu & Kashmir",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Ladakh",
+  "Lakshadweep",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Puducherry",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+const VAHAN_FETCH_STATES = INDIA_STATES.filter((state) => state !== "Daman and Diu");
+const MAP_TO_VAHAN_STATE = new Map([
+  ["Andaman and Nicobar Islands", "Andaman & Nicobar Island"],
+  ["Dadra and Nagar Haveli", "UT of DNH and DD"],
+  ["Jammu & Kashmir", "Jammu and Kashmir"],
+]);
+const MAP_SCRAPER_GROUP_TIMEOUT_MS = 90_000;
+const DEFERRED_MAP_FETCH_STATES = new Set(["Jammu & Kashmir"]);
 
 const MONTHS = new Map([
   ["jan", 1],
@@ -236,6 +286,7 @@ const VEHICLE_CLASS_ALIASES = [
   { aliases: ["goods carrier"], value: "GOODS CARRIER" },
   { aliases: ["tractor"], value: "TRACTOR (COMMERCIAL)" },
   { aliases: ["e-rickshaw", "erickshaw"], value: "E-RICKSHAW(P)" },
+  { aliases: ["fork lift", "forklift", "fork lifts", "forklifts"], value: "FORK LIFT" },
   { aliases: ["tow truck"], value: "TOW TRUCK" },
   { aliases: ["fire tenders", "fire tender"], value: "FIRE TENDERS" },
   { aliases: ["trailer"], value: "TRAILER (AGRICULTURAL)" },
@@ -245,6 +296,8 @@ let dataCache = null;
 let persistenceQueue = Promise.resolve();
 let nextRefreshJobId = 1;
 const refreshJobs = new Map();
+const mapRefreshJobs = new Map();
+const MAX_MAP_FETCH_MONTHS = 12;
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -261,6 +314,23 @@ function uniqueSorted(values) {
 function filterContextValue(values) {
   const normalized = uniqueSorted(values).map((value) => value.toUpperCase());
   return normalized.length ? normalized.join("|") : ALL_FILTER;
+}
+
+function isRedundantFuelFilter(value, fuelType) {
+  if (!value || !fuelType) return false;
+  const normalizedValue = normalizeLookup(value).replace(/[()]/g, "");
+  const normalizedFuelType = normalizeLookup(fuelType).replace(/[()]/g, "");
+  return normalizedValue.includes(normalizedFuelType) || normalizedFuelType.includes(normalizedValue);
+}
+
+function fuelFiltersForQuery(text, matches, fuelType) {
+  const wantsCheckboxContext = /\b(?:fuel\s*(?:filter|checkbox)|checkbox\s*fuel)\b/i.test(text);
+  if (!wantsCheckboxContext) return [];
+  return uniqueSorted(
+    matches
+      .map((definition) => definition.value)
+      .filter((value) => !isRedundantFuelFilter(value, fuelType)),
+  );
 }
 
 function filterContext(filters = {}) {
@@ -286,6 +356,60 @@ function findFilterValues(text, definitions) {
       }))
       .map((definition) => definition.value),
   );
+}
+
+function queryListParam(searchParams, key) {
+  const values = searchParams.getAll(key);
+  const expanded = values.flatMap((value) => String(value).split(/[|,]/));
+  return uniqueSorted(expanded);
+}
+
+function queryFiltersFromSearchParams(searchParams, extra = {}) {
+  return {
+    state: searchParams.get("state") || null,
+    rto: searchParams.get("rto") || null,
+    locationText: searchParams.get("locationText") || null,
+    fuelSegment: searchParams.get("fuelSegment") || null,
+    fuelType: searchParams.get("fuelType") || null,
+    fuelFilters: queryListParam(searchParams, "fuelFilters"),
+    vehicleCategories: queryListParam(searchParams, "vehicleCategories"),
+    norms: queryListParam(searchParams, "norms"),
+    vehicleClasses: queryListParam(searchParams, "vehicleClasses"),
+    from: searchParams.get("from") || null,
+    to: searchParams.get("to") || null,
+    ...extra,
+  };
+}
+
+function normalizeMapStateName(state) {
+  const lookup = {
+    "Andaman & Nicobar Island": "Andaman and Nicobar Islands",
+    "UT of DNH and DD": "Dadra and Nagar Haveli",
+    "Jammu and Kashmir": "Jammu & Kashmir",
+  };
+  return lookup[state] ?? state;
+}
+
+function toVahanStateName(state) {
+  return MAP_TO_VAHAN_STATE.get(state) ?? state;
+}
+
+function orderedMapFetchStates() {
+  return [
+    ...VAHAN_FETCH_STATES.filter((state) => !DEFERRED_MAP_FETCH_STATES.has(state)),
+    ...VAHAN_FETCH_STATES.filter((state) => DEFERRED_MAP_FETCH_STATES.has(state)),
+  ];
+}
+
+function uniqueInOrder(values) {
+  const seen = new Set();
+  const result = [];
+  for (const value of values) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
 }
 
 function csvEscape(value) {
@@ -420,16 +544,29 @@ async function persistScrapedRows(rows) {
   await fs.writeFile(DATA_FILE, toRegistrationsCsv(csvRows), "utf8");
 }
 
+function queueScrapedRowsPersistence(rows) {
+  if (!rows.length) return Promise.resolve({ skipped: true, count: 0 });
+
+  const task = persistenceQueue
+    .catch(() => {})
+    .then(async () => {
+      await persistScrapedRows(rows);
+      return { skipped: false, count: rows.length };
+    });
+
+  persistenceQueue = task.then(() => undefined, () => undefined);
+
+  task.catch((error) => {
+    console.error(`[persist] Failed to save scraped rows: ${error.message}`);
+  });
+
+  return task;
+}
+
 function persistScrapedRowsInBackground(rows) {
   if (!rows.length) return "saved";
 
-  persistenceQueue = persistenceQueue
-    .catch(() => {})
-    .then(() => persistScrapedRows(rows));
-
-  persistenceQueue.catch((error) => {
-    console.error(`[persist] Failed to save scraped rows: ${error.message}`);
-  });
+  queueScrapedRowsPersistence(rows);
 
   return "pending";
 }
@@ -439,10 +576,31 @@ function monthKey(year, month) {
 }
 
 function parseMonthYear(text) {
-  const matches = [...text.matchAll(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\b/gi)];
-  return matches.map((match) => ({
-    year: Number(match[2]),
-    month: MONTHS.get(match[1].toLowerCase()),
+  const matches = [];
+  for (const match of text.matchAll(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?),?\s+(\d{4})\b/gi)) {
+    matches.push({
+      index: match.index,
+      year: Number(match[2]),
+      month: MONTHS.get(match[1].toLowerCase()),
+    });
+  }
+  for (const match of text.matchAll(/\b(20\d{2})[-/](0?[1-9]|1[0-2])\b/g)) {
+    matches.push({
+      index: match.index,
+      year: Number(match[1]),
+      month: Number(match[2]),
+    });
+  }
+  for (const match of text.matchAll(/\b(0?[1-9]|1[0-2])\/(20\d{2})\b/g)) {
+    matches.push({
+      index: match.index,
+      year: Number(match[2]),
+      month: Number(match[1]),
+    });
+  }
+  return matches.sort((a, b) => a.index - b.index).map((match) => ({
+    year: match.year,
+    month: match.month,
   }));
 }
 
@@ -528,11 +686,11 @@ function decodeWithRules(query) {
   const fuelMatches = FUEL_FILTER_ALIASES.filter((definition) =>
     definition.aliases.some((alias) => new RegExp(`\\b${normalizeLookup(alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text)),
   );
-  const fuelFilters = uniqueSorted(fuelMatches.map((definition) => definition.value));
   if (fuelMatches.length) {
     fuelSegment = fuelSegment ?? fuelMatches[0].fuelSegment ?? null;
     fuelType = fuelType ?? fuelMatches[0].fuelType ?? null;
   }
+  const fuelFilters = fuelFiltersForQuery(text, fuelMatches, fuelType);
   const vehicleCategories = findFilterValues(text, VEHICLE_CATEGORY_ALIASES);
   const norms = findFilterValues(text, NORMS_ALIASES);
   const vehicleClasses = findFilterValues(text, VEHICLE_CLASS_ALIASES);
@@ -628,10 +786,13 @@ function mergeFilters(ruleFilters, llmFilters) {
   if (!llmFilters) return ruleFilters;
   const ruleHasLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
   const llmHasLocation = Boolean(llmFilters.state || llmFilters.rto || llmFilters.rtoText || llmFilters.locationText);
+  const fuelType = ruleFilters.fuelType ?? llmFilters.fuelType ?? null;
+  const fuelFilters = uniqueSorted([...(ruleFilters.fuelFilters ?? []), ...(llmFilters.fuelFilters ?? [])])
+    .filter((value) => !isRedundantFuelFilter(value, fuelType));
   return {
     fuelSegment: ruleFilters.fuelSegment ?? llmFilters.fuelSegment ?? null,
-    fuelType: ruleFilters.fuelType ?? llmFilters.fuelType ?? null,
-    fuelFilters: uniqueSorted([...(ruleFilters.fuelFilters ?? []), ...(llmFilters.fuelFilters ?? [])]),
+    fuelType,
+    fuelFilters,
     vehicleCategories: uniqueSorted([...(ruleFilters.vehicleCategories ?? []), ...(llmFilters.vehicleCategories ?? [])]),
     norms: uniqueSorted([...(ruleFilters.norms ?? []), ...(llmFilters.norms ?? [])]),
     vehicleClasses: uniqueSorted([...(ruleFilters.vehicleClasses ?? []), ...(llmFilters.vehicleClasses ?? [])]),
@@ -681,6 +842,19 @@ function monthsByYear(from, to) {
   if (!from || !to) return [];
   const [fromYear, fromMonth] = from.split("-").map(Number);
   const [toYear, toMonth] = to.split("-").map(Number);
+  if (
+    !Number.isInteger(fromYear) ||
+    !Number.isInteger(fromMonth) ||
+    !Number.isInteger(toYear) ||
+    !Number.isInteger(toMonth) ||
+    fromMonth < 1 ||
+    fromMonth > 12 ||
+    toMonth < 1 ||
+    toMonth > 12 ||
+    fromYear * 100 + fromMonth > toYear * 100 + toMonth
+  ) {
+    return [];
+  }
   const groups = new Map();
   for (let year = fromYear; year <= toYear; year += 1) {
     const startMonth = year === fromYear ? fromMonth : 1;
@@ -905,6 +1079,172 @@ async function runScraperForFilters(filters, missingMonths) {
   return runs;
 }
 
+async function runScraperForMapFilters(filters, groups) {
+  const runs = [];
+  for (const group of groups) {
+    const args = [
+      "scripts/vahan-scraper.mjs",
+      "--mode", "scrape",
+      "--no-persist",
+      "--emit-rows-json",
+      "--years", String(group.year),
+      "--months", group.months.join(","),
+    ];
+    if (group.states?.length) args.push("--states", group.states.map(toVahanStateName).join(","));
+    if (filters.vehicleCategories?.length) args.push("--vehicle-categories", filters.vehicleCategories.join(","));
+    if (filters.norms?.length) args.push("--norms", filters.norms.join(","));
+    if (filters.vehicleClasses?.length) args.push("--vehicle-classes", filters.vehicleClasses.join(","));
+    console.log(`[map-fetch] all states / ${group.year} months=${group.months.join(",")}`);
+    try {
+      const result = await execFileAsync(process.execPath, args, {
+        cwd: __dirname,
+        timeout: 900_000,
+        maxBuffer: 1024 * 1024 * 30,
+      });
+      runs.push({
+        year: group.year,
+        months: group.months,
+        success: true,
+        rows: extractScrapedRows(result.stdout),
+        stdout: result.stdout,
+        stderr: result.stderr,
+      });
+    } catch (error) {
+      runs.push({
+        year: group.year,
+        months: group.months,
+        success: false,
+        rows: extractScrapedRows(error.stdout),
+        error: error.message,
+        stderr: error.stderr,
+      });
+    }
+  }
+  return runs;
+}
+
+function createMapProgress(groups) {
+  const fetchStates = uniqueInOrder(groups.flatMap((group) => group.states?.length ? group.states : orderedMapFetchStates()));
+  const states = fetchStates.map((state) => ({
+    state,
+    status: "pending",
+    rowsScraped: 0,
+    error: null,
+  }));
+  return {
+    totalStates: states.length,
+    completedStates: 0,
+    failedStates: 0,
+    currentState: null,
+    requiredMonths: groups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
+    states,
+  };
+}
+
+function updateMapProgressCounts(progress) {
+  progress.completedStates = progress.states.filter((item) => item.status === "complete").length;
+  progress.failedStates = progress.states.filter((item) => item.status === "failed").length;
+}
+
+function markMapProgressState(progress, state, status, details = {}) {
+  if (!state) return;
+  const item = progress.states.find((entry) => entry.state === normalizeMapStateName(state));
+  if (!item) return;
+  item.status = status;
+  if (details.error !== undefined) item.error = details.error;
+  if (details.rowsScraped !== undefined) item.rowsScraped += details.rowsScraped;
+  if (status === "running") progress.currentState = item.state;
+  else if (progress.currentState === item.state) progress.currentState = null;
+  updateMapProgressCounts(progress);
+}
+
+function parseMapScraperProgressLine(line) {
+  const started = line.match(/^\[(\d+)\/(\d+)\]\s+(\d{4})\s+(.+?)\s+All RTOs\b/);
+  if (started) {
+    return {
+      type: "started",
+      index: Number(started[1]),
+      total: Number(started[2]),
+      year: Number(started[3]),
+      state: started[4].trim(),
+    };
+  }
+
+  const failed = line.match(/^Failed:\s+(\d{4})\s+(.+?)\s+All RTOs:\s+(.+)$/);
+  if (failed) {
+    return {
+      type: "failed",
+      year: Number(failed[1]),
+      state: failed[2].trim(),
+      error: failed[3].trim(),
+    };
+  }
+
+  return null;
+}
+
+async function runScraperForMapFiltersWithProgress(filters, groups, progress, onRunComplete = null) {
+  const runs = [];
+  for (const group of groups) {
+    const args = [
+      "scripts/vahan-scraper.mjs",
+      "--mode", "scrape",
+      "--no-persist",
+      "--emit-rows-json",
+      "--years", String(group.year),
+      "--months", group.months.join(","),
+    ];
+    if (group.states?.length) args.push("--states", group.states.map(toVahanStateName).join(","));
+    if (filters.vehicleCategories?.length) args.push("--vehicle-categories", filters.vehicleCategories.join(","));
+    if (filters.norms?.length) args.push("--norms", filters.norms.join(","));
+    if (filters.vehicleClasses?.length) args.push("--vehicle-classes", filters.vehicleClasses.join(","));
+
+    const state = group.states?.[0] ?? null;
+    console.log(`[map-fetch] ${state ?? "all states"} / ${group.year} months=${group.months.join(",")}`);
+    if (state) markMapProgressState(progress, state, "running");
+
+    try {
+      const result = await execFileAsync(process.execPath, args, {
+        cwd: __dirname,
+        timeout: MAP_SCRAPER_GROUP_TIMEOUT_MS,
+        killSignal: "SIGKILL",
+        maxBuffer: 1024 * 1024 * 30,
+      });
+      const rows = extractScrapedRows(result.stdout);
+      if (state) markMapProgressState(progress, state, "complete", { rowsScraped: rows.length });
+      const run = {
+        state,
+        year: group.year,
+        months: group.months,
+        success: true,
+        rows,
+        stdout: result.stdout,
+        stderr: result.stderr,
+      };
+      runs.push(run);
+      onRunComplete?.(run);
+    } catch (error) {
+      const timedOut = error.killed || /timed out|timeout/i.test(error.message);
+      const message = timedOut
+        ? `Map scraper timed out after ${Math.round(MAP_SCRAPER_GROUP_TIMEOUT_MS / 1000)}s.`
+        : error.message;
+      if (state) markMapProgressState(progress, state, "failed", { error: message });
+      const run = {
+        state,
+        year: group.year,
+        months: group.months,
+        success: false,
+        rows: extractScrapedRows(error.stdout),
+        error: message,
+        stderr: error.stderr,
+      };
+      runs.push(run);
+      onRunComplete?.(run);
+    }
+  }
+  return runs;
+}
+
 function filterRows(rows, filters) {
   const requestedContext = filterContext(filters);
   return rows.filter((row) => {
@@ -919,6 +1259,59 @@ function filterRows(rows, filters) {
     if (!rowMatchesContext(row, requestedContext)) return false;
     return true;
   });
+}
+
+function filterMapRows(rows, filters) {
+  const requestedContext = filterContext(filters);
+  return rows.filter((row) => {
+    const key = monthKey(row.year, row.month);
+    if (filters.from && key < filters.from) return false;
+    if (filters.to && key > filters.to) return false;
+    if (filters.state && row.state !== filters.state) return false;
+    if (filters.rto && row.rto !== filters.rto) return false;
+    if (filters.rtoSearch && !row.rto.toLowerCase().includes(String(filters.rtoSearch).toLowerCase())) return false;
+    if (filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
+    if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
+    for (const field of FILTER_CONTEXT_FIELDS) {
+      if (requestedContext[field] !== ALL_FILTER && String(row[field] ?? ALL_FILTER) !== requestedContext[field]) return false;
+    }
+    return true;
+  });
+}
+
+function hasMapCoverageFor(rows, filters, state, year, month) {
+  const requestedContext = filterContext(filters);
+  return rows.some((row) =>
+    normalizeMapStateName(row.state) === state &&
+    row.year === year &&
+    row.month === month &&
+    row.rto === ALL_RTO &&
+    rowMatchesContext(row, requestedContext),
+  );
+}
+
+function mapRefreshGroupsForFilters(filters, rows) {
+  const groups = monthsByYear(filters.from, filters.to);
+  const refreshGroups = [];
+  for (const group of groups) {
+    for (const state of orderedMapFetchStates()) {
+      const missingMonths = group.months.filter((month) => !hasMapCoverageFor(rows, filters, state, group.year, month));
+      if (missingMonths.length) {
+        refreshGroups.push({ year: group.year, months: missingMonths, states: [state] });
+      }
+    }
+  }
+  return refreshGroups;
+}
+
+function mapSavedStateCount(filters, rows) {
+  const groups = monthsByYear(filters.from, filters.to);
+  if (!groups.length) return 0;
+  return VAHAN_FETCH_STATES.filter((state) =>
+    groups.every((group) =>
+      group.months.every((month) => hasMapCoverageFor(rows, filters, state, group.year, month)),
+    ),
+  ).length;
 }
 
 function filterRowsIgnoringDate(rows, filters) {
@@ -989,6 +1382,280 @@ function summarize(rows) {
     trend,
     fuelBreakdown,
   };
+}
+
+function evShare(evTotal, total) {
+  return total > 0 ? evTotal / total : null;
+}
+
+function mapBaseFilters(url) {
+  return queryFiltersFromSearchParams(url.searchParams, { state: null, rto: null, locationText: null });
+}
+
+function mapAggregateFilters(filters) {
+  if (filters.rto || filters.rtoSearch) return filters;
+  return { ...filters, rto: ALL_RTO };
+}
+
+async function loadMapRows(filters, { rtoScope = "aggregate" } = {}) {
+  const queryFilters = rtoScope === "aggregate" ? mapAggregateFilters(filters) : filters;
+  if (hasDatabaseUrl()) {
+    try {
+      return await queryRegistrationRows(queryFilters, {
+        stateRtoMode: rtoScope === "all" ? "all" : "aggregate",
+      });
+    } catch (error) {
+      console.warn(`[map] Neon read failed, falling back to CSV: ${error.message}`);
+    }
+  }
+  return filterMapRows(await loadRows(), queryFilters);
+}
+
+function mapSummaryPayload(rows, filters, liveRefresh = null) {
+  const resultRows = filterMapRows(rows, filters);
+  const states = summarizeMapStateRows(resultRows);
+  return {
+    filters,
+    states,
+    coverage: {
+      availableStates: states.filter((item) => item.rowCount > 0).length,
+      totalStates: states.length,
+      rowCount: resultRows.length,
+      latestMonth: freshness(rows).latestMonth,
+    },
+    liveRefresh,
+  };
+}
+
+function mapRefreshInfo(job) {
+  return {
+    jobId: job.id,
+    status: job.status,
+    requiredMonths: job.requiredMonths,
+    error: job.error ?? null,
+    savedStateCount: job.savedStateCount ?? null,
+    fetchStateCount: job.progress?.totalStates ?? null,
+    progress: job.progress,
+    persistence: {
+      saves: job.saveStatuses.map((save) => ({
+        state: save.state,
+        year: save.year,
+        months: save.months,
+        status: save.status,
+        rowsSaved: save.rowsSaved ?? 0,
+        error: save.error ?? null,
+      })),
+    },
+    scraper: {
+      runs: job.runs.map((run) => ({
+        state: run.state ?? null,
+        year: run.year,
+        months: run.months,
+        success: run.success,
+        rowsScraped: run.rows?.length ?? 0,
+        error: run.error ?? null,
+      })),
+    },
+  };
+}
+
+function mapSavedRefreshInfo(groups) {
+  const progress = createMapProgress(groups.map((group) => ({ ...group, states: VAHAN_FETCH_STATES })));
+  for (const state of progress.states) state.status = "complete";
+  updateMapProgressCounts(progress);
+  return {
+    jobId: null,
+    status: "complete",
+    source: "saved",
+    requiredMonths: groups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
+    error: null,
+    savedStateCount: VAHAN_FETCH_STATES.length,
+    fetchStateCount: 0,
+    progress,
+    scraper: { runs: [] },
+  };
+}
+
+function mapFiltersFromQuery(query, fallback = {}) {
+  const ruleFilters = decodeWithRules(query ?? "");
+  return {
+    ...fallback,
+    fuelSegment: null,
+    fuelType: null,
+    fuelFilters: [],
+    state: null,
+    rto: null,
+    locationText: null,
+    from: ruleFilters.from ?? fallback.from ?? null,
+    to: ruleFilters.to ?? fallback.to ?? null,
+    vehicleCategories: ruleFilters.vehicleCategories?.length ? ruleFilters.vehicleCategories : fallback.vehicleCategories ?? [],
+    norms: ruleFilters.norms?.length ? ruleFilters.norms : fallback.norms ?? [],
+    vehicleClasses: ruleFilters.vehicleClasses?.length ? ruleFilters.vehicleClasses : fallback.vehicleClasses ?? [],
+  };
+}
+
+function startMapRefreshJob({ filters, baseRows, groups, savedStateCount = null }) {
+  const id = String(nextRefreshJobId++);
+  const job = {
+    id,
+    status: "pending",
+    filters,
+    groups,
+    baseRows,
+    liveRows: [],
+    requiredMonths: groups.flatMap((group) => group.months.map((month) => monthKey(group.year, month))),
+    runs: [],
+    saveStatuses: [],
+    saveTasks: [],
+    savedStateCount,
+    progress: createMapProgress(groups),
+    error: null,
+    payload: null,
+    createdAt: Date.now(),
+  };
+  mapRefreshJobs.set(id, job);
+
+  job.promise = (async () => {
+    try {
+      const runs = await runScraperForMapFiltersWithProgress(filters, groups, job.progress, (run) => {
+        job.runs.push(run);
+        if (run.rows?.length) {
+          job.liveRows = mergeRegistrationRows(job.liveRows, run.rows);
+        }
+        const save = {
+          state: run.state ?? null,
+          year: run.year,
+          months: run.months,
+          status: run.rows?.length ? "pending" : "skipped",
+          rowsSaved: 0,
+          error: null,
+        };
+        job.saveStatuses.push(save);
+        if (run.rows?.length) {
+          const saveTask = queueScrapedRowsPersistence(run.rows)
+            .then((result) => {
+              save.status = result.skipped ? "skipped" : "saved";
+              save.rowsSaved = result.count ?? 0;
+            })
+            .catch((error) => {
+              save.status = "failed";
+              save.error = error.message;
+            });
+          job.saveTasks.push(saveTask);
+        }
+      });
+      const freshRows = runs.flatMap((run) => run.rows ?? []);
+      if (freshRows.length) {
+        if (hasDatabaseUrl()) {
+          dataCache = null;
+        } else {
+          dataCache = mergeRegistrationRows(await loadRows(), freshRows);
+        }
+      }
+      await Promise.allSettled(job.saveTasks);
+      const combinedRows = mergeRegistrationRows(baseRows, freshRows);
+      job.status = runs.some((run) => !run.success) ? "failed" : "complete";
+      job.error = job.status === "failed" ? runs.find((run) => !run.success)?.error ?? "One or more VAHAN scrape runs failed." : null;
+      job.payload = mapSummaryPayload(combinedRows, filters, mapRefreshInfo(job));
+    } catch (error) {
+      await Promise.allSettled(job.saveTasks);
+      job.status = "failed";
+      job.error = error.message;
+      job.payload = mapSummaryPayload(mapRefreshDisplayRows(job), filters, mapRefreshInfo(job));
+    }
+  })();
+
+  return job;
+}
+
+function mapRefreshDisplayRows(job) {
+  return mergeRegistrationRows(job.baseRows, job.liveRows);
+}
+
+function summarizeMapStateRows(rows) {
+  const byState = new Map();
+  for (const state of INDIA_STATES) {
+    byState.set(state, {
+      state,
+      total: 0,
+      evTotal: 0,
+      evShare: null,
+      rowCount: 0,
+      rtoCount: 0,
+      hasRtoData: false,
+    });
+  }
+
+  for (const row of rows) {
+    const stateName = normalizeMapStateName(row.state);
+    if (!byState.has(stateName)) {
+      byState.set(stateName, {
+        state: stateName,
+        total: 0,
+        evTotal: 0,
+        evShare: null,
+        rowCount: 0,
+        rtoCount: 0,
+        hasRtoData: false,
+      });
+    }
+    const item = byState.get(stateName);
+    item.total += row.vehicle_count;
+    if (row.fuel_segment === "EV") item.evTotal += row.vehicle_count;
+    item.rowCount += 1;
+    if (!item.rtos) item.rtos = new Set();
+    if (row.rto && row.rto !== ALL_RTO) item.rtos.add(row.rto);
+  }
+
+  return [...byState.values()]
+    .map((item) => ({
+      state: item.state,
+      total: item.total,
+      evTotal: item.evTotal,
+      evShare: evShare(item.evTotal, item.total),
+      rowCount: item.rowCount,
+      rtoCount: item.rtos?.size ?? 0,
+      hasRtoData: Boolean(item.rtos?.size),
+    }))
+    .sort((a, b) => a.state.localeCompare(b.state));
+}
+
+function summarizeMapRtoRows(rows) {
+  const byRto = new Map();
+  for (const row of rows) {
+    if (row.rto === ALL_RTO) continue;
+    if (!byRto.has(row.rto)) {
+      byRto.set(row.rto, {
+        rto: row.rto,
+        total: 0,
+        evTotal: 0,
+        rowCount: 0,
+        months: new Set(),
+        fuels: new Map(),
+      });
+    }
+    const item = byRto.get(row.rto);
+    item.total += row.vehicle_count;
+    if (row.fuel_segment === "EV") item.evTotal += row.vehicle_count;
+    item.rowCount += 1;
+    item.months.add(monthKey(row.year, row.month));
+    item.fuels.set(row.fuel_type, (item.fuels.get(row.fuel_type) ?? 0) + row.vehicle_count);
+  }
+
+  return [...byRto.values()]
+    .map((item) => ({
+      rto: item.rto,
+      total: item.total,
+      evTotal: item.evTotal,
+      evShare: evShare(item.evTotal, item.total),
+      rowCount: item.rowCount,
+      months: [...item.months].sort(),
+      topFuels: [...item.fuels.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([fuelType, count]) => ({ fuelType, count })),
+    }))
+    .sort((a, b) => b.evShare - a.evShare || b.evTotal - a.evTotal || a.rto.localeCompare(b.rto));
 }
 
 function freshness(rows) {
@@ -1137,10 +1804,17 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
 }
 
 async function queryData(input) {
+  const query = String(input.query ?? "").trim();
+  if (!query) {
+    const error = new Error("Enter a query before running the dashboard.");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const useDatabase = hasDatabaseUrl();
   let rows = useDatabase ? [] : await loadRows();
   const catalog = await loadCatalog(rows);
-  const ruleFilters = decodeWithRules(input.query ?? "");
+  const ruleFilters = decodeWithRules(query);
   let llmFilters = null;
   const ruleHasAnyLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
   const needsGemini =
@@ -1149,7 +1823,7 @@ async function queryData(input) {
     !ruleFilters.to;
   if (needsGemini) {
     try {
-      llmFilters = normalizeGeminiFilters(await decodeWithGemini(input.query ?? ""));
+      llmFilters = normalizeGeminiFilters(await decodeWithGemini(query));
     } catch (error) {
       llmFilters = { decodeWarning: error.message };
     }
@@ -1163,7 +1837,7 @@ async function queryData(input) {
       ? await findMissingMonthsFromDb(filters)
       : findMissingMonths(filters, rows)
     : [];
-  const refreshGroups = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
+  const refreshGroups = !LIVE_REFRESH_DISABLED && hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
     ? useDatabase
       ? await refreshMonthsForFiltersFromDb(filters)
       : refreshMonthsForFilters(filters, rows)
@@ -1187,7 +1861,14 @@ async function readBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
   const text = Buffer.concat(chunks).toString("utf8");
-  return text ? JSON.parse(text) : {};
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    const error = new Error("Request body must be valid JSON.");
+    error.statusCode = 400;
+    throw error;
+  }
 }
 
 function sendJson(response, status, payload) {
@@ -1197,9 +1878,17 @@ function sendJson(response, status, payload) {
 
 async function serveStatic(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
-  const filePath = url.pathname === "/" ? path.join(PUBLIC_DIR, "index.html") : path.join(PUBLIC_DIR, url.pathname);
-  const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(PUBLIC_DIR)) {
+  let requestedPath;
+  try {
+    requestedPath = url.pathname === "/" ? "index.html" : decodeURIComponent(url.pathname).replace(/^[/\\]+/, "");
+  } catch {
+    response.writeHead(400);
+    response.end("Bad request");
+    return;
+  }
+  const publicRoot = path.resolve(PUBLIC_DIR);
+  const resolved = path.resolve(publicRoot, requestedPath);
+  if (resolved !== publicRoot && !resolved.startsWith(`${publicRoot}${path.sep}`)) {
     response.writeHead(403);
     response.end("Forbidden");
     return;
@@ -1242,15 +1931,7 @@ const server = http.createServer(async (request, response) => {
       const useDatabase = hasDatabaseUrl();
       const rows = useDatabase ? [] : await loadRows();
       const catalog = await loadCatalog(rows);
-      const filters = resolveRto({
-        state: url.searchParams.get("state") || null,
-        rto: url.searchParams.get("rto") || null,
-        locationText: url.searchParams.get("locationText") || null,
-        fuelSegment: url.searchParams.get("fuelSegment") || null,
-        fuelType: url.searchParams.get("fuelType") || null,
-        from: url.searchParams.get("from") || null,
-        to: url.searchParams.get("to") || null,
-      }, rows, catalog);
+      const filters = resolveRto(queryFiltersFromSearchParams(url.searchParams), rows, catalog);
       const resultRows = useDatabase && !filters.ambiguousRtos
         ? await queryRegistrationRows(filters)
         : filterRows(rows, filters);
@@ -1262,6 +1943,79 @@ const server = http.createServer(async (request, response) => {
         fuelBreakdown: summary.fuelBreakdown,
         rows: resultRows,
         freshness: useDatabase ? await freshnessFromDb() : freshness(rows),
+      });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/map/summary") {
+      const filters = mapBaseFilters(url);
+      const rows = await loadMapRows(filters);
+      sendJson(response, 200, mapSummaryPayload(rows, filters));
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/map/query") {
+      const body = await readBody(request);
+      const fallbackFilters = {
+        ...mapBaseFilters(url),
+        from: body.from ?? url.searchParams.get("from") ?? null,
+        to: body.to ?? url.searchParams.get("to") ?? null,
+        vehicleCategories: uniqueSorted(body.vehicleCategories ?? []),
+        norms: uniqueSorted(body.norms ?? []),
+        vehicleClasses: uniqueSorted(body.vehicleClasses ?? []),
+      };
+      const filters = mapFiltersFromQuery(body.query ?? "", fallbackFilters);
+      const groups = monthsByYear(filters.from, filters.to);
+      if (!groups.length) {
+        sendJson(response, 400, { error: "Choose a valid month range where From is earlier than or equal to To." });
+        return;
+      }
+      const monthCount = groups.reduce((count, group) => count + group.months.length, 0);
+      if (monthCount > MAX_MAP_FETCH_MONTHS) {
+        sendJson(response, 400, { error: `Map fetch supports up to ${MAX_MAP_FETCH_MONTHS} months at a time. Narrow the date range and try again.` });
+        return;
+      }
+      const rows = await loadMapRows(filters);
+      const refreshGroups = mapRefreshGroupsForFilters(filters, rows);
+      const savedStateCount = mapSavedStateCount(filters, rows);
+      if (!refreshGroups.length) {
+        sendJson(response, 200, mapSummaryPayload(rows, filters, mapSavedRefreshInfo(groups)));
+        return;
+      }
+      const job = startMapRefreshJob({ filters, baseRows: rows, groups: refreshGroups, savedStateCount });
+      sendJson(response, 202, mapSummaryPayload(mapRefreshDisplayRows(job), filters, mapRefreshInfo(job)));
+      return;
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/map-refresh/")) {
+      const jobId = decodeURIComponent(url.pathname.slice("/api/map-refresh/".length));
+      const job = mapRefreshJobs.get(jobId);
+      if (!job) {
+        sendJson(response, 404, { error: "Map refresh job not found" });
+        return;
+      }
+      if (job.status === "pending") {
+        sendJson(response, 200, mapSummaryPayload(mapRefreshDisplayRows(job), job.filters, mapRefreshInfo(job)));
+        return;
+      }
+      sendJson(response, 200, job.payload ?? mapSummaryPayload(job.baseRows, job.filters, mapRefreshInfo(job)));
+      return;
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/map/state/") && url.pathname.endsWith("/rtos")) {
+      const state = decodeURIComponent(url.pathname.slice("/api/map/state/".length, -"/rtos".length));
+      const filters = mapBaseFilters(url);
+      const rows = await loadMapRows({ ...filters, state }, { rtoScope: "all" });
+      const stateRows = filterMapRows(rows, { ...filters, state });
+      const stateSummary = summarizeMapStateRows(stateRows).find((item) => item.state === state) ?? {
+        state,
+        total: 0,
+        evTotal: 0,
+        evShare: null,
+        rowCount: 0,
+        rtoCount: 0,
+        hasRtoData: false,
+      };
+      sendJson(response, 200, {
+        filters: { ...filters, state },
+        state: stateSummary,
+        rtos: summarizeMapRtoRows(stateRows),
       });
       return;
     }
@@ -1317,7 +2071,9 @@ const server = http.createServer(async (request, response) => {
     }
     await serveStatic(request, response);
   } catch (error) {
-    sendJson(response, 500, { error: error.message });
+    const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
+    const message = error.message || (status === 500 ? "Internal server error" : "Request failed");
+    sendJson(response, status, { error: message });
   }
 });
 
