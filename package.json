@@ -12,7 +12,8 @@
     "scrape:vahan": "node --env-file=.env scripts/vahan-scraper.mjs",
     "scrape:vahan:discover": "node --env-file=.env scripts/vahan-scraper.mjs --mode discover",
     "scrape:vahan:rto-catalog": "node --env-file=.env scripts/vahan-scraper.mjs --mode rto-catalog",
-    "scrape:vahan:sample": "node --env-file=.env scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1"
+    "scrape:vahan:sample": "node --env-file=.env scripts/vahan-scraper.mjs --mode scrape --states Maharashtra --years 2024 --months 1",
+    "check:local": "node scripts/local-regression-check.mjs"
   },
   "dependencies": {
     "pg": "^8.20.0",

@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-19T11:10:00.736Z",
+  "attempt": 2,
+  "error": "page.goto: Target page, context or browser has been closed",
+  "report": {
+    "year": 2025,
+    "months": [
+      12
+    ],
+    "state": "Ladakh",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260519_164000_ladakh_2025_all-rtos_attempt2.png",
+    "html": "data\\vahan\\failures\\20260519_164000_ladakh_2025_all-rtos_attempt2.html"
+  }
+}

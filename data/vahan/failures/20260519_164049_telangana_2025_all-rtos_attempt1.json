@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-19T11:10:49.982Z",
+  "attempt": 1,
+  "error": "page.goto: Target page, context or browser has been closed",
+  "report": {
+    "year": 2025,
+    "months": [
+      12
+    ],
+    "state": "Telangana",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260519_164049_telangana_2025_all-rtos_attempt1.png",
+    "html": "data\\vahan\\failures\\20260519_164049_telangana_2025_all-rtos_attempt1.html"
+  }
+}

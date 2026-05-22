@@ -1,0 +1,24 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-19T08:36:22.713Z",
+  "attempt": 1,
+  "error": "page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "report": {
+    "year": 2024,
+    "months": [
+      1
+    ],
+    "state": "Maharashtra",
+    "rto": "All RTOs",
+    "fuels": [
+      "DIESEL"
+    ]
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260519_140622_maharashtra_2024_all-rtos_attempt1.png",
+    "html": "data\\vahan\\failures\\20260519_140622_maharashtra_2024_all-rtos_attempt1.html"
+  }
+}

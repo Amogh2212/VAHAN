@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
 import { closePool } from "../lib/db.mjs";
-import { upsertRegistrationRows } from "../lib/registrations.mjs";
+import { replaceRegistrationRows } from "../lib/registrations.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
 
 const SOURCE_URL =
@@ -28,7 +28,7 @@ const STATE_NAMES = [
   "Gujarat",
   "Haryana",
   "Himachal Pradesh",
-  "Jammu & Kashmir",
+  "Jammu and Kashmir",
   "Jharkhand",
   "Karnataka",
   "Kerala",
@@ -527,7 +527,7 @@ async function selectPrimeOption(page, controlConfig, value) {
 
 async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
   const wanted = new Set(wantedLabels.map((label) => normalizeLookup(label)));
-  const matches = await page.locator(`table[id="${tableId}"] tr`).evaluateAll(
+  const readMatches = () => page.locator(`table[id="${tableId}"] tr`).evaluateAll(
     (rows, wantedValues) => {
       const wantedSet = new Set(wantedValues);
       return rows.map((row) => {
@@ -545,6 +545,7 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
     [...wanted],
   );
 
+  const matches = await readMatches();
   let changed = false;
   for (const match of matches) {
     if (!match.id) continue;
@@ -559,9 +560,14 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
     }
   }
 
-  const selected = matches.filter((match) => match.wanted);
+  const afterMatches = await readMatches();
+  const selected = afterMatches.filter((match) => match.wanted);
   if (wantedLabels.length && !selected.length) {
     throw new Error(`Could not find ${tableId} checkbox for ${wantedLabels.join(", ")}`);
+  }
+  const missingSelection = selected.filter((match) => !match.checked).map((match) => match.text);
+  if (missingSelection.length) {
+    throw new Error(`Could not select ${tableId} checkbox for ${missingSelection.join(", ")}`);
   }
   return changed;
 }
@@ -1320,7 +1326,7 @@ async function scrape(args) {
         rows.push(...newRows);
         succeeded += newRows.length;
         if (args.persist) {
-          const upsertResult = await upsertRegistrationRows(newRows);
+          const upsertResult = await replaceRegistrationRows(newRows);
           neonSkipped = neonSkipped || upsertResult.skipped;
           neonUpserted += upsertResult.count;
           await writeFileWithRetry(outputFile, toCsv(rows));

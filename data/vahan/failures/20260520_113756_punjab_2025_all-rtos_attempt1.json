@@ -1,0 +1,860 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-05-20T06:07:56.601Z",
+  "attempt": 1,
+  "error": "Could not find VAHAN report table after refresh. Table samples: [[[\"FOUR WHEELER (Invalid Carriage)\"],[\"LIGHT MOTOR VEHICLE\"],[\"MEDIUM MOTOR VEHICLE\"]],[[\"BHARAT STAGE I\"],[\"BHARAT STAGE II\"],[\"BHARAT STAGE III\"]],[[\"BIO-CNG/BIO-GAS\"],[\"BIO-DIESEL(B100)\"],[\"BIO-METHANE\"]],[[\"M-CYCLE/SCOOTER\"],[\"M-CYCLE/SCOOTER-WITH SIDE CAR\"],[\"MOPED\"]],[[],[\"S No\",\"Vehicle Class\",\"Vehicle Category Group\"],[\"FOUR WHEELER\"]]]",
+  "report": {
+    "year": 2025,
+    "months": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "state": "Punjab",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "VAHAN SEWA| DASHBOARD",
+  "bodyTextSample": " Home\nType:\nIn Thousand\nIn Lakh\nIn Crore\nActual Value\nActual Value\nState:\nAll Vahan4 Running States (36/36)\nAndaman & Nicobar Island(5)\nAndhra Pradesh(84)\nArunachal Pradesh(29)\nAssam(35)\nBihar(48)\nChhattisgarh(31)\nChandigarh(1)\nUT of DNH and DD(3)\nDelhi(16)\nGoa(13)\nGujarat(37)\nHimachal Pradesh(98)\nHaryana(104)\nJharkhand(25)\nJammu and Kashmir(21)\nKarnataka(68)\nKerala(87)\nLadakh(3)\nLakshadweep(9)\nMaharashtra(59)\nMeghalaya(14)\nManipur(17)\nMadhya Pradesh(53)\nMizoram(12)\nNagaland(9)\nOdisha(39)\nPunjab(96)\nPuducherry(8)\nRajasthan(60)\nSikkim(9)\nTelangana(57)\nTamil Nadu(148)\nTripura(9)\nUttarakhand(21)\nUttar Pradesh(77)\nWest Bengal(59)\nAll Vahan4 Running States (36/36)\nRTO:\nAll Vahan4 Running Office(96/96)\nPUNJAB STA(RAC)/(AITP) - PB1( 16-FEB-2018 )\nRTO AMRITSAR - PB2( 02-NOV-2017 )\nRTO BARNALA - PB19( 02-JAN-2018 )\nRTO BATHINDA - PB3( 25-OCT-2017 )\nRTO FARIDKOT - PB4( 25-OCT-2017 )\nRTO FATEHGARH SAHIB - PB23( 11-OCT-2017 )\nRTO FAZILKA - PB22( 10-NOV-2017 )\nRTO FEROZPUR - PB5( 25-OCT-2017 )\nRTO GURDASPUR - PB6( 27-OCT-2017 )\nRTO HOSHIARPUR - PB7( 01-NOV-2017 )\nRTO JALANDHAR - PB8( 30-OCT-2017 )\nRTO KAPURTHALA - PB9( 01-NOV-2017 )\nRTO LUDHIANA - PB10( 25-JAN-2018 )\nRTO MALERKOTLA - PB28( 01-NOV-2017 )\nRTO MANSA - PB31( 24-OCT-2017 )\nRTO MOGA - PB29( 18-OCT-2017 )\nRTO MUKTSAR SAHIB - PB30( 27-FEB-2018 )\nRTO PATHANKOT - PB35( 01-NOV-2017 )\nRTO PATIALA - PB11( 22-DEC-2017 )\nRTO ROPAR - PB12( 31-OCT-2017 )\nRTO SAHIBZADA AJIT SINGH NAGAR - PB65( 24-OCT-2017 )\nRTO SANGRUR - PB13( 13-NOV-2017 )\nRTO SBS NAGAR - PB32( 28-OCT-2017 )\nRTO TARN TARAN - PB46( 26-OCT-2017 )\nSDM ABOHAR - PB15( 26-OCT-2017 )\nSDM ADAMPUR - PB94( 26-OCT-2023 )\nSDM AHMEDGARH - PB82( 01-NOV-2017 )\nSDM AJNALA - PB14( 02-NOV-2017 )\nSDM AMARGARH - PB92( 22-OCT-2021 )\nSDM AMLOH - PB48( 04-OCT-2017 )\nSDM AMRITSAR-2 - PB89( 02-NOV-2017 )\nSDM ANANDPUR SAHIB - PB16( 30-OCT-2017 )\nSDM BABA BAKALA - PB17( 02-NOV-2017 )\nSDM BAGHA PURANA - PB69( 18-OCT-2017 )\nSDM BALACHAUR - PB20( 01-NOV-2017 )\nSDM BANGA - PB78( 01-NOV-2017 )\nSDM BASSI PATHANA - PB52( 28-SEP-2017 )\nSDM BATALA - PB18( 27-OCT-2017 )\nSDM BHAWNIGARH - PB84( 25-OCT-2017 )\nSDM BHIKHIWIND - PB88( 26-OCT-2017 )\nSDM BHOLATH - PB57( 01-NOV-2017 )\nSDM BUDHLADA - PB50( 26-OCT-2017 )\nSDM CHAMKAUR SAHIB - PB71( 26-OCT-2017 )\nSDM DASUYA - PB21( 01-NOV-2017 )\nSDM DERA BABA NANAK - PB58( 27-OCT-2017 )\nSDM DERA BASSI - PB70( 17-OCT-2017 )\nSDM DHARAMKOT - PB76( 18-OCT-2017 )\nSDM DHAR KALAN - PB68( 01-NOV-2017 )\nSDM DHURI - PB59( 27-OCT-2017 )\nSDM DINANAGAR - PB99( 25-MAR-2019 )\nSDM DIRBA - PB86( 01-NOV-2017 )\nSDM DUDHAN SADHAN - PB83( 26-OCT-2017 )\nSDM GARSHANKAR - PB24( 27-OCT-2017 )\nSDM GIDDARBAHA - PB60( 13-OCT-2017 )\nSDM GURU HAR SAHAI - PB77( 24-OCT-2017 )\nSDM JAGRAON - PB25( 03-NOV-2017 )\nSDM JAITO - PB62( 24-OCT-2017 )\nSDM JALALABAD - PB61( 26-OCT-2017 )\nSDM JALANDHAR-11 - PB90( 27-OCT-2017 )\nSDM KALANAUR - PB85( 27-OCT-2017 )\nSDM KHADUR SAHIB - PB63( 26-OCT-2017 )\nSDM KHAMANO - PB49( 26-SEP-2017 )\nSDM KHANNA - PB26( 01-NOV-2017 )\nSDM KHARAR - PB27( 23-OCT-2017 )\nSDM KOTKAPURA - PB79( 25-OCT-2017 )\nSDM LEHRAGAGA - PB75( 27-OCT-2017 )\nSDM LOPOKE - PB93( 26-OCT-2023 )\nSDM LUDHIANA EAST - PB91( 29-DEC-2017 )\nSDM MAJITHA - PB81( 28-OCT-2017 )\nSDM MALOUT - PB53( 17-OCT-2017 )\nSDM MAUR MANDI - PB80( 25-OCT-2017 )\nSDM MOONAK - PB64( 27-OCT-2017 )\nSDM MORINDA - PB87( 27-OCT-2017 )\nSDM MUKERIAN - PB54( 27-OCT-2017 )\nSDM NABHA - PB34( 13-OCT-2017 )\nSDM NAKODAR - PB33( 31-OCT-2017 )\nSDM NANGAL - PB74( 26-OCT-2017 )\nSDM NIHAL SINGH WALA - PB66( 18-OCT-2017 )\nSDM PATRAN - PB72( 11-OCT-2017 )\nSDM PATTI - PB38( 26-OCT-2017 )\nSDM PAYAL - PB55( 03-NOV-2017 )\nSDM PHAGWARA - PB36( 01-NOV-2017 )\nSDM PHILLOUR - PB37( 28-OCT-2017 )\nSDM RAIKOT - PB56( 20-NOV-2017 )\nSDM RAJPURA - PB39( 24-OCT-2017 )\nSDM RAMPURA PHUL - PB40( 25-OCT-2017 )\nSDM SAMANA - PB42( 11-OCT-2017 )\nSDM SAMRALA - PB43( 27-OCT-2017 )\nSDM SARDULGARH - PB51( 27-OCT-2017 )\nSDM SHAHKOT - PB67( 30-OCT-2017 )\nSDM SULTANPUR LODHI - PB41( 30-OCT-2017 )\nSDM SUNAM - PB44( 26-OCT-2017 )\nSDM TALWA",
+  "controls": [
+    {
+      "id": "j_idt28_input",
+      "name": "j_idt28_input",
+      "selector": "[id=\"j_idt28_input\"]",
+      "nearbyText": "j_idt28_input j_idt28_input In ThousandIn LakhIn CroreActual Value",
+      "optionCount": 4,
+      "options": [
+        {
+          "label": "In Thousand",
+          "value": "T"
+        },
+        {
+          "label": "In Lakh",
+          "value": "L"
+        },
+        {
+          "label": "In Crore",
+          "value": "C"
+        },
+        {
+          "label": "Actual Value",
+          "value": "A"
+        }
+      ]
+    },
+    {
+      "id": "j_idt36_input",
+      "name": "j_idt36_input",
+      "selector": "[id=\"j_idt36_input\"]",
+      "nearbyText": "j_idt36_input j_idt36_input All Vahan4 Running States (36/36)Andaman & Nicobar Island(5)Andhra Pradesh(84)Arunachal Pradesh(29)Assam(35)Bihar(48)Chhattisgarh(31)Chandigarh(1)UT of DNH and DD(3)Delhi(16)Goa(13)Gujarat(37)Himachal Pradesh(98)Haryana(104)Jharkhand(25)Jammu and Kashmir(21)Karnataka(68)Kerala(87)Ladakh(3)Lakshadwee",
+      "optionCount": 37,
+      "options": [
+        {
+          "label": "All Vahan4 Running States (36/36)",
+          "value": "-1"
+        },
+        {
+          "label": "Andaman & Nicobar Island(5)",
+          "value": "AN"
+        },
+        {
+          "label": "Andhra Pradesh(84)",
+          "value": "AP"
+        },
+        {
+          "label": "Arunachal Pradesh(29)",
+          "value": "AR"
+        },
+        {
+          "label": "Assam(35)",
+          "value": "AS"
+        },
+        {
+          "label": "Bihar(48)",
+          "value": "BR"
+        },
+        {
+          "label": "Chhattisgarh(31)",
+          "value": "CG"
+        },
+        {
+          "label": "Chandigarh(1)",
+          "value": "CH"
+        },
+        {
+          "label": "UT of DNH and DD(3)",
+          "value": "DD"
+        },
+        {
+          "label": "Delhi(16)",
+          "value": "DL"
+        },
+        {
+          "label": "Goa(13)",
+          "value": "GA"
+        },
+        {
+          "label": "Gujarat(37)",
+          "value": "GJ"
+        },
+        {
+          "label": "Himachal Pradesh(98)",
+          "value": "HP"
+        },
+        {
+          "label": "Haryana(104)",
+          "value": "HR"
+        },
+        {
+          "label": "Jharkhand(25)",
+          "value": "JH"
+        },
+        {
+          "label": "Jammu and Kashmir(21)",
+          "value": "JK"
+        },
+        {
+          "label": "Karnataka(68)",
+          "value": "KA"
+        },
+        {
+          "label": "Kerala(87)",
+          "value": "KL"
+        },
+        {
+          "label": "Ladakh(3)",
+          "value": "LA"
+        },
+        {
+          "label": "Lakshadweep(9)",
+          "value": "LD"
+        },
+        {
+          "label": "Maharashtra(59)",
+          "value": "MH"
+        },
+        {
+          "label": "Meghalaya(14)",
+          "value": "ML"
+        },
+        {
+          "label": "Manipur(17)",
+          "value": "MN"
+        },
+        {
+          "label": "Madhya Pradesh(53)",
+          "value": "MP"
+        },
+        {
+          "label": "Mizoram(12)",
+          "value": "MZ"
+        },
+        {
+          "label": "Nagaland(9)",
+          "value": "NL"
+        },
+        {
+          "label": "Odisha(39)",
+          "value": "OR"
+        },
+        {
+          "label": "Punjab(96)",
+          "value": "PB"
+        },
+        {
+          "label": "Puducherry(8)",
+          "value": "PY"
+        },
+        {
+          "label": "Rajasthan(60)",
+          "value": "RJ"
+        },
+        {
+          "label": "Sikkim(9)",
+          "value": "SK"
+        },
+        {
+          "label": "Telangana(57)",
+          "value": "TG"
+        },
+        {
+          "label": "Tamil Nadu(148)",
+          "value": "TN"
+        },
+        {
+          "label": "Tripura(9)",
+          "value": "TR"
+        },
+        {
+          "label": "Uttarakhand(21)",
+          "value": "UK"
+        },
+        {
+          "label": "Uttar Pradesh(77)",
+          "value": "UP"
+        },
+        {
+          "label": "West Bengal(59)",
+          "value": "WB"
+        }
+      ]
+    },
+    {
+      "id": "selectedRto_input",
+      "name": "selectedRto_input",
+      "selector": "[id=\"selectedRto_input\"]",
+      "nearbyText": "selectedRto_input selectedRto_input All Vahan4 Running Office(96/96)PUNJAB STA(RAC)/(AITP) - PB1( 16-FEB-2018 )RTO AMRITSAR - PB2( 02-NOV-2017 ) RTO BARNALA - PB19( 02-JAN-2018 )RTO BATHINDA - PB3( 25-OCT-2017 )RTO FARIDKOT - PB4( 25-OCT-2017 )RTO FATEHGARH SAHIB - PB23( 11-OCT-2017 )RTO FAZILKA - PB22( 10-NOV-2017 )RTO FEROZPUR - PB",
+      "optionCount": 97,
+      "options": [
+        {
+          "label": "All Vahan4 Running Office(96/96)",
+          "value": "-1"
+        },
+        {
+          "label": "PUNJAB STA(RAC)/(AITP) - PB1( 16-FEB-2018 )",
+          "value": "1"
+        },
+        {
+          "label": "RTO AMRITSAR - PB2( 02-NOV-2017 )",
+          "value": "2"
+        },
+        {
+          "label": "RTO BARNALA - PB19( 02-JAN-2018 )",
+          "value": "19"
+        },
+        {
+          "label": "RTO BATHINDA - PB3( 25-OCT-2017 )",
+          "value": "3"
+        },
+        {
+          "label": "RTO FARIDKOT - PB4( 25-OCT-2017 )",
+          "value": "4"
+        },
+        {
+          "label": "RTO FATEHGARH SAHIB - PB23( 11-OCT-2017 )",
+          "value": "23"
+        },
+        {
+          "label": "RTO FAZILKA - PB22( 10-NOV-2017 )",
+          "value": "22"
+        },
+        {
+          "label": "RTO FEROZPUR - PB5( 25-OCT-2017 )",
+          "value": "5"
+        },
+        {
+          "label": "RTO GURDASPUR - PB6( 27-OCT-2017 )",
+          "value": "6"
+        },
+        {
+          "label": "RTO HOSHIARPUR - PB7( 01-NOV-2017 )",
+          "value": "7"
+        },
+        {
+          "label": "RTO JALANDHAR - PB8( 30-OCT-2017 )",
+          "value": "8"
+        },
+        {
+          "label": "RTO KAPURTHALA - PB9( 01-NOV-2017 )",
+          "value": "9"
+        },
+        {
+          "label": "RTO LUDHIANA - PB10( 25-JAN-2018 )",
+          "value": "10"
+        },
+        {
+          "label": "RTO MALERKOTLA - PB28( 01-NOV-2017 )",
+          "value": "28"
+        },
+        {
+          "label": "RTO MANSA - PB31( 24-OCT-2017 )",
+          "value": "31"
+        },
+        {
+          "label": "RTO MOGA - PB29( 18-OCT-2017 )",
+          "value": "29"
+        },
+        {
+          "label": "RTO MUKTSAR SAHIB - PB30( 27-FEB-2018 )",
+          "value": "30"
+        },
+        {
+          "label": "RTO PATHANKOT - PB35( 01-NOV-2017 )",
+          "value": "35"
+        },
+        {
+          "label": "RTO PATIALA - PB11( 22-DEC-2017 )",
+          "value": "11"
+        },
+        {
+          "label": "RTO ROPAR - PB12( 31-OCT-2017 )",
+          "value": "12"
+        },
+        {
+          "label": "RTO SAHIBZADA AJIT SINGH NAGAR - PB65( 24-OCT-2017 )",
+          "value": "65"
+        },
+        {
+          "label": "RTO SANGRUR - PB13( 13-NOV-2017 )",
+          "value": "13"
+        },
+        {
+          "label": "RTO SBS NAGAR - PB32( 28-OCT-2017 )",
+          "value": "32"
+        },
+        {
+          "label": "RTO TARN TARAN - PB46( 26-OCT-2017 )",
+          "value": "46"
+        },
+        {
+          "label": "SDM ABOHAR - PB15( 26-OCT-2017 )",
+          "value": "15"
+        },
+        {
+          "label": "SDM ADAMPUR - PB94( 26-OCT-2023 )",
+          "value": "94"
+        },
+        {
+          "label": "SDM AHMEDGARH - PB82( 01-NOV-2017 )",
+          "value": "82"
+        },
+        {
+          "label": "SDM AJNALA - PB14( 02-NOV-2017 )",
+          "value": "14"
+        },
+        {
+          "label": "SDM AMARGARH - PB92( 22-OCT-2021 )",
+          "value": "92"
+        },
+        {
+          "label": "SDM AMLOH - PB48( 04-OCT-2017 )",
+          "value": "48"
+        },
+        {
+          "label": "SDM AMRITSAR-2 - PB89( 02-NOV-2017 )",
+          "value": "89"
+        },
+        {
+          "label": "SDM ANANDPUR SAHIB - PB16( 30-OCT-2017 )",
+          "value": "16"
+        },
+        {
+          "label": "SDM BABA BAKALA - PB17( 02-NOV-2017 )",
+          "value": "17"
+        },
+        {
+          "label": "SDM BAGHA PURANA - PB69( 18-OCT-2017 )",
+          "value": "69"
+        },
+        {
+          "label": "SDM BALACHAUR - PB20( 01-NOV-2017 )",
+          "value": "20"
+        },
+        {
+          "label": "SDM BANGA - PB78( 01-NOV-2017 )",
+          "value": "78"
+        },
+        {
+          "label": "SDM BASSI PATHANA - PB52( 28-SEP-2017 )",
+          "value": "52"
+        },
+        {
+          "label": "SDM BATALA - PB18( 27-OCT-2017 )",
+          "value": "18"
+        },
+        {
+          "label": "SDM BHAWNIGARH - PB84( 25-OCT-2017 )",
+          "value": "84"
+        },
+        {
+          "label": "SDM BHIKHIWIND - PB88( 26-OCT-2017 )",
+          "value": "88"
+        },
+        {
+          "label": "SDM BHOLATH - PB57( 01-NOV-2017 )",
+          "value": "57"
+        },
+        {
+          "label": "SDM BUDHLADA - PB50( 26-OCT-2017 )",
+          "value": "50"
+        },
+        {
+          "label": "SDM CHAMKAUR SAHIB - PB71( 26-OCT-2017 )",
+          "value": "71"
+        },
+        {
+          "label": "SDM DASUYA - PB21( 01-NOV-2017 )",
+          "value": "21"
+        },
+        {
+          "label": "SDM DERA BABA NANAK - PB58( 27-OCT-2017 )",
+          "value": "58"
+        },
+        {
+          "label": "SDM DERA BASSI - PB70( 17-OCT-2017 )",
+          "value": "70"
+        },
+        {
+          "label": "SDM DHARAMKOT - PB76( 18-OCT-2017 )",
+          "value": "76"
+        },
+        {
+          "label": "SDM DHAR KALAN - PB68( 01-NOV-2017 )",
+          "value": "68"
+        },
+        {
+          "label": "SDM DHURI - PB59( 27-OCT-2017 )",
+          "value": "59"
+        },
+        {
+          "label": "SDM DINANAGAR - PB99( 25-MAR-2019 )",
+          "value": "99"
+        },
+        {
+          "label": "SDM DIRBA - PB86( 01-NOV-2017 )",
+          "value": "86"
+        },
+        {
+          "label": "SDM DUDHAN SADHAN - PB83( 26-OCT-2017 )",
+          "value": "83"
+        },
+        {
+          "label": "SDM GARSHANKAR - PB24( 27-OCT-2017 )",
+          "value": "24"
+        },
+        {
+          "label": "SDM GIDDARBAHA - PB60( 13-OCT-2017 )",
+          "value": "60"
+        },
+        {
+          "label": "SDM GURU HAR SAHAI - PB77( 24-OCT-2017 )",
+          "value": "77"
+        },
+        {
+          "label": "SDM JAGRAON - PB25( 03-NOV-2017 )",
+          "value": "25"
+        },
+        {
+          "label": "SDM JAITO - PB62( 24-OCT-2017 )",
+          "value": "62"
+        },
+        {
+          "label": "SDM JALALABAD - PB61( 26-OCT-2017 )",
+          "value": "61"
+        },
+        {
+          "label": "SDM JALANDHAR-11 - PB90( 27-OCT-2017 )",
+          "value": "90"
+        },
+        {
+          "label": "SDM KALANAUR - PB85( 27-OCT-2017 )",
+          "value": "85"
+        },
+        {
+          "label": "SDM KHADUR SAHIB - PB63( 26-OCT-2017 )",
+          "value": "63"
+        },
+        {
+          "label": "SDM KHAMANO - PB49( 26-SEP-2017 )",
+          "value": "49"
+        },
+        {
+          "label": "SDM KHANNA - PB26( 01-NOV-2017 )",
+          "value": "26"
+        },
+        {
+          "label": "SDM KHARAR - PB27( 23-OCT-2017 )",
+          "value": "27"
+        },
+        {
+          "label": "SDM KOTKAPURA - PB79( 25-OCT-2017 )",
+          "value": "79"
+        },
+        {
+          "label": "SDM LEHRAGAGA - PB75( 27-OCT-2017 )",
+          "value": "75"
+        },
+        {
+          "label": "SDM LOPOKE - PB93( 26-OCT-2023 )",
+          "value": "93"
+        },
+        {
+          "label": "SDM LUDHIANA EAST - PB91( 29-DEC-2017 )",
+          "value": "91"
+        },
+        {
+          "label": "SDM MAJITHA - PB81( 28-OCT-2017 )",
+          "value": "81"
+        },
+        {
+          "label": "SDM MALOUT - PB53( 17-OCT-2017 )",
+          "value": "53"
+        },
+        {
+          "label": "SDM MAUR MANDI - PB80( 25-OCT-2017 )",
+          "value": "80"
+        },
+        {
+          "label": "SDM MOONAK - PB64( 27-OCT-2017 )",
+          "value": "64"
+        },
+        {
+          "label": "SDM MORINDA - PB87( 27-OCT-2017 )",
+          "value": "87"
+        },
+        {
+          "label": "SDM MUKERIAN - PB54( 27-OCT-2017 )",
+          "value": "54"
+        },
+        {
+          "label": "SDM NABHA - PB34( 13-OCT-2017 )",
+          "value": "34"
+        },
+        {
+          "label": "SDM NAKODAR - PB33( 31-OCT-2017 )",
+          "value": "33"
+        },
+        {
+          "label": "SDM NANGAL - PB74( 26-OCT-2017 )",
+          "value": "74"
+        },
+        {
+          "label": "SDM NIHAL SINGH WALA - PB66( 18-OCT-2017 )",
+          "value": "66"
+        },
+        {
+          "label": "SDM PATRAN - PB72( 11-OCT-2017 )",
+          "value": "72"
+        },
+        {
+          "label": "SDM PATTI - PB38( 26-OCT-2017 )",
+          "value": "38"
+        },
+        {
+          "label": "SDM PAYAL - PB55( 03-NOV-2017 )",
+          "value": "55"
+        },
+        {
+          "label": "SDM PHAGWARA - PB36( 01-NOV-2017 )",
+          "value": "36"
+        },
+        {
+          "label": "SDM PHILLOUR - PB37( 28-OCT-2017 )",
+          "value": "37"
+        },
+        {
+          "label": "SDM RAIKOT - PB56( 20-NOV-2017 )",
+          "value": "56"
+        },
+        {
+          "label": "SDM RAJPURA - PB39( 24-OCT-2017 )",
+          "value": "39"
+        },
+        {
+          "label": "SDM RAMPURA PHUL - PB40( 25-OCT-2017 )",
+          "value": "40"
+        },
+        {
+          "label": "SDM SAMANA - PB42( 11-OCT-2017 )",
+          "value": "42"
+        },
+        {
+          "label": "SDM SAMRALA - PB43( 27-OCT-2017 )",
+          "value": "43"
+        },
+        {
+          "label": "SDM SARDULGARH - PB51( 27-OCT-2017 )",
+          "value": "51"
+        },
+        {
+          "label": "SDM SHAHKOT - PB67( 30-OCT-2017 )",
+          "value": "67"
+        },
+        {
+          "label": "SDM SULTANPUR LODHI - PB41( 30-OCT-2017 )",
+          "value": "41"
+        },
+        {
+          "label": "SDM SUNAM - PB44( 26-OCT-2017 )",
+          "value": "44"
+        },
+        {
+          "label": "SDM TALWANDI SABO - PB45( 24-OCT-2017 )",
+          "value": "45"
+        },
+        {
+          "label": "SDM TANDA - PB95( 29-AUG-2024 )",
+          "value": "95"
+        },
+        {
+          "label": "SDM TAPA - PB73( 03-NOV-2017 )",
+          "value": "73"
+        },
+        {
+          "label": "SDM ZIRA - PB47( 26-OCT-2017 )",
+          "value": "47"
+        }
+      ]
+    },
+    {
+      "id": "yaxisVar_input",
+      "name": "yaxisVar_input",
+      "selector": "[id=\"yaxisVar_input\"]",
+      "nearbyText": "yaxisVar_input yaxisVar_input Vehicle CategoryVehicle ClassNormsFuelMakerRto",
+      "optionCount": 6,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Fuel",
+          "value": "Fuel"
+        },
+        {
+          "label": "Maker",
+          "value": "Maker"
+        },
+        {
+          "label": "Rto",
+          "value": "Rto"
+        }
+      ]
+    },
+    {
+      "id": "xaxisVar_input",
+      "name": "xaxisVar_input",
+      "selector": "[id=\"xaxisVar_input\"]",
+      "nearbyText": "xaxisVar_input xaxisVar_input Vehicle CategoryVehicle ClassNormsVehicle Category GroupFinancial YearCalendar YearMonth Wise",
+      "optionCount": 7,
+      "options": [
+        {
+          "label": "Vehicle Category",
+          "value": "Vehicle Category"
+        },
+        {
+          "label": "Vehicle Class",
+          "value": "Vehicle Class"
+        },
+        {
+          "label": "Norms",
+          "value": "Norms"
+        },
+        {
+          "label": "Vehicle Category Group",
+          "value": "VCG"
+        },
+        {
+          "label": "Financial Year",
+          "value": "Financial Year"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "Calendar Year"
+        },
+        {
+          "label": "Month Wise",
+          "value": "Month Wise"
+        }
+      ]
+    },
+    {
+      "id": "selectedYearType_input",
+      "name": "selectedYearType_input",
+      "selector": "[id=\"selectedYearType_input\"]",
+      "nearbyText": "selectedYearType_input selectedYearType_input SelectFinancial YearCalendar Year",
+      "optionCount": 3,
+      "options": [
+        {
+          "label": "Select",
+          "value": ""
+        },
+        {
+          "label": "Financial Year",
+          "value": "F"
+        },
+        {
+          "label": "Calendar Year",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "id": "selectedYear_input",
+      "name": "selectedYear_input",
+      "selector": "[id=\"selectedYear_input\"]",
+      "nearbyText": "selectedYear_input selectedYear_input Select Year202620252024202320222021202020192018201720162015201420132012201120102009200820072006200520042003",
+      "optionCount": 25,
+      "options": [
+        {
+          "label": "Select Year",
+          "value": ""
+        },
+        {
+          "label": "2026",
+          "value": "2026"
+        },
+        {
+          "label": "2025",
+          "value": "2025"
+        },
+        {
+          "label": "2024",
+          "value": "2024"
+        },
+        {
+          "label": "2023",
+          "value": "2023"
+        },
+        {
+          "label": "2022",
+          "value": "2022"
+        },
+        {
+          "label": "2021",
+          "value": "2021"
+        },
+        {
+          "label": "2020",
+          "value": "2020"
+        },
+        {
+          "label": "2019",
+          "value": "2019"
+        },
+        {
+          "label": "2018",
+          "value": "2018"
+        },
+        {
+          "label": "2017",
+          "value": "2017"
+        },
+        {
+          "label": "2016",
+          "value": "2016"
+        },
+        {
+          "label": "2015",
+          "value": "2015"
+        },
+        {
+          "label": "2014",
+          "value": "2014"
+        },
+        {
+          "label": "2013",
+          "value": "2013"
+        },
+        {
+          "label": "2012",
+          "value": "2012"
+        },
+        {
+          "label": "2011",
+          "value": "2011"
+        },
+        {
+          "label": "2010",
+          "value": "2010"
+        },
+        {
+          "label": "2009",
+          "value": "2009"
+        },
+        {
+          "label": "2008",
+          "value": "2008"
+        },
+        {
+          "label": "2007",
+          "value": "2007"
+        },
+        {
+          "label": "2006",
+          "value": "2006"
+        },
+        {
+          "label": "2005",
+          "value": "2005"
+        },
+        {
+          "label": "2004",
+          "value": "2004"
+        },
+        {
+          "label": "2003",
+          "value": "2003"
+        }
+      ]
+    },
+    {
+      "id": "vchgroupTable:selectCatgGrp_input",
+      "name": "vchgroupTable:selectCatgGrp_input",
+      "selector": "[id=\"vchgroupTable:selectCatgGrp_input\"]",
+      "nearbyText": "vchgroupTable:selectCatgGrp_input vchgroupTable:selectCatgGrp_input TWO WHEELERTHREE WHEELERFOUR WHEELERAMBULANCE/HEARSESCONSTRUCTION EQUIPMENT VEHICLEGOODS VEHICLESPUBLIC SERVICE VEHICLESPECIAL CATEGORY VEHICLESTRAILERTRACTOR",
+      "optionCount": 10,
+      "options": [
+        {
+          "label": "TWO WHEELER",
+          "value": "2W|1,2,3,4,5,51,52,53|2WIC,2WN,2WT"
+        },
+        {
+          "label": "THREE WHEELER",
+          "value": "3W|6,54,55,57,58|3WN,3WT"
+        },
+        {
+          "label": "FOUR WHEELER",
+          "value": "4W|5,7,15,23,31,56,70,71,93|4WIC,LMV,MMV,HMV"
+        },
+        {
+          "label": "AMBULANCE/HEARSES",
+          "value": "AH|76,77,85|2WT,LPV,MPV,HPV,LGV,MGV,HGV"
+        },
+        {
+          "label": "CONSTRUCTION EQUIPMENT VEHICLE",
+          "value": "CE|22,25,26,29,87,88,92|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "GOODS VEHICLES",
+          "value": "GV|59,64,79,84|LGV,MGV,HGV"
+        },
+        {
+          "label": "PUBLIC SERVICE VEHICLE",
+          "value": "PS|69,73,75,78,86|LPV,MPV,HPV"
+        },
+        {
+          "label": "SPECIAL CATEGORY VEHICLES",
+          "value": "SC|8,9,10,11,12,14,17,18,19,20,21,24,27,32,62,65,66,67,68,80,81,83|LMV,MMV,HMV,LGV,MGV,HGV,OTH"
+        },
+        {
+          "label": "TRAILER",
+          "value": "TL|16,28,30,82,89,91,94|LMV,HMV,MMV,LGV,MGV,HGV"
+        },
+        {
+          "label": "TRACTOR",
+          "value": "TR|13,63,90|LMV,MMV,LGV,MGV,HGV,OTH"
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260520_113756_punjab_2025_all-rtos_attempt1.png",
+    "html": "data\\vahan\\failures\\20260520_113756_punjab_2025_all-rtos_attempt1.html"
+  }
+}
