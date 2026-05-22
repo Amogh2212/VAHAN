@@ -1174,6 +1174,16 @@ td:last-child {
   margin-left: auto;
 }
 
+.compare-form .compare-actions {
+  justify-content: flex-start;
+  margin-left: 0;
+}
+
+.compare-form .compare-empty {
+  flex: 1 1 320px;
+  min-width: 240px;
+}
+
 .compare-logo-button {
   text-decoration: none;
 }
