@@ -667,6 +667,10 @@ button:active {
   border-bottom: 1px solid var(--border-subtle);
 }
 
+#fuelPanel + #tablePanel {
+  margin-top: 18px;
+}
+
 /* ── Filters ───────────────────────────────────────────────────────────── */
 .filters {
   display: grid;
