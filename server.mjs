@@ -21,6 +21,10 @@ import {
   loadRtoCatalog,
   resolveRtoWithCatalog,
 } from "./lib/rto-resolver.mjs";
+import {
+  createTelegramBot,
+  parseAllowedChatIds,
+} from "./lib/telegram-bot.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -33,6 +37,9 @@ const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 const ALL_FILTER = "ALL";
 const LIVE_REFRESH_DISABLED = /^(1|true|yes)$/i.test(process.env.VAHAN_DISABLE_LIVE_REFRESH ?? "");
+const TELEGRAM_ENABLE_POLLING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_ENABLE_POLLING ?? "true");
+const TELEGRAM_ALERT_THRESHOLD_POINTS = Number(process.env.TELEGRAM_ALERT_THRESHOLD_POINTS ?? 2);
+const TELEGRAM_SUMMARY_FETCH_MISSING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_SUMMARY_FETCH_MISSING ?? "true");
 const FILTER_CONTEXT_FIELDS = [
   "fuel_filter",
   "vehicle_category_filter",
@@ -40,6 +47,10 @@ const FILTER_CONTEXT_FIELDS = [
   "vehicle_class_filter",
 ];
 let rtoCatalogCache = null;
+let telegramBot = null;
+const telegramChatModes = new Map();
+const sentTelegramAlertKeys = new Set();
+const sentTelegramSummaryKeys = new Set();
 
 const INDIA_STATES = [
   "Andaman and Nicobar Islands",
@@ -82,6 +93,14 @@ const INDIA_STATES = [
 ];
 
 const VAHAN_FETCH_STATES = INDIA_STATES.filter((state) => state !== "Daman and Diu");
+const TELEGRAM_SUMMARY_STATES = VAHAN_FETCH_STATES;
+const TELEGRAM_SUMMARY_STATE_SET = new Set(TELEGRAM_SUMMARY_STATES);
+const SUMMARY_CHOICE_KEYBOARD = {
+  keyboard: [["Weekly", "Monthly"], ["Query", "Map", "Summary"]],
+  resize_keyboard: true,
+  one_time_keyboard: false,
+  is_persistent: true,
+};
 const MAP_TO_VAHAN_STATE = new Map([
   ["Andaman and Nicobar Islands", "Andaman & Nicobar Island"],
   ["Dadra and Nagar Haveli", "UT of DNH and DD"],
@@ -228,6 +247,10 @@ const CITY_DB = [
 const STATE_ALIASES = new Map([
   ["maharashtra", "Maharashtra"], ["delhi", "Delhi"], ["karnataka", "Karnataka"],
   ["tamil nadu", "Tamil Nadu"], ["telangana", "Telangana"], ["gujarat", "Gujarat"],
+  ["gujrat", "Gujarat"], ["gujarath", "Gujarat"], ["gujraat", "Gujarat"],
+  ["maharastra", "Maharashtra"], ["maharashtr", "Maharashtra"],
+  ["karnatak", "Karnataka"], ["rajsthan", "Rajasthan"], ["rajasthan", "Rajasthan"],
+  ["uttar prdesh", "Uttar Pradesh"], ["uttar pardesh", "Uttar Pradesh"],
   ["rajasthan", "Rajasthan"], ["haryana", "Haryana"], ["punjab", "Punjab"],
   ["west bengal", "West Bengal"], ["bihar", "Bihar"], ["kerala", "Kerala"],
   ["madhya pradesh", "Madhya Pradesh"], ["odisha", "Odisha"], ["assam", "Assam"],
@@ -656,16 +679,32 @@ function editDistanceWithin(a, b, maxDistance) {
   return previous[b.length];
 }
 
+function closestStateAlias(word, maxDistance = 2) {
+  const normalizedWord = normalizeLookup(word);
+  if (normalizedWord.length < 5) return null;
+  return [...STATE_ALIASES.entries()]
+    .filter(([alias]) => /^[a-z ]+$/.test(alias))
+    .map(([alias, state]) => ({
+      alias,
+      state,
+      distance: editDistanceWithin(normalizedWord, alias, maxDistance),
+    }))
+    .filter(({ distance }) => distance <= maxDistance)
+    .sort((a, b) => a.distance - b.distance || a.alias.length - b.alias.length)[0] ?? null;
+}
+
 function findFuzzyCityAlias(text) {
   const words = text.match(/[a-z]+/g) ?? [];
   const singleWordAliases = RTO_ALIASES.filter((item) => /^[a-z]+$/.test(item.alias) && item.alias.length >= 5);
 
   for (const word of words) {
     if (word.length < 5) continue;
+    const stateMatch = closestStateAlias(word, 2);
     const match = singleWordAliases
       .map((item) => ({ item, distance: editDistanceWithin(word, item.alias, 2) }))
       .filter(({ distance }) => distance <= 2)
       .sort((a, b) => a.distance - b.distance || b.item.alias.length - a.item.alias.length)[0];
+    if (stateMatch && (!match || stateMatch.distance <= match.distance)) continue;
     if (match) return match.item;
   }
 
@@ -717,6 +756,7 @@ function decodeWithRules(query) {
       rto = fuzzyAlias.rto ?? fuzzyAlias.rtoIncludes;
     }
   }
+  const locationSource = locationText && !text.includes(locationText) ? "fuzzy_city" : locationText ? "exact_city" : state ? "state" : null;
 
   return {
     fuelSegment,
@@ -728,6 +768,7 @@ function decodeWithRules(query) {
     state,
     rto,
     locationText,
+    locationSource,
     from: yearRange?.from ?? null,
     to: yearRange?.to ?? null,
     metric: "registrations",
@@ -785,6 +826,8 @@ function normalizeGeminiFilters(filters) {
 function mergeFilters(ruleFilters, llmFilters) {
   if (!llmFilters) return ruleFilters;
   const ruleHasLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
+  const ruleHasWeakLocation = ruleFilters.locationSource === "fuzzy_city";
+  const preferredRuleLocation = ruleHasLocation && !ruleHasWeakLocation;
   const llmHasLocation = Boolean(llmFilters.state || llmFilters.rto || llmFilters.rtoText || llmFilters.locationText);
   const fuelType = ruleFilters.fuelType ?? llmFilters.fuelType ?? null;
   const fuelFilters = uniqueSorted([...(ruleFilters.fuelFilters ?? []), ...(llmFilters.fuelFilters ?? [])])
@@ -796,12 +839,13 @@ function mergeFilters(ruleFilters, llmFilters) {
     vehicleCategories: uniqueSorted([...(ruleFilters.vehicleCategories ?? []), ...(llmFilters.vehicleCategories ?? [])]),
     norms: uniqueSorted([...(ruleFilters.norms ?? []), ...(llmFilters.norms ?? [])]),
     vehicleClasses: uniqueSorted([...(ruleFilters.vehicleClasses ?? []), ...(llmFilters.vehicleClasses ?? [])]),
-    state: ruleHasLocation ? ruleFilters.state ?? llmFilters.state ?? null : llmFilters.state ?? null,
-    rto: ruleHasLocation ? ruleFilters.rto ?? llmFilters.rto ?? llmFilters.rtoText ?? null : llmFilters.rto ?? llmFilters.rtoText ?? null,
-    locationText: ruleHasLocation ? ruleFilters.locationText ?? llmFilters.locationText ?? null : llmFilters.locationText ?? llmFilters.rtoText ?? null,
+    state: preferredRuleLocation ? ruleFilters.state ?? llmFilters.state ?? null : llmFilters.state ?? ruleFilters.state ?? null,
+    rto: preferredRuleLocation ? ruleFilters.rto ?? llmFilters.rto ?? llmFilters.rtoText ?? null : llmFilters.rto ?? llmFilters.rtoText ?? ruleFilters.rto ?? null,
+    locationText: preferredRuleLocation ? ruleFilters.locationText ?? llmFilters.locationText ?? null : llmFilters.locationText ?? llmFilters.rtoText ?? ruleFilters.locationText ?? null,
+    locationSource: preferredRuleLocation ? ruleFilters.locationSource : llmHasLocation ? "gemini" : ruleFilters.locationSource,
     from: ruleFilters.from ?? llmFilters.from ?? null,
     to: ruleFilters.to ?? llmFilters.to ?? null,
-    correctedByGemini: !ruleHasLocation && llmHasLocation ? true : undefined,
+    correctedByGemini: (!ruleHasLocation || ruleHasWeakLocation) && llmHasLocation ? true : undefined,
     metric: "registrations",
   };
 }
@@ -1263,6 +1307,7 @@ function filterRows(rows, filters) {
 
 function filterMapRows(rows, filters) {
   const requestedContext = filterContext(filters);
+  const shouldApplyFuelFilter = filters.metric !== "ev_share";
   return rows.filter((row) => {
     const key = monthKey(row.year, row.month);
     if (filters.from && key < filters.from) return false;
@@ -1270,8 +1315,8 @@ function filterMapRows(rows, filters) {
     if (filters.state && row.state !== filters.state) return false;
     if (filters.rto && row.rto !== filters.rto) return false;
     if (filters.rtoSearch && !row.rto.toLowerCase().includes(String(filters.rtoSearch).toLowerCase())) return false;
-    if (filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
-    if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
+    if (shouldApplyFuelFilter && filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
+    if (shouldApplyFuelFilter && filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     for (const field of FILTER_CONTEXT_FIELDS) {
       if (requestedContext[field] !== ALL_FILTER && String(row[field] ?? ALL_FILTER) !== requestedContext[field]) return false;
     }
@@ -1392,6 +1437,29 @@ function mapBaseFilters(url) {
   return queryFiltersFromSearchParams(url.searchParams, { state: null, rto: null, locationText: null });
 }
 
+function mapFiltersFromUrl(url) {
+  const fallback = { ...mapBaseFilters(url), metric: "ev_share" };
+  const query = url.searchParams.get("query");
+  return query ? mapFiltersFromQuery(query, fallback) : fallback;
+}
+
+function hasExplicitMapLocation(query, filters = {}) {
+  const normalizedText = normalizeLookup(query ?? "");
+  if (/\b(?:across\s+(?:all\s+)?states|all\s+states|across\s+india|pan\s+india)\b/i.test(normalizedText)) {
+    return false;
+  }
+  if (filters.state) {
+    const statePattern = new RegExp(`\\b${normalizeLookup(filters.state).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    if (statePattern.test(normalizedText)) return true;
+    return CITY_DB.some((item) => {
+      if (item.state !== filters.state) return false;
+      const aliasPattern = new RegExp(`\\b${normalizeLookup(item.alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      return aliasPattern.test(normalizedText);
+    });
+  }
+  return false;
+}
+
 function mapAggregateFilters(filters) {
   if (filters.rto || filters.rtoSearch) return filters;
   return { ...filters, rto: ALL_RTO };
@@ -1478,14 +1546,20 @@ function mapSavedRefreshInfo(groups) {
 
 function mapFiltersFromQuery(query, fallback = {}) {
   const ruleFilters = decodeWithRules(query ?? "");
+  const isEvShareQuery = /\b(?:ev|electric)\s+share\b/i.test(query ?? "") ||
+    /\bshare\b.*\b(?:ev|electric)\b/i.test(query ?? "");
+  const hasLocation = hasExplicitMapLocation(query, ruleFilters);
   return {
     ...fallback,
-    fuelSegment: null,
-    fuelType: null,
-    fuelFilters: [],
-    state: null,
-    rto: null,
-    locationText: null,
+    metric: isEvShareQuery ? "ev_share" : "registrations",
+    fuelSegment: isEvShareQuery ? null : ruleFilters.fuelSegment ?? fallback.fuelSegment ?? null,
+    fuelType: isEvShareQuery ? null : ruleFilters.fuelType ?? fallback.fuelType ?? null,
+    fuelFilters: isEvShareQuery
+      ? []
+      : ruleFilters.fuelFilters?.length ? ruleFilters.fuelFilters : fallback.fuelFilters ?? [],
+    state: hasLocation ? ruleFilters.state ?? fallback.state ?? null : fallback.state ?? null,
+    rto: hasLocation ? ruleFilters.rto ?? fallback.rto ?? null : fallback.rto ?? null,
+    locationText: hasLocation ? ruleFilters.locationText ?? fallback.locationText ?? null : fallback.locationText ?? null,
     from: ruleFilters.from ?? fallback.from ?? null,
     to: ruleFilters.to ?? fallback.to ?? null,
     vehicleCategories: ruleFilters.vehicleCategories?.length ? ruleFilters.vehicleCategories : fallback.vehicleCategories ?? [],
@@ -1556,11 +1630,28 @@ function startMapRefreshJob({ filters, baseRows, groups, savedStateCount = null 
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);
       job.status = runs.some((run) => !run.success) ? "failed" : "complete";
       job.error = job.status === "failed" ? runs.find((run) => !run.success)?.error ?? "One or more VAHAN scrape runs failed." : null;
+      if (job.status === "failed") {
+        const failedRuns = runs.filter((run) => !run.success);
+        notifyTelegramAlert([
+          "Map refresh failed.",
+          `Scope: ${describeFilters(filters)}`,
+          `Failed states: ${failedRuns.length}`,
+          failedRuns[0]?.state ? `First failed: ${failedRuns[0].state}` : null,
+          job.error,
+        ].filter(Boolean).join("\n"));
+      } else {
+        void checkTelegramBigChangeAlerts(filters).catch((error) => console.warn(`[telegram] big-change alert failed: ${error.message}`));
+      }
       job.payload = mapSummaryPayload(combinedRows, filters, mapRefreshInfo(job));
     } catch (error) {
       await Promise.allSettled(job.saveTasks);
       job.status = "failed";
       job.error = error.message;
+      notifyTelegramAlert([
+        "Map refresh failed.",
+        `Scope: ${describeFilters(filters)}`,
+        error.message,
+      ].join("\n"));
       job.payload = mapSummaryPayload(mapRefreshDisplayRows(job), filters, mapRefreshInfo(job));
     }
   })();
@@ -1772,6 +1863,13 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);
       const missingMonths = findMissingMonths(filters, combinedRows);
       job.status = runs.some((run) => !run.success) ? "failed" : "complete";
+      if (job.status === "failed") {
+        notifyTelegramAlert([
+          "Query refresh failed.",
+          `Scope: ${describeFilters(filters)}`,
+          runs.find((run) => !run.success)?.error ?? "One or more VAHAN scraper runs failed.",
+        ].join("\n"));
+      }
       job.payload = dashboardPayload({
         filters,
         rows: combinedRows,
@@ -1786,6 +1884,11 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
     } catch (error) {
       job.status = "failed";
       job.error = error.message;
+      notifyTelegramAlert([
+        "Query refresh failed.",
+        `Scope: ${describeFilters(filters)}`,
+        error.message,
+      ].join("\n"));
       job.payload = dashboardPayload({
         filters,
         rows: baseRows,
@@ -1817,7 +1920,9 @@ async function queryData(input) {
   const ruleFilters = decodeWithRules(query);
   let llmFilters = null;
   const ruleHasAnyLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
+  const ruleHasWeakLocation = ruleFilters.locationSource === "fuzzy_city";
   const needsGemini =
+    ruleHasWeakLocation ||
     !ruleHasAnyLocation ||
     !ruleFilters.from ||
     !ruleFilters.to;
@@ -1855,6 +1960,388 @@ async function queryData(input) {
     preFiltered: useDatabase,
     freshnessInfo: useDatabase ? await freshnessFromDb() : null,
   });
+}
+
+function telegramNumber(value) {
+  return new Intl.NumberFormat("en-IN").format(Math.round(Number(value) || 0));
+}
+
+function telegramPercent(value) {
+  return value === null || value === undefined
+    ? "No data"
+    : `${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 }).format(value * 100)}%`;
+}
+
+function telegramPoints(value) {
+  if (value === null || value === undefined) return "No data";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 }).format(value * 100)} pts`;
+}
+
+function previousMonthKey(value) {
+  const [year, month] = String(value ?? "").split("-").map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month)) return null;
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function isTelegramSummaryState(state) {
+  return TELEGRAM_SUMMARY_STATE_SET.has(normalizeMapStateName(state));
+}
+
+function telegramSummaryCoverage(rows) {
+  const states = new Set();
+  let rowCount = 0;
+  for (const row of rows) {
+    const state = normalizeMapStateName(row.state);
+    if (!TELEGRAM_SUMMARY_STATE_SET.has(state)) continue;
+    states.add(state);
+    rowCount += 1;
+  }
+  return {
+    availableStates: states.size,
+    totalStates: TELEGRAM_SUMMARY_STATES.length,
+    rowCount,
+  };
+}
+
+function describeFilters(filters = {}) {
+  return [
+    filters.state,
+    filters.rto && filters.rto !== ALL_RTO ? filters.rto : null,
+    filters.from && filters.to ? `${filters.from} to ${filters.to}` : filters.from ?? filters.to,
+  ].filter(Boolean).join(", ") || "All saved data";
+}
+
+function formatDashboardTelegramResult(data, query) {
+  const total = data.summary?.total ?? 0;
+  const evTotal = data.rows?.reduce((sum, row) => sum + (row.fuel_segment === "EV" ? row.vehicle_count : 0), 0) ?? 0;
+  const share = evShare(evTotal, total);
+  const topFuels = (data.fuelBreakdown ?? [])
+    .slice(0, 4)
+    .map((fuel) => `${fuel.fuelType}: ${telegramNumber(fuel.count)}`)
+    .join("\n");
+  const warnings = (data.warnings ?? []).slice(0, 3).map((warning) => `- ${warning}`).join("\n");
+  return [
+    "Query Result",
+    query ? `Query: ${query}` : null,
+    `Scope: ${describeFilters(data.filters)}`,
+    `Total registrations: ${telegramNumber(total)}`,
+    `EV registrations: ${telegramNumber(evTotal)}`,
+    `EV share: ${telegramPercent(share)}`,
+    data.summary?.peakMonth ? `Peak month: ${data.summary.peakMonth} (${telegramNumber(data.summary.peakMonthCount)})` : null,
+    topFuels ? `Top fuels:\n${topFuels}` : null,
+    warnings ? `Warnings:\n${warnings}` : null,
+    data.liveRefresh?.status === "pending" ? `Refresh job running: ${data.liveRefresh.jobId}` : null,
+  ].filter(Boolean).join("\n");
+}
+
+function sortStatesByEvShare(states) {
+  return states
+    .filter((item) => item.rowCount > 0 && item.evShare !== null)
+    .sort((a, b) => b.evShare - a.evShare || b.evTotal - a.evTotal || a.state.localeCompare(b.state));
+}
+
+function formatMapTopStates(data, limit = 5) {
+  const top = sortStatesByEvShare(data.states).slice(0, limit);
+  const rows = top.map((item, index) =>
+    `${index + 1}. ${item.state}: ${telegramPercent(item.evShare)} (${telegramNumber(item.evTotal)} EV / ${telegramNumber(item.total)})`,
+  );
+  return [
+    "Top EV States",
+    `Scope: ${describeFilters(data.filters)}`,
+    data.coverage ? `Coverage: ${data.coverage.availableStates}/${data.coverage.totalStates} states, ${telegramNumber(data.coverage.rowCount)} rows` : null,
+    rows.join("\n") || "No saved state data found for this request.",
+  ].filter(Boolean).join("\n");
+}
+
+function formatMapStateDetail(data, state) {
+  const item = data.states.find((entry) => entry.state === state) ??
+    data.states.find((entry) => normalizeLookup(entry.state) === normalizeLookup(state));
+  if (!item || item.rowCount === 0) return `No saved map data found for ${state}.`;
+  return [
+    "State Map Result",
+    `${item.state}: ${telegramPercent(item.evShare)} EV share`,
+    `EV registrations: ${telegramNumber(item.evTotal)}`,
+    `Total registrations: ${telegramNumber(item.total)}`,
+    `Saved RTOs: ${telegramNumber(item.rtoCount)}`,
+    `Scope: ${describeFilters(data.filters)}`,
+  ].join("\n");
+}
+
+function findStatesInText(text) {
+  const normalized = normalizeLookup(text);
+  return INDIA_STATES.filter((state) => normalized.includes(normalizeLookup(state)));
+}
+
+function formatMapComparison(data, states) {
+  const [leftState, rightState] = states;
+  const left = data.states.find((item) => item.state === leftState);
+  const right = data.states.find((item) => item.state === rightState);
+  if (!left?.rowCount || !right?.rowCount) return `Could not compare ${leftState} and ${rightState}; one side has no saved data.`;
+  const delta = left.evShare - right.evShare;
+  return [
+    "Map Comparison",
+    `Scope: ${describeFilters(data.filters)}`,
+    `${left.state}: ${telegramPercent(left.evShare)}`,
+    `${right.state}: ${telegramPercent(right.evShare)}`,
+    `Difference: ${telegramPoints(delta)}`,
+    `Higher EV share: ${delta >= 0 ? left.state : right.state}`,
+  ].join("\n");
+}
+
+async function telegramMapDataForText(text) {
+  const filters = mapFiltersFromQuery(text, { metric: "ev_share" });
+  const rows = await loadMapRows(filters);
+  return mapSummaryPayload(rows, filters);
+}
+
+async function handleTelegramQuery(text) {
+  const data = await queryData({ query: text });
+  return formatDashboardTelegramResult(data, text);
+}
+
+async function handleTelegramMap(text) {
+  const data = await telegramMapDataForText(text);
+  const states = findStatesInText(text);
+  if (/\bcompare\b|\bvs\b|\bversus\b/i.test(text) && states.length >= 2) {
+    return formatMapComparison(data, states.slice(0, 2));
+  }
+  if (states.length === 1 && !/\btop\b|\bbest\b|\brank/i.test(text)) {
+    return formatMapStateDetail(data, states[0]);
+  }
+  return formatMapTopStates(data);
+}
+
+function telegramSummaryFetchStateCount(groups) {
+  return new Set(groups.flatMap((group) => group.states ?? [])).size;
+}
+
+async function fetchMissingTelegramSummaryRows(filters, rows, onFetchStart = null) {
+  const refreshGroups = mapRefreshGroupsForFilters(filters, rows);
+  if (!refreshGroups.length) {
+    return { rows, refreshGroups, runs: [], fetchedRows: 0, failedRuns: [] };
+  }
+
+  if (onFetchStart) {
+    try {
+      await onFetchStart({ filters, refreshGroups });
+    } catch (error) {
+      console.warn(`[telegram] summary fetch notice failed: ${error.message}`);
+    }
+  }
+
+  const progress = createMapProgress(refreshGroups);
+  const saveTasks = [];
+  const runs = await runScraperForMapFiltersWithProgress(filters, refreshGroups, progress, (run) => {
+    if (run.rows?.length) saveTasks.push(queueScrapedRowsPersistence(run.rows));
+  });
+  await Promise.allSettled(saveTasks);
+
+  const freshRows = runs.flatMap((run) => run.rows ?? []);
+  if (freshRows.length) {
+    if (hasDatabaseUrl()) {
+      dataCache = null;
+    } else {
+      dataCache = mergeRegistrationRows(await loadRows(), freshRows);
+    }
+  }
+
+  return {
+    rows: mergeRegistrationRows(rows, freshRows),
+    refreshGroups,
+    runs,
+    fetchedRows: freshRows.length,
+    failedRuns: runs.filter((run) => !run.success),
+  };
+}
+
+async function buildTelegramSummary({
+  label = "Latest",
+  fetchMissing = TELEGRAM_SUMMARY_FETCH_MISSING,
+  onFetchStart = null,
+} = {}) {
+  const freshnessInfo = hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : freshness(await loadRows());
+  const latestMonth = freshnessInfo?.latestMonth;
+  if (!latestMonth) return "No saved VAHAN data is available yet.";
+  const filters = { from: latestMonth, to: latestMonth, metric: "ev_share" };
+  const initialRows = await loadMapRows(filters);
+  const refresh = fetchMissing
+    ? await fetchMissingTelegramSummaryRows(filters, initialRows, onFetchStart)
+    : { rows: initialRows, refreshGroups: [], runs: [], fetchedRows: 0, failedRuns: [] };
+  const resultRows = filterMapRows(refresh.rows, filters);
+  const data = mapSummaryPayload(refresh.rows, filters);
+  const summaryStates = data.states.filter((item) => isTelegramSummaryState(item.state));
+  const coverage = telegramSummaryCoverage(resultRows);
+  const ranked = sortStatesByEvShare(summaryStates);
+  const bottom = [...ranked].reverse().slice(0, 5);
+  const missing = summaryStates.filter((item) => item.rowCount === 0).map((item) => item.state);
+  const topRows = ranked.slice(0, 5).map((item, index) => `${index + 1}. ${item.state}: ${telegramPercent(item.evShare)}`).join("\n");
+  const bottomRows = bottom.map((item, index) => `${index + 1}. ${item.state}: ${telegramPercent(item.evShare)}`).join("\n");
+  const fetchedStateCount = telegramSummaryFetchStateCount(refresh.refreshGroups);
+  const fetchLine = refresh.refreshGroups.length
+    ? `Fetch attempted: ${telegramNumber(fetchedStateCount)} missing states, ${telegramNumber(refresh.fetchedRows)} rows fetched${refresh.failedRuns.length ? `, ${telegramNumber(refresh.failedRuns.length)} failed` : ""}.`
+    : !fetchMissing && coverage.availableStates < coverage.totalStates
+      ? "Fetch skipped for missing states."
+      : null;
+  return [
+    `${label} EV Summary`,
+    `Month: ${latestMonth}`,
+    fetchLine,
+    `Coverage: ${coverage.availableStates}/${coverage.totalStates} states, ${telegramNumber(coverage.rowCount)} rows`,
+    topRows ? `Top EV share:\n${topRows}` : null,
+    bottomRows ? `Lowest EV share:\n${bottomRows}` : null,
+    missing.length ? `Missing states: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` +${missing.length - 8} more` : ""}` : "Missing states: none",
+  ].filter(Boolean).join("\n");
+}
+
+async function sendTelegramAlert(text) {
+  if (!telegramBot) return;
+  await telegramBot.broadcast(`Alert\n${text}`);
+}
+
+function notifyTelegramAlert(text) {
+  if (!telegramBot) return;
+  void sendTelegramAlert(text).catch((error) => console.warn(`[telegram] alert failed: ${error.message}`));
+}
+
+async function checkTelegramBigChangeAlerts(filters = {}) {
+  if (!telegramBot) return;
+  const currentMonth = filters.to ?? (hasDatabaseUrl()
+    ? (await freshnessFromDb().catch(() => null))?.latestMonth
+    : freshness(await loadRows()).latestMonth);
+  const previousMonth = previousMonthKey(currentMonth);
+  if (!currentMonth || !previousMonth) return;
+  const currentRows = await loadMapRows({ ...filters, from: currentMonth, to: currentMonth, metric: "ev_share" });
+  const previousRows = await loadMapRows({ ...filters, from: previousMonth, to: previousMonth, metric: "ev_share" });
+  const current = new Map(summarizeMapStateRows(currentRows).map((item) => [item.state, item]));
+  const previous = new Map(summarizeMapStateRows(previousRows).map((item) => [item.state, item]));
+  const threshold = TELEGRAM_ALERT_THRESHOLD_POINTS / 100;
+  const changes = [];
+  for (const [state, item] of current) {
+    const before = previous.get(state);
+    if (!item.rowCount || !before?.rowCount || item.evShare === null || before.evShare === null) continue;
+    const delta = item.evShare - before.evShare;
+    if (Math.abs(delta) >= threshold) changes.push({ state, item, before, delta });
+  }
+  changes.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  for (const change of changes.slice(0, 5)) {
+    const key = `ev-share-change:${currentMonth}:${change.state}:${change.delta.toFixed(4)}`;
+    if (sentTelegramAlertKeys.has(key)) continue;
+    sentTelegramAlertKeys.add(key);
+    await sendTelegramAlert([
+      `EV share changed for ${change.state}`,
+      `${previousMonth}: ${telegramPercent(change.before.evShare)}`,
+      `${currentMonth}: ${telegramPercent(change.item.evShare)}`,
+      `Change: ${telegramPoints(change.delta)}`,
+    ].join("\n"));
+  }
+}
+
+function scheduleTelegramSummaries() {
+  if (!telegramBot) return;
+  setInterval(() => {
+    const now = new Date();
+    const dateKey = now.toISOString().slice(0, 10);
+    const isMorning = now.getHours() === 9;
+    const jobs = [];
+    if (isMorning && now.getDay() === 1) jobs.push(["weekly", "Weekly"]);
+    if (isMorning && now.getDate() === 1) jobs.push(["monthly", "Monthly"]);
+    for (const [kind, label] of jobs) {
+      const key = `${kind}:${dateKey}`;
+      if (sentTelegramSummaryKeys.has(key)) continue;
+      sentTelegramSummaryKeys.add(key);
+      void buildTelegramSummary({ label })
+        .then((summary) => telegramBot.broadcast(summary))
+        .catch((error) => console.warn(`[telegram] ${kind} summary failed: ${error.message}`));
+    }
+  }, 60 * 60 * 1000);
+}
+
+async function handleTelegramMessage({ chatId, text, bot }) {
+  try {
+    const normalized = text.trim().toLowerCase();
+    if (normalized === "/start" || normalized === "/help") {
+      telegramChatModes.set(String(chatId), "neutral");
+      await bot.sendKeyboard(chatId, [
+        "VAHAN Telegram Command Center",
+        "Use the keyboard buttons:",
+        "Query - ask dashboard questions",
+        "Map - ask state/map questions",
+        "Summary - get the latest EV ranking and coverage summary",
+      ].join("\n"));
+      return;
+    }
+    if (normalized === "query" || normalized === "/query") {
+      telegramChatModes.set(String(chatId), "query");
+      await bot.sendKeyboard(chatId, "Send a VAHAN query.");
+      return;
+    }
+    if (normalized === "map" || normalized === "/map") {
+      telegramChatModes.set(String(chatId), "map");
+      await bot.sendKeyboard(chatId, "Send a map/state query.");
+      return;
+    }
+    const sendSummary = async (summaryLabel) => {
+      telegramChatModes.set(String(chatId), "neutral");
+      await bot.sendKeyboard(chatId, await buildTelegramSummary({
+        label: summaryLabel,
+        onFetchStart: ({ filters, refreshGroups }) => bot.sendMessage(chatId, [
+          `${summaryLabel} EV Summary`,
+          `Fetching ${telegramNumber(telegramSummaryFetchStateCount(refreshGroups))} missing states for ${filters.from} before creating the summary.`,
+          "This can take a few minutes.",
+        ].join("\n")),
+      }));
+    };
+
+    if (normalized === "summary" || normalized === "/summary") {
+      telegramChatModes.set(String(chatId), "summary");
+      await bot.sendMessage(chatId, "Which summary do you want?", {
+        reply_markup: SUMMARY_CHOICE_KEYBOARD,
+      });
+      return;
+    }
+    if (normalized === "/weekly" || (telegramChatModes.get(String(chatId)) === "summary" && ["weekly", "week", "weeks"].includes(normalized))) {
+      await sendSummary("Weekly");
+      return;
+    }
+    if (normalized === "/monthly" || (telegramChatModes.get(String(chatId)) === "summary" && ["monthly", "month", "months"].includes(normalized))) {
+      await sendSummary("Monthly");
+      return;
+    }
+
+    const mode = telegramChatModes.get(String(chatId)) ?? "neutral";
+    const reply = mode === "map" ? await handleTelegramMap(text) : await handleTelegramQuery(text);
+    await bot.sendKeyboard(chatId, reply);
+  } catch (error) {
+    console.warn(`[telegram] message failed: ${error.message}`);
+    await bot.sendKeyboard(chatId, [
+      "I could not process that message.",
+      error.message,
+      "Use Query, Map, Summary, /weekly, or /monthly.",
+    ].join("\n"));
+  }
+}
+
+function startTelegramCommandCenter() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const allowedChatIds = parseAllowedChatIds(process.env.TELEGRAM_ALLOWED_CHAT_IDS);
+  if (!token || allowedChatIds.size === 0) {
+    console.log("[telegram] disabled; configure TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_CHAT_IDS to enable.");
+    return null;
+  }
+  const bot = createTelegramBot({
+    token,
+    allowedChatIds,
+    polling: TELEGRAM_ENABLE_POLLING,
+    onMessage: handleTelegramMessage,
+    logger: console,
+  });
+  telegramBot = bot;
+  bot.start();
+  scheduleTelegramSummaries();
+  console.log(`[telegram] command center enabled for ${allowedChatIds.size} allowed chat(s).`);
+  return bot;
 }
 
 async function readBody(request) {
@@ -1947,7 +2434,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/map/summary") {
-      const filters = mapBaseFilters(url);
+      const filters = mapFiltersFromUrl(url);
       const rows = await loadMapRows(filters);
       sendJson(response, 200, mapSummaryPayload(rows, filters));
       return;
@@ -2000,7 +2487,7 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/map/state/") && url.pathname.endsWith("/rtos")) {
       const state = decodeURIComponent(url.pathname.slice("/api/map/state/".length, -"/rtos".length));
-      const filters = mapBaseFilters(url);
+      const filters = mapFiltersFromUrl(url);
       const rows = await loadMapRows({ ...filters, state }, { rtoScope: "all" });
       const stateRows = filterMapRows(rows, { ...filters, state });
       const stateSummary = summarizeMapStateRows(stateRows).find((item) => item.state === state) ?? {
@@ -2079,4 +2566,5 @@ const server = http.createServer(async (request, response) => {
 
 server.listen(PORT, () => {
   console.log(`VAHAN dashboard running at http://localhost:${PORT}`);
+  startTelegramCommandCenter();
 });

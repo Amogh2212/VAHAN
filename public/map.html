@@ -80,30 +80,11 @@
               <span class="eyebrow">To</span>
               <input id="mapTo" name="to" value="2025-12" />
             </label>
-            <label>
-              <span class="eyebrow">Fuel type</span>
-              <select id="mapFuelType" name="fuelType">
-                <option value="">All fuels</option>
-                <option value="ELECTRIC">Electric</option>
-                <option value="PURE EV">Pure EV</option>
-                <option value="DIESEL">Diesel</option>
-                <option value="PETROL">Petrol</option>
-              </select>
-            </label>
-            <label>
-              <span class="eyebrow">Vehicle class</span>
-              <select id="mapVehicleClass" name="vehicleClasses">
-                <option value="">All classes</option>
-                <option value="FORK LIFT">Fork lift</option>
-                <option value="E-RICKSHAW(P)">E-rickshaw</option>
-                <option value="MOTOR CAR">Motor car</option>
-                <option value="BUS">Bus</option>
-              </select>
-            </label>
             <button type="submit" id="applyMapFilters">Apply</button>
             <button type="button" id="fetchAllStatesBtn">Fetch all states</button>
           </form>
           <p class="map-fetch-status" id="mapFetchStatus">Saved rows render instantly. Fetch all states starts a live VAHAN job for the selected range.</p>
+          <div class="map-parsed-filters" id="mapParsedFilters" aria-live="polite"></div>
           <div class="map-fetch-progress" id="mapFetchProgress" hidden>
             <div class="map-progress-head">
               <span id="mapProgressLabel">Preparing fetch</span>
@@ -130,6 +111,10 @@
           <article class="panel map-panel">
             <div class="panel-head map-panel-head">
               <h2>EV share by state</h2>
+              <div class="mode-toggle map-color-toggle" aria-label="Map color mode">
+                <button type="button" class="active" data-map-color-mode="heat" aria-pressed="true">Heat map</button>
+                <button type="button" data-map-color-mode="compare" aria-pressed="false">Vs India avg</button>
+              </div>
               <div class="map-legend" aria-label="EV share legend">
                 <span class="is-empty">No data</span>
                 <span class="level-1">0-5%</span>
@@ -140,6 +125,7 @@
             </div>
             <div class="map-stage" id="mapStage">
               <svg id="indiaMap" class="india-map" viewBox="0 0 620 760" role="img" aria-label="India state EV registration map"></svg>
+              <button type="button" class="map-zoom-out" id="mapZoomOutBtn" hidden disabled>Zoom out</button>
               <div class="map-tooltip" id="mapTooltip" hidden></div>
             </div>
           </article>

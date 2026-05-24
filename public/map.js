@@ -3,9 +3,13 @@ const mapTooltip = document.querySelector("#mapTooltip");
 const coverageText = document.querySelector("#coverageText");
 const mapFilters = document.querySelector("#mapFilters");
 const mapQueryInput = document.querySelector("#mapQueryInput");
+const mapPanelTitle = document.querySelector(".map-panel-head h2");
+const mapLegend = document.querySelector(".map-legend");
+const mapColorToggle = document.querySelector(".map-color-toggle");
 const fetchAllStatesBtn = document.querySelector("#fetchAllStatesBtn");
 const mapFetchStatus = document.querySelector("#mapFetchStatus");
 const mapFetchProgress = document.querySelector("#mapFetchProgress");
+const mapParsedFilters = document.querySelector("#mapParsedFilters");
 const mapProgressLabel = document.querySelector("#mapProgressLabel");
 const mapProgressCount = document.querySelector("#mapProgressCount");
 const mapProgressFill = document.querySelector("#mapProgressFill");
@@ -13,6 +17,7 @@ const mapCurrentState = document.querySelector("#mapCurrentState");
 const mapRemainingStates = document.querySelector("#mapRemainingStates");
 const mapProgressList = document.querySelector("#mapProgressList");
 const resetMapBtn = document.querySelector("#resetMapBtn");
+const mapZoomOutBtn = document.querySelector("#mapZoomOutBtn");
 const selectedStateTitle = document.querySelector("#selectedStateTitle");
 const stateSummary = document.querySelector("#stateSummary");
 const rtoList = document.querySelector("#rtoList");
@@ -63,6 +68,13 @@ const CLIENT_FETCH_STATES = [
 let stateData = new Map();
 let selectedState = null;
 let activeMapJobId = null;
+let latestMapFilters = null;
+let selectedLegendLevels = new Set();
+let currentLegendMetric = null;
+let currentLegendMode = null;
+let mapColorMode = "heat";
+let activeTooltipState = null;
+let latestStateDetailData = null;
 
 function setFetchButtonBusy(isBusy) {
   fetchAllStatesBtn.disabled = isBusy;
@@ -86,36 +98,116 @@ function percent(value) {
   return value === null || value === undefined ? "No data" : `${pctFmt.format(value * 100)}%`;
 }
 
+function signedPercentPoints(value) {
+  if (value === null || value === undefined) return "No data";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${pctFmt.format(value * 100)} pts`;
+}
+
+function signedCount(value) {
+  if (value === null || value === undefined) return "No data";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${fmt.format(Math.round(value))}`;
+}
+
+function mapValue(item, filters = latestMapFilters) {
+  if (!item || item.rowCount === 0) return null;
+  return mapMetric(filters) === "registrations" ? item.total : item.evShare;
+}
+
+function comparisonBaseline(filters = latestMapFilters) {
+  const loaded = [...stateData.values()].filter((item) => item.rowCount > 0);
+  if (!loaded.length) return null;
+  if (mapMetric(filters) === "registrations") {
+    const total = loaded.reduce((sum, item) => sum + item.total, 0);
+    return total / loaded.length;
+  }
+  const total = loaded.reduce((sum, item) => sum + item.total, 0);
+  const evTotal = loaded.reduce((sum, item) => sum + item.evTotal, 0);
+  return total > 0 ? evTotal / total : null;
+}
+
+function comparisonDelta(item, filters = latestMapFilters) {
+  const baseline = comparisonBaseline(filters);
+  const value = mapValue(item, filters);
+  if (baseline === null || value === null) return null;
+  return value - baseline;
+}
+
+function formatMapValue(value, filters = latestMapFilters) {
+  if (value === null || value === undefined) return "No data";
+  return mapMetric(filters) === "registrations" ? fmt.format(Math.round(value)) : percent(value);
+}
+
+function formatComparisonDelta(delta, filters = latestMapFilters) {
+  if (delta === null || delta === undefined) return "No data";
+  return mapMetric(filters) === "registrations" ? signedCount(delta) : signedPercentPoints(delta);
+}
+
 function levelFor(item) {
   if (!item || item.rowCount === 0 || item.evShare === null) return "is-empty";
+  if (mapColorMode === "compare") return comparisonLevelFor(item);
+  if (mapMetric() === "registrations") return "level-2";
   if (item.evShare >= 0.3) return "level-4";
   if (item.evShare >= 0.15) return "level-3";
   if (item.evShare >= 0.05) return "level-2";
   return "level-1";
 }
 
+function comparisonLevelFor(item) {
+  const delta = comparisonDelta(item);
+  const baseline = comparisonBaseline();
+  if (!item || item.rowCount === 0 || delta === null || baseline === null) return "is-empty";
+  if (mapMetric() === "registrations") {
+    const ratio = baseline > 0 ? delta / baseline : 0;
+    if (ratio <= -0.3) return "compare-lowest";
+    if (ratio < -0.1) return "compare-low";
+    if (ratio <= 0.1) return "compare-mid";
+    if (ratio < 0.3) return "compare-high";
+    return "compare-highest";
+  }
+  if (delta <= -0.1) return "compare-lowest";
+  if (delta < -0.02) return "compare-low";
+  if (delta <= 0.02) return "compare-mid";
+  if (delta < 0.1) return "compare-high";
+  return "compare-highest";
+}
+
+function legendLevelFor(item) {
+  return levelFor(item);
+}
+
+function legendAllows(item) {
+  return selectedLegendLevels.size === 0 || selectedLegendLevels.has(legendLevelFor(item));
+}
+
+function mapMetric(filters = latestMapFilters) {
+  return filters?.metric === "registrations" ? "registrations" : "ev_share";
+}
+
+function metricLabel(filters = latestMapFilters) {
+  return mapMetric(filters) === "registrations" ? "Registrations" : "EV share";
+}
+
 function currentParams() {
   const params = new URLSearchParams();
+  const query = mapQueryInput?.value.trim();
   const from = document.querySelector("#mapFrom")?.value.trim();
   const to = document.querySelector("#mapTo")?.value.trim();
-  const fuelType = document.querySelector("#mapFuelType")?.value;
-  const vehicleClass = document.querySelector("#mapVehicleClass")?.value;
+  if (query) params.set("query", query);
   if (from) params.set("from", from);
   if (to) params.set("to", to);
-  if (fuelType) params.set("fuelType", fuelType);
-  if (vehicleClass) params.set("vehicleClasses", vehicleClass);
   return params;
 }
 
 function currentBody() {
-  const vehicleClass = document.querySelector("#mapVehicleClass")?.value;
   return {
     query: mapQueryInput?.value.trim() ?? "",
     from: document.querySelector("#mapFrom")?.value.trim() || null,
     to: document.querySelector("#mapTo")?.value.trim() || null,
-    vehicleClasses: vehicleClass ? [vehicleClass] : [],
     vehicleCategories: [],
     norms: [],
+    vehicleClasses: [],
   };
 }
 
@@ -138,13 +230,9 @@ function validateMonthRange() {
 function dashboardQuery(state, rto = null) {
   const from = document.querySelector("#mapFrom")?.value.trim();
   const to = document.querySelector("#mapTo")?.value.trim();
-  const vehicleClass = document.querySelector("#mapVehicleClass")?.value;
-  const fuelType = document.querySelector("#mapFuelType")?.value;
-  const parts = [];
-  if (fuelType) parts.push(fuelType.toLowerCase());
-  if (vehicleClass) parts.push(vehicleClass.toLowerCase());
-  parts.push("registrations in");
-  parts.push(rto ? `${rto}, ${state}` : state);
+  const baseQuery = mapQueryInput?.value.trim() || "registrations";
+  const location = rto ? `${rto}, ${state}` : state;
+  const parts = [baseQuery, "in", location];
   if (from && to) parts.push(`from ${from} to ${to}`);
   return parts.join(" ");
 }
@@ -166,7 +254,13 @@ function renderMapSkeleton() {
     path.addEventListener("mouseenter", (event) => showTooltip(event, group.dataset.state));
     path.addEventListener("mousemove", (event) => moveTooltip(event));
     path.addEventListener("mouseleave", hideTooltip);
-    path.addEventListener("click", () => selectState(group.dataset.state));
+    path.addEventListener("click", () => {
+      if (selectedState === group.dataset.state) {
+        resetZoom();
+      } else {
+        selectState(group.dataset.state);
+      }
+    });
     path.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
@@ -181,19 +275,37 @@ function applyMapData(states) {
   for (const group of mapSvg.querySelectorAll(".map-state-group")) {
     const item = stateData.get(group.dataset.state);
     const path = group.querySelector("path");
-    path.className.baseVal = `map-state ${levelFor(item)}${selectedState === group.dataset.state ? " selected" : ""}`;
+    const classes = [
+      "map-state",
+      levelFor(item),
+      selectedState === group.dataset.state ? "selected" : "",
+      legendAllows(item) ? "" : "is-muted",
+    ].filter(Boolean);
+    path.className.baseVal = classes.join(" ");
     path.setAttribute(
       "aria-label",
-      `${group.dataset.state}: ${item?.rowCount ? `${percent(item.evShare)} EV share` : "no saved data"}`,
+      `${group.dataset.state}: ${item?.rowCount ? `${metricLabel()} ${formatMapValue(mapValue(item))}` : "no saved data"}`,
     );
   }
 }
 
 function showTooltip(event, state) {
   const item = stateData.get(state);
+  activeTooltipState = state;
+  const primaryLabel = metricLabel();
+  const primaryValue = formatMapValue(mapValue(item));
+  const baseline = comparisonBaseline();
+  const delta = comparisonDelta(item);
+  const comparisonRows = mapColorMode === "compare"
+    ? `
+      <span>India avg: ${escapeHtml(formatMapValue(baseline))}</span>
+      <span>Diff: ${escapeHtml(formatComparisonDelta(delta))}</span>
+    `
+    : "";
   mapTooltip.innerHTML = `
     <strong>${escapeHtml(state)}</strong>
-    <span>EV share: ${percent(item?.evShare)}</span>
+    <span>${escapeHtml(primaryLabel)}: ${escapeHtml(primaryValue)}</span>
+    ${comparisonRows}
     <span>EV: ${fmt.format(item?.evTotal ?? 0)}</span>
     <span>Total: ${fmt.format(item?.total ?? 0)}</span>
     <span>RTOs: ${fmt.format(item?.rtoCount ?? 0)}</span>
@@ -203,14 +315,59 @@ function showTooltip(event, state) {
 }
 
 function moveTooltip(event) {
+  const activeState = stateFromPointer(event);
+  if (!activeState) {
+    hideTooltip();
+    return;
+  }
+  if (activeState !== activeTooltipState) showTooltip(event, activeState);
   const stageBox = document.querySelector("#mapStage").getBoundingClientRect();
   mapTooltip.style.left = `${event.clientX - stageBox.left + 14}px`;
   mapTooltip.style.top = `${event.clientY - stageBox.top + 14}px`;
 }
 
 function hideTooltip() {
+  activeTooltipState = null;
   mapTooltip.hidden = true;
 }
+
+function stateFromPointer(event) {
+  for (const group of mapSvg.querySelectorAll(".map-state-group")) {
+    const path = group.querySelector(".map-state");
+    if (pointerIsInsidePath(event, path)) return group.dataset.state;
+  }
+  return null;
+}
+
+function pointerIsInsidePath(event, path) {
+  if (!path?.getScreenCTM) return false;
+  const matrix = path.getScreenCTM();
+  if (!matrix) return false;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  if (typeof path.isPointInFill === "function" && !path.isPointInFill(point)) return false;
+  if (typeof path.isPointInStroke === "function" && path.isPointInStroke(point)) return true;
+  return typeof path.isPointInFill === "function" ? path.isPointInFill(point) : false;
+}
+
+document.querySelector("#mapStage")?.addEventListener("pointermove", (event) => {
+  const state = stateFromPointer(event);
+  if (!state) {
+    hideTooltip();
+    return;
+  }
+  if (state !== activeTooltipState) {
+    showTooltip(event, state);
+  } else {
+    moveTooltip(event);
+  }
+});
+
+document.querySelector("#mapStage")?.addEventListener("pointerleave", hideTooltip);
+
+mapSvg.addEventListener("click", (event) => {
+  if (event.target?.classList?.contains("map-state")) return;
+  if (selectedState) resetZoom();
+});
 
 function zoomToState(state) {
   const path = mapSvg.querySelector(`[data-state="${CSS.escape(state)}"] path`);
@@ -220,9 +377,17 @@ function zoomToState(state) {
   mapSvg.setAttribute("viewBox", `${box.x - pad} ${box.y - pad} ${box.width + pad * 2} ${box.height + pad * 2}`);
 }
 
+function setZoomOutVisible(isVisible) {
+  if (!mapZoomOutBtn) return;
+  mapZoomOutBtn.hidden = !isVisible;
+  mapZoomOutBtn.disabled = !isVisible;
+}
+
 function resetZoom() {
   selectedState = null;
+  latestStateDetailData = null;
   mapSvg.setAttribute("viewBox", "0 0 620 760");
+  setZoomOutVisible(false);
   applyMapData([...stateData.values()]);
   selectedStateTitle.textContent = "Select a state";
   stateSummary.innerHTML = `<p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>`;
@@ -232,6 +397,7 @@ function resetZoom() {
 async function selectState(state) {
   selectedState = state;
   zoomToState(state);
+  setZoomOutVisible(true);
   applyMapData([...stateData.values()]);
   selectedStateTitle.textContent = state;
   stateSummary.innerHTML = `<p class="compare-empty">Loading saved state data.</p>`;
@@ -248,15 +414,28 @@ async function selectState(state) {
 }
 
 function renderStateDetail(data) {
+  latestStateDetailData = data;
   const item = data.state;
+  latestMapFilters = data.filters ?? latestMapFilters;
   selectedStateTitle.textContent = item.state;
   const query = dashboardQuery(item.state);
+  const primaryLabel = metricLabel(data.filters);
+  const primaryValue = formatMapValue(mapValue(item, data.filters), data.filters);
+  const baseline = comparisonBaseline(data.filters);
+  const delta = comparisonDelta(item, data.filters);
+  const comparisonMetrics = mapColorMode === "compare"
+    ? `
+      <div class="metric"><span>India avg</span><strong>${escapeHtml(formatMapValue(baseline, data.filters))}</strong></div>
+      <div class="metric"><span>Diff vs avg</span><strong>${escapeHtml(formatComparisonDelta(delta, data.filters))}</strong></div>
+    `
+    : "";
   stateSummary.innerHTML = `
     <div class="map-metric-grid">
-      <div class="metric"><span>EV share</span><strong>${percent(item.evShare)}</strong></div>
+      <div class="metric"><span>${escapeHtml(primaryLabel)}</span><strong>${escapeHtml(primaryValue)}</strong></div>
       <div class="metric"><span>EV registrations</span><strong>${fmt.format(item.evTotal)}</strong></div>
       <div class="metric"><span>Total</span><strong>${fmt.format(item.total)}</strong></div>
       <div class="metric"><span>Saved RTOs</span><strong>${fmt.format(item.rtoCount)}</strong></div>
+      ${comparisonMetrics}
     </div>
     <a class="back-link map-query-link" href="/?query=${encodeURIComponent(query)}">Run dashboard query</a>
   `;
@@ -281,7 +460,7 @@ function renderStateDetail(data) {
             <span>${rto.months.length ? `${rto.months[0]} to ${rto.months.at(-1)}` : "No month range"}</span>
           </div>
           <div class="rto-card-metrics">
-            <span>${percent(rto.evShare)} EV</span>
+            <span>${mapMetric(data.filters) === "registrations" ? `${fmt.format(rto.total)} registrations` : `${percent(rto.evShare)} EV`}</span>
             <span>${fmt.format(rto.evTotal)} / ${fmt.format(rto.total)}</span>
           </div>
           <div class="rto-fuels">${rto.topFuels.map((fuel) => `<span>${escapeHtml(fuel.fuelType)} ${fmt.format(fuel.count)}</span>`).join("")}</div>
@@ -311,7 +490,11 @@ async function loadMap() {
 }
 
 function renderMapData(data) {
+  latestMapFilters = data.filters ?? null;
+  stateData = new Map(data.states.map((item) => [item.state, item]));
+  renderMapHeading(data.filters);
   applyMapData(data.states);
+  renderParsedFilters(data.filters);
   renderFetchProgress(data.liveRefresh);
   if (data.liveRefresh?.status === "pending") {
     const savedCount = data.liveRefresh.savedStateCount;
@@ -344,6 +527,133 @@ function renderMapData(data) {
       `${fmt.format(data.coverage.availableStates)} of ${fmt.format(data.coverage.totalStates)} states have saved rows. Latest loaded month: ${data.coverage.latestMonth ?? "not available"}.`;
     setMapStatus("Saved rows render instantly. Fetch all states starts a live VAHAN job for the selected range.");
   }
+}
+
+function renderMapHeading(filters = {}) {
+  const nextMetric = mapMetric(filters);
+  if (nextMetric !== currentLegendMetric || mapColorMode !== currentLegendMode) {
+    currentLegendMetric = nextMetric;
+    currentLegendMode = mapColorMode;
+    selectedLegendLevels = new Set();
+  }
+  if (mapPanelTitle) {
+    const baseTitle = nextMetric === "registrations"
+      ? "Matching registrations by state"
+      : "EV share by state";
+    mapPanelTitle.textContent = mapColorMode === "compare"
+      ? `${baseTitle} vs India average`
+      : baseTitle;
+  }
+  if (!mapLegend) return;
+  const items = mapColorMode === "compare"
+    ? [
+      ["is-empty", "No data"],
+      ["compare-lowest", "Far below avg"],
+      ["compare-low", "Below avg"],
+      ["compare-mid", "Near avg"],
+      ["compare-high", "Above avg"],
+      ["compare-highest", "Far above avg"],
+    ]
+    : nextMetric === "registrations"
+    ? [
+      ["is-empty", "No data"],
+      ["level-2", "Matching rows"],
+    ]
+    : [
+      ["is-empty", "No data"],
+      ["level-1", "0-5%"],
+      ["level-2", "5-15%"],
+      ["level-3", "15-30%"],
+      ["level-4", "30%+"],
+    ];
+  const baseline = comparisonBaseline(filters);
+  const note = mapColorMode === "compare"
+    ? `Compared with India average: ${formatMapValue(baseline, filters)}`
+    : nextMetric === "registrations"
+      ? "Color shows states with matching registration rows"
+      : "Color shows EV share bucket";
+  mapLegend.innerHTML = `
+    <div class="map-legend-head">
+      <strong>Color index</strong>
+      <small>${escapeHtml(note)}</small>
+    </div>
+    <div class="map-legend-items">
+      ${items
+    .map(([level, label]) => `
+        <button type="button" class="${level}${selectedLegendLevels.has(level) ? " active" : ""}" data-level="${level}" aria-pressed="${selectedLegendLevels.has(level)}">
+          ${escapeHtml(label)}
+        </button>
+      `)
+    .join("")}
+    </div>
+  `;
+}
+
+function toggleLegendLevel(level) {
+  if (!level) return;
+  if (selectedLegendLevels.has(level)) {
+    selectedLegendLevels.delete(level);
+  } else {
+    selectedLegendLevels.add(level);
+  }
+  renderMapHeading(latestMapFilters ?? {});
+  applyMapData([...stateData.values()]);
+}
+
+mapLegend?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-level]");
+  if (!button) return;
+  toggleLegendLevel(button.dataset.level);
+});
+
+function setMapColorMode(mode) {
+  mapColorMode = mode === "compare" ? "compare" : "heat";
+  for (const button of mapColorToggle?.querySelectorAll("[data-map-color-mode]") ?? []) {
+    const active = button.dataset.mapColorMode === mapColorMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  renderMapHeading(latestMapFilters ?? {});
+  applyMapData([...stateData.values()]);
+  if (selectedState) {
+    if (latestStateDetailData?.state?.state === selectedState) {
+      renderStateDetail(latestStateDetailData);
+    }
+  }
+}
+
+mapColorToggle?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-map-color-mode]");
+  if (!button) return;
+  setMapColorMode(button.dataset.mapColorMode);
+});
+
+function renderParsedFilters(filters = {}) {
+  if (!mapParsedFilters) return;
+  const entries = [
+    ["Metric", metricLabel(filters)],
+    ["Fuel", filters.fuelType ?? filters.fuelSegment ?? "All fuels"],
+    ["Fuel checkbox", filters.fuelFilters?.length ? filters.fuelFilters.join(", ") : "All"],
+    ["Vehicle category", filters.vehicleCategories?.length ? filters.vehicleCategories.join(", ") : "All"],
+    ["Vehicle class", filters.vehicleClasses?.length ? filters.vehicleClasses.join(", ") : "All"],
+    ["Norms", filters.norms?.length ? filters.norms.join(", ") : "All"],
+    ["Range", [filters.from, filters.to].filter(Boolean).join(" to ") || "Not set"],
+  ];
+  mapParsedFilters.innerHTML = `
+    <div class="map-interpret-head">
+      <span>Interpreted query</span>
+    </div>
+    <div class="map-interpret-grid">
+    ${entries
+    .map(([label, value]) => `
+      <span class="map-filter-chip">
+        <small>${escapeHtml(label)}</small>
+        <strong>${escapeHtml(value)}</strong>
+      </span>
+    `)
+    .join("")}
+    </div>
+  `;
 }
 
 function renderFetchProgress(liveRefresh) {
@@ -501,6 +811,7 @@ mapFilters.addEventListener("submit", async (event) => {
 
 fetchAllStatesBtn.addEventListener("click", startAllStatesFetch);
 resetMapBtn.addEventListener("click", resetZoom);
+mapZoomOutBtn?.addEventListener("click", resetZoom);
 
 if (appFrame && sidebarTrigger && featureSidebar) {
   let closeSidebarTimer = null;
