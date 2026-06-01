@@ -15,6 +15,9 @@ const downloadCsvBtn = document.querySelector("#downloadCsvBtn");
 const downloadPdfBtn = document.querySelector("#downloadPdfBtn");
 const downloadMenu = document.querySelector(".download-menu");
 const downloadMenuBtn = document.querySelector("#downloadMenuBtn");
+const dashboardLayout = document.querySelector("#dashboardLayout");
+const dashboardModeButtons = document.querySelectorAll("[data-dashboard-mode]");
+const queryShortcutButtons = document.querySelectorAll("[data-query]");
 
 const fmt = new Intl.NumberFormat("en-IN");
 const monthFmt = new Intl.DateTimeFormat("en", { month: "short", year: "numeric" });
@@ -22,6 +25,8 @@ let activeRefreshJobId = null;
 let showZeroResultRows = false;
 let latestQuery = "";
 let latestData = null;
+let warningToastTimers = [];
+let filtersExpanded = false;
 
 /* Helpers */
 
@@ -63,6 +68,18 @@ function formatTimestamp(value) {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-IN");
 }
 
+function dataStatusLabel(status) {
+  const labels = {
+    complete: "Complete",
+    live: "Fresh scrape",
+    refreshing: "Refreshing",
+    partial: "Partial",
+    stale: "Stale",
+    fetch_failed: "Fetch failed",
+  };
+  return labels[status] ?? "Complete";
+}
+
 function csvCell(value) {
   const text = String(value ?? "");
   return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -80,6 +97,15 @@ function slugifyFilename(value) {
 
 function filterEntries(filters = {}) {
   return [
+    ["Interpreted intent", filters.semanticIntent ?? "Standard filter parse"],
+    ["Semantic confidence", filters.semanticConfidence !== null && filters.semanticConfidence !== undefined ? `${Math.round(filters.semanticConfidence * 100)}%` : "Not scored"],
+    ["Semantic explanation", filters.semanticExplanation ?? "-"],
+    ["AI provider", filters.aiProvider ?? "Local rules"],
+    ["Selected fuel labels", filters.selectedFuelTypes?.length ? filters.selectedFuelTypes.join(", ") : "All"],
+    ["Selected vehicle groups", filters.selectedVehicleGroups?.length ? filters.selectedVehicleGroups.join(", ") : "All"],
+    ["Selected vehicle classes", filters.selectedVehicleClasses?.length ? filters.selectedVehicleClasses.join(", ") : "All"],
+    ["Selected vehicle categories", filters.selectedVehicleCategories?.length ? filters.selectedVehicleCategories.join(", ") : "All"],
+    ["Selected norms", filters.selectedNorms?.length ? filters.selectedNorms.join(", ") : "All"],
     ["Fuel segment", filters.fuelSegment ?? "All"],
     ["Fuel type", filters.fuelType ?? "All"],
     ["Fuel checkbox", filters.fuelFilters?.length ? filters.fuelFilters.join(", ") : "All"],
@@ -92,6 +118,16 @@ function filterEntries(filters = {}) {
     ["From", filters.from ?? "-"],
     ["To", filters.to ?? "-"],
   ];
+}
+
+function compactFilterEntries(filters = {}) {
+  return filterEntries(filters).filter(([key, value]) => {
+    if (["Interpreted intent", "Semantic confidence", "Semantic explanation", "State", "RTO", "From", "To"].includes(key)) return true;
+    if (["Selected fuel labels", "Selected vehicle groups", "Selected vehicle classes", "Selected vehicle categories", "Selected norms"].includes(key)) {
+      return value && value !== "All" && value !== "-";
+    }
+    return false;
+  });
 }
 
 function setExportButtonsEnabled(enabled) {
@@ -119,9 +155,28 @@ function animateCounter(el, target) {
 
 function renderFilters(filters) {
   const el = document.querySelector("#filters");
-  el.innerHTML = filterEntries(filters)
+  const pairedGrid = el.closest(".grid");
+  const allEntries = filterEntries(filters);
+  const entries = filtersExpanded ? allEntries : compactFilterEntries(filters);
+  const hiddenCount = Math.max(0, allEntries.length - entries.length);
+  pairedGrid?.classList.toggle("filters-expanded", filtersExpanded);
+  el.innerHTML = entries
     .map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`)
     .join("");
+
+  const panel = document.querySelector("#filtersPanel");
+  panel?.querySelector("#filtersToggle")?.remove();
+  const toggle = document.createElement("button");
+  toggle.id = "filtersToggle";
+  toggle.type = "button";
+  toggle.className = "panel-toggle";
+  toggle.textContent = filtersExpanded ? "Show less" : `Show more${hiddenCount ? ` (${hiddenCount})` : ""}`;
+  toggle.setAttribute("aria-expanded", String(filtersExpanded));
+  toggle.addEventListener("click", () => {
+    filtersExpanded = !filtersExpanded;
+    renderFilters(filters);
+  });
+  panel?.appendChild(toggle);
 }
 
 function renderTrend(trend) {
@@ -161,6 +216,79 @@ function renderFuelBreakdown(items) {
     `,
     )
     .join("");
+}
+
+function renderInsightRail(data) {
+  const status = data.dataStatus ?? "complete";
+  const sourceStatusPill = document.querySelector("#sourceStatusPill");
+  const sourceMetric = document.querySelector("#sourceMetric");
+  const railLatestMonth = document.querySelector("#railLatestMonth");
+  const railSaveStatus = document.querySelector("#railSaveStatus");
+  const railScrapeStatus = document.querySelector("#railScrapeStatus");
+  const analystNotes = document.querySelector("#analystNotes");
+  const trendRange = document.querySelector("#trendRange");
+  const fuelLeader = document.querySelector("#fuelLeader");
+  const filterConfidence = document.querySelector("#filterConfidence");
+
+  if (sourceStatusPill) {
+    sourceStatusPill.textContent = dataStatusLabel(status);
+    sourceStatusPill.classList.toggle("success", ["complete", "live"].includes(status));
+    sourceStatusPill.classList.toggle("error", status === "fetch_failed");
+  }
+  if (sourceMetric) sourceMetric.textContent = fmt.format(data.rows?.length ?? 0);
+  if (railLatestMonth) {
+    railLatestMonth.textContent = data.freshness?.latestMonth ? displayMonth(data.freshness.latestMonth) : "-";
+  }
+  if (railSaveStatus) railSaveStatus.textContent = data.persistenceStatus ?? "saved";
+  if (railScrapeStatus) {
+    railScrapeStatus.textContent = data.scraper?.autoTriggered
+      ? data.scraper.success
+        ? "Completed"
+        : "Attempted"
+      : data.liveRefresh?.status === "pending"
+        ? "Running"
+        : "Idle";
+  }
+
+  if (trendRange) {
+    const months = data.trend?.map((item) => item.month) ?? [];
+    trendRange.textContent = months.length
+      ? `${displayMonth(months[0])} to ${displayMonth(months[months.length - 1])}`
+      : "No trend data";
+  }
+  if (fuelLeader) {
+    const leader = data.fuelBreakdown?.[0];
+    fuelLeader.textContent = leader ? `${leader.fuelType}: ${fmt.format(leader.count)}` : "No leader yet";
+  }
+  if (filterConfidence) {
+    filterConfidence.textContent = data.filters?.semanticConfidence !== null && data.filters?.semanticConfidence !== undefined
+      ? `${Math.round(data.filters.semanticConfidence * 100)}% semantic`
+      : data.filters?.rtoResolution?.status === "matched" ? "RTO matched" : "Rule parsed";
+  }
+
+  if (!analystNotes) return;
+  const notes = [];
+  if (data.summary?.total) {
+    notes.push(
+      `<p><strong>${fmt.format(data.summary.total)}</strong> registrations matched the current query, averaging <strong>${fmt.format(data.summary.monthlyAverage)}</strong> per month.</p>`,
+    );
+  }
+  if (data.summary?.peakMonth) {
+    notes.push(
+      `<p>Peak activity was <strong>${displayMonth(data.summary.peakMonth)}</strong> with <strong>${fmt.format(data.summary.peakMonthCount)}</strong> registrations.</p>`,
+    );
+  }
+  if (data.fuelBreakdown?.length) {
+    const leader = data.fuelBreakdown[0];
+    notes.push(`<p><strong>${escapeHtml(leader.fuelType)}</strong> leads the fuel mix for this slice.</p>`);
+  }
+  if (data.filters?.semanticIntent) {
+    notes.push(`<p>Interpreted as: <strong>${escapeHtml(data.filters.semanticIntent)}</strong></p>`);
+  }
+  if (status === "refreshing") {
+    notes.push("<p>Fresh VAHAN data is being fetched in the background; saved rows are shown now.</p>");
+  }
+  analystNotes.innerHTML = notes.length ? notes.join("") : "<p>No matching rows yet. Try a broader state, date, or fuel query.</p>";
 }
 
 function renderResultCards(rows, dataStatus) {
@@ -245,11 +373,41 @@ function renderResultCards(rows, dataStatus) {
 }
 
 function renderWarnings(items) {
-  const uniqueItems = [...new Set((items ?? []).filter(Boolean))];
+  const uniqueItems = [...new Set((items ?? []).filter(Boolean))]
+    .filter((item) => !/^Showing saved data now\. Missing or latest months/i.test(item))
+    .filter((item) => !/^Resolved .+ using the VAHAN RTO catalog\.$/i.test(item))
+    .slice(0, 3);
+  for (const timer of warningToastTimers) clearTimeout(timer);
+  warningToastTimers = [];
+  warnings.innerHTML = "";
   warnings.hidden = !uniqueItems.length;
-  warnings.innerHTML = uniqueItems.length
-    ? uniqueItems.map((item) => `<div>${escapeHtml(item)}</div>`).join("")
-    : "";
+  if (!uniqueItems.length) return;
+
+  for (const item of uniqueItems) {
+    const toast = document.createElement("div");
+    toast.className = "warning-toast";
+    toast.setAttribute("role", "status");
+    toast.innerHTML = `
+      <span>${escapeHtml(item)}</span>
+      <button type="button" class="warning-toast-close" aria-label="Dismiss message">x</button>
+    `;
+
+    const removeToast = () => {
+      toast.remove();
+      warnings.hidden = warnings.children.length === 0;
+    };
+    toast.querySelector("button")?.addEventListener("click", removeToast);
+    warningToastTimers.push(setTimeout(removeToast, 30_000));
+    warnings.appendChild(toast);
+  }
+}
+
+function compactRefreshMessage(data) {
+  if (data.dataStatus !== "refreshing") return null;
+  const count = data.liveRefresh?.requiredMonths?.length ?? 0;
+  return count
+    ? `Fetching ${count} missing/latest month${count === 1 ? "" : "s"} from VAHAN. Saved data is shown now and will update automatically.`
+    : "Fetching missing/latest VAHAN data. Saved data is shown now and will update automatically.";
 }
 
 /* Main Render */
@@ -285,7 +443,7 @@ function render(data) {
         : data.dataStatus === "live"
           ? ["Showing freshly scraped VAHAN data while it is saved in the background."]
         : data.dataStatus === "refreshing"
-          ? [`Showing saved data now. Missing or latest months (${displayMonthList(data.liveRefresh?.requiredMonths) || "requested months"}) are being fetched from VAHAN; the dashboard will update automatically.`]
+          ? [compactRefreshMessage(data)]
         : data.dataStatus === "partial"
           ? ["Some requested months are missing from the local dataset."]
           : [];
@@ -295,6 +453,7 @@ function render(data) {
   renderTrend(data.trend);
   renderFuelBreakdown(data.fuelBreakdown);
   renderResultCards(data.rows, data.dataStatus);
+  renderInsightRail(data);
 
   // Remove loading state
   app.classList.remove("loading");
@@ -564,6 +723,25 @@ downloadMenu?.addEventListener("focusout", (event) => {
   if (!downloadMenu.contains(event.relatedTarget)) {
     downloadMenuBtn?.setAttribute("aria-expanded", "false");
   }
+});
+
+dashboardModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const mode = button.dataset.dashboardMode;
+    dashboardLayout?.setAttribute("data-mode", mode);
+    dashboardModeButtons.forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-pressed", String(active));
+    });
+  });
+});
+
+queryShortcutButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.query;
+    input.focus();
+  });
 });
 
 if (appFrame && sidebarTrigger && featureSidebar) {
