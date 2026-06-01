@@ -87,6 +87,34 @@ The import is idempotent. Rows are upserted by:
 year, month, state, rto, fuel_type
 ```
 
+## Daily Tracked Queries
+
+Apply the schema first so the tracked query tables exist:
+
+```powershell
+npm run db:schema
+```
+
+Create tracked queries through the API, then run the daily batch from an
+external scheduler such as Windows Task Scheduler, Render cron, or GitHub
+Actions:
+
+```powershell
+node --env-file=.env scripts/run-tracked-queries.mjs
+```
+
+Preview due queries without writing run or observation rows:
+
+```powershell
+npm run tracked:dry-run
+```
+
+For a controlled rerun of a specific observation date:
+
+```powershell
+node --env-file=.env scripts/run-tracked-queries.mjs --date 2026-06-01 --all
+```
+
 Preview the planned combinations without launching the browser or writing files:
 
 ```powershell
