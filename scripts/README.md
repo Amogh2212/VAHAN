@@ -103,6 +103,11 @@ Actions:
 node --env-file=.env scripts/run-tracked-queries.mjs
 ```
 
+Tracked queries do not need to include a month. If a saved query has no date
+range, the daily runner defaults it to the observation month, so a query such as
+`EV registrations in Maharashtra` is checked against the current month on each
+daily run.
+
 Preview due queries without writing run or observation rows:
 
 ```powershell

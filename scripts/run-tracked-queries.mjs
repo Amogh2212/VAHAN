@@ -68,14 +68,31 @@ function observationPayload(payload) {
   };
 }
 
+function monthRangeForObservationDate(value) {
+  const month = String(value ?? "").slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    throw new Error("Observation date must use YYYY-MM-DD format.");
+  }
+  return {
+    from: month,
+    to: month,
+    reason: "No date was provided in the saved query, so the daily tracker used the observation month",
+  };
+}
+
 async function runTrackedQuery(item) {
+  const defaultDateRange = monthRangeForObservationDate(item.observationDate);
   const run = await createTrackedQueryRun(item.id, item.observationDate, {
     query: item.query,
     label: item.label,
+    defaultDateRange,
   });
 
   try {
-    const payload = await finalPayload(await queryData({ query: item.query }));
+    const payload = await finalPayload(await queryData({
+      query: item.query,
+      defaultDateRange,
+    }));
     const observation = await upsertTrackedQueryObservation(
       item.id,
       item.observationDate,
@@ -84,6 +101,7 @@ async function runTrackedQuery(item) {
     await completeTrackedQueryRun(run.id, {
       query: item.query,
       label: item.label,
+      defaultDateRange,
       dataStatus: payload.dataStatus ?? null,
       liveRefresh: payload.liveRefresh ?? null,
       scraper: payload.scraper ?? null,
@@ -134,6 +152,7 @@ async function main() {
         observationDate: item.observationDate,
         runTimeLocal: item.runTimeLocal,
         timezone: item.timezone,
+        defaultMonth: String(item.observationDate).slice(0, 7),
       })),
     }, null, 2));
     return;

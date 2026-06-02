@@ -211,7 +211,7 @@ async function loadObservations(id) {
         <td>${fmt.format(row.warnings?.length ?? 0)}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="6">No observations yet. Run <code>npm run tracked:run</code> after saving the query.</td></tr>`;
+    : `<tr><td colspan="6">No observations yet. Run <code>npm run tracked:run</code> after saving the query. If the query has no month, the worker uses the run month.</td></tr>`;
 }
 
 async function toggleTrackedQuery(item) {

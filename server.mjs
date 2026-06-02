@@ -773,6 +773,20 @@ function clampFutureDateRange(filters, maxMonth = currentMonthKey()) {
   return { ...filters, to: maxMonth, cappedFutureDateRange: true };
 }
 
+function applyDefaultDateRange(filters, defaultDateRange = null, { force = false } = {}) {
+  if (!defaultDateRange || (!force && (filters?.from || filters?.to))) return filters;
+  const from = defaultDateRange.from ?? defaultDateRange.month ?? null;
+  const to = defaultDateRange.to ?? defaultDateRange.month ?? from;
+  if (!from || !to) return filters;
+  return {
+    ...filters,
+    from,
+    to,
+    defaultedDateRange: true,
+    defaultedDateRangeReason: defaultDateRange.reason ?? "No date was provided, so the daily tracker used its run month",
+  };
+}
+
 function editDistanceWithin(a, b, maxDistance) {
   if (Math.abs(a.length - b.length) > maxDistance) return maxDistance + 1;
   const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
@@ -2267,6 +2281,7 @@ function dashboardPayload({
         ? `Interpreted broad vehicle group: ${filters.selectedVehicleGroups.join(", ")}. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added.`
         : null,
       filters.cappedFutureDateRange ? `Date range was capped at ${filters.to} because future VAHAN months are not available yet.` : null,
+      filters.defaultedDateRange ? `${filters.defaultedDateRangeReason} (${filters.from} to ${filters.to}).` : null,
       filters.correctedByGemini ? `${filters.aiProvider ?? "AI"} helped interpret the location or filters; counts still come only from VAHAN data.` : null,
       filters.rtoResolution?.status === "resolved" && filters.rtoResolution.query
         ? `Resolved ${filters.rtoResolution.query} to ${filters.rtoResolution.rto} using the VAHAN RTO catalog.`
@@ -2414,7 +2429,12 @@ export async function queryData(input) {
   if (semanticPlan.selectedVehicleGroups?.length) mergedFilters.selectedVehicleGroups = semanticPlan.selectedVehicleGroups;
   if (semanticPlan.selectedVehicleClasses?.length) mergedFilters.vehicleClasses = semanticPlan.selectedVehicleClasses;
   if (semanticPlan.selectedNorms?.length) mergedFilters.norms = semanticPlan.selectedNorms;
-  let filters = resolveRto(clampFutureDateRange(mergedFilters), rows, catalog);
+  const shouldUseDefaultDateRange = Boolean(input.defaultDateRange && !ruleFilters.from && !ruleFilters.to);
+  let filters = resolveRto(
+    clampFutureDateRange(applyDefaultDateRange(mergedFilters, input.defaultDateRange, { force: shouldUseDefaultDateRange })),
+    rows,
+    catalog,
+  );
   let immediateRows = rows;
   if (useDatabase && !filters.ambiguousRtos) {
     try {
@@ -2462,7 +2482,7 @@ export async function waitForQueryRefresh(jobId, { timeoutMs = 300_000, pollMs =
   }
 
   const started = Date.now();
-  while (job.status === "pending") {
+  while (job.status === "pending" || !job.payload) {
     if (Date.now() - started > timeoutMs) {
       const error = new Error(`Timed out waiting for refresh job ${jobId}`);
       error.statusCode = 504;
