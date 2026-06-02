@@ -26,6 +26,14 @@ import {
   createTelegramBot,
   parseAllowedChatIds,
 } from "./lib/telegram-bot.mjs";
+import {
+  createTrackedQuery,
+  disableTrackedQuery,
+  getTrackedQuery,
+  listTrackedQueries,
+  listTrackedQueryObservations,
+  updateTrackedQuery,
+} from "./lib/tracked-queries.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -763,6 +771,20 @@ function clampFutureDateRange(filters, maxMonth = currentMonthKey()) {
   if (!filters?.from || !filters?.to || filters.to <= maxMonth) return filters;
   if (filters.from > maxMonth) return filters;
   return { ...filters, to: maxMonth, cappedFutureDateRange: true };
+}
+
+function applyDefaultDateRange(filters, defaultDateRange = null, { force = false } = {}) {
+  if (!defaultDateRange || (!force && (filters?.from || filters?.to))) return filters;
+  const from = defaultDateRange.from ?? defaultDateRange.month ?? null;
+  const to = defaultDateRange.to ?? defaultDateRange.month ?? from;
+  if (!from || !to) return filters;
+  return {
+    ...filters,
+    from,
+    to,
+    defaultedDateRange: true,
+    defaultedDateRangeReason: defaultDateRange.reason ?? "No date was provided, so the daily tracker used its run month",
+  };
 }
 
 function editDistanceWithin(a, b, maxDistance) {
@@ -2259,6 +2281,7 @@ function dashboardPayload({
         ? `Interpreted broad vehicle group: ${filters.selectedVehicleGroups.join(", ")}. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added.`
         : null,
       filters.cappedFutureDateRange ? `Date range was capped at ${filters.to} because future VAHAN months are not available yet.` : null,
+      filters.defaultedDateRange ? `${filters.defaultedDateRangeReason} (${filters.from} to ${filters.to}).` : null,
       filters.correctedByGemini ? `${filters.aiProvider ?? "AI"} helped interpret the location or filters; counts still come only from VAHAN data.` : null,
       filters.rtoResolution?.status === "resolved" && filters.rtoResolution.query
         ? `Resolved ${filters.rtoResolution.query} to ${filters.rtoResolution.rto} using the VAHAN RTO catalog.`
@@ -2360,7 +2383,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
   return job;
 }
 
-async function queryData(input) {
+export async function queryData(input) {
   const query = String(input.query ?? "").trim();
   if (!query) {
     const error = new Error("Enter a query before running the dashboard.");
@@ -2406,7 +2429,12 @@ async function queryData(input) {
   if (semanticPlan.selectedVehicleGroups?.length) mergedFilters.selectedVehicleGroups = semanticPlan.selectedVehicleGroups;
   if (semanticPlan.selectedVehicleClasses?.length) mergedFilters.vehicleClasses = semanticPlan.selectedVehicleClasses;
   if (semanticPlan.selectedNorms?.length) mergedFilters.norms = semanticPlan.selectedNorms;
-  let filters = resolveRto(clampFutureDateRange(mergedFilters), rows, catalog);
+  const shouldUseDefaultDateRange = Boolean(input.defaultDateRange && !ruleFilters.from && !ruleFilters.to);
+  let filters = resolveRto(
+    clampFutureDateRange(applyDefaultDateRange(mergedFilters, input.defaultDateRange, { force: shouldUseDefaultDateRange })),
+    rows,
+    catalog,
+  );
   let immediateRows = rows;
   if (useDatabase && !filters.ambiguousRtos) {
     try {
@@ -2443,6 +2471,26 @@ async function queryData(input) {
     preFiltered: queryUsesDatabase,
     freshnessInfo: queryUsesDatabase ? await freshnessFromDb().catch(() => null) : null,
   });
+}
+
+export async function waitForQueryRefresh(jobId, { timeoutMs = 300_000, pollMs = 1000 } = {}) {
+  const job = refreshJobs.get(String(jobId));
+  if (!job) {
+    const error = new Error("Refresh job not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const started = Date.now();
+  while (job.status === "pending" || !job.payload) {
+    if (Date.now() - started > timeoutMs) {
+      const error = new Error(`Timed out waiting for refresh job ${jobId}`);
+      error.statusCode = 504;
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+  return job.payload ?? { liveRefresh: liveRefreshInfo(job) };
 }
 
 function telegramNumber(value) {
@@ -2971,6 +3019,53 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, job.payload ?? { liveRefresh: liveRefreshInfo(job) });
       return;
     }
+    if (request.method === "GET" && url.pathname === "/api/tracked-queries") {
+      sendJson(response, 200, { trackedQueries: await listTrackedQueries() });
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/tracked-queries") {
+      const body = await readBody(request);
+      sendJson(response, 201, { trackedQuery: await createTrackedQuery(body) });
+      return;
+    }
+    const trackedObservationMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/observations$/);
+    if (request.method === "GET" && trackedObservationMatch) {
+      const trackedQueryId = Number(trackedObservationMatch[1]);
+      const trackedQuery = await getTrackedQuery(trackedQueryId);
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, {
+        trackedQuery,
+        observations: await listTrackedQueryObservations(trackedQueryId, {
+          from: url.searchParams.get("from"),
+          to: url.searchParams.get("to"),
+          limit: url.searchParams.get("limit"),
+        }),
+      });
+      return;
+    }
+    const trackedQueryMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)$/);
+    if (trackedQueryMatch && request.method === "PATCH") {
+      const body = await readBody(request);
+      const trackedQuery = await updateTrackedQuery(Number(trackedQueryMatch[1]), body);
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, { trackedQuery });
+      return;
+    }
+    if (trackedQueryMatch && request.method === "DELETE") {
+      const trackedQuery = await disableTrackedQuery(Number(trackedQueryMatch[1]));
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, { trackedQuery });
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/api/registrations") {
       const useDatabase = hasDatabaseUrl();
       const rows = useDatabase ? [] : await loadRows();
@@ -3126,7 +3221,9 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`VAHAN dashboard running at http://localhost:${PORT}`);
-  startTelegramCommandCenter();
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  server.listen(PORT, () => {
+    console.log(`VAHAN dashboard running at http://localhost:${PORT}`);
+    startTelegramCommandCenter();
+  });
+}

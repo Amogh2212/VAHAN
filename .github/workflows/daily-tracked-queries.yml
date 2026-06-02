@@ -1,0 +1,54 @@
+name: Daily Tracked Queries
+
+on:
+  schedule:
+    # 00:30 UTC = 06:00 IST
+    - cron: "30 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-tracked-queries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create environment file
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ vars.GROQ_MODEL || 'llama-3.1-8b-instant' }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ALLOWED_CHAT_IDS: ${{ secrets.TELEGRAM_ALLOWED_CHAT_IDS }}
+          TELEGRAM_ALERT_THRESHOLD_POINTS: ${{ vars.TELEGRAM_ALERT_THRESHOLD_POINTS }}
+          TELEGRAM_PUBLIC_DAILY_LIMIT: ${{ vars.TELEGRAM_PUBLIC_DAILY_LIMIT }}
+        run: |
+          {
+            printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
+            printf 'GEMINI_API_KEY=%s\n' "$GEMINI_API_KEY"
+            printf 'GROQ_API_KEY=%s\n' "$GROQ_API_KEY"
+            printf 'GROQ_MODEL=%s\n' "$GROQ_MODEL"
+            printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TELEGRAM_BOT_TOKEN"
+            printf 'TELEGRAM_ALLOWED_CHAT_IDS=%s\n' "$TELEGRAM_ALLOWED_CHAT_IDS"
+            printf 'TELEGRAM_ENABLE_POLLING=0\n'
+            printf 'TELEGRAM_ALERT_THRESHOLD_POINTS=%s\n' "$TELEGRAM_ALERT_THRESHOLD_POINTS"
+            printf 'TELEGRAM_PUBLIC_DAILY_LIMIT=%s\n' "$TELEGRAM_PUBLIC_DAILY_LIMIT"
+            printf 'TRACKED_QUERY_DEFAULT_TIMEZONE=Asia/Calcutta\n'
+            printf 'TRACKED_QUERY_DEFAULT_RUN_TIME=08:00\n'
+            printf 'TRACKED_QUERY_RUN_TIMEOUT_MS=300000\n'
+          } > .env
+
+      - name: Run daily tracked queries
+        run: npm run tracked:run
