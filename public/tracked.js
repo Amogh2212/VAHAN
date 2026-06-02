@@ -11,10 +11,15 @@ const detailMeta = document.querySelector("#trackedDetailMeta");
 const detailStatus = document.querySelector("#trackedDetailStatus");
 const observationSummary = document.querySelector("#trackedObservationSummary");
 const observationsBody = document.querySelector("#trackedObservations");
+const observationTableWrap = document.querySelector(".tracked-table-wrap");
+const formTitle = document.querySelector("#trackedFormTitle");
+const createTrackedBtn = document.querySelector("#createTrackedBtn");
+const cancelEditBtn = document.querySelector("#cancelEditBtn");
 
 const fmt = new Intl.NumberFormat("en-IN");
 let trackedQueries = [];
 let selectedId = null;
+let editingId = null;
 
 function setSidebarOpen(open) {
   appFrame?.classList.toggle("sidebar-open", open);
@@ -148,8 +153,45 @@ function renderEmptyDetail() {
   detailTitle.textContent = "Observation history";
   detailMeta.textContent = "No tracked query selected";
   detailStatus.textContent = "Idle";
+  observationSummary?.classList.add("empty-observation-state");
   observationSummary.innerHTML = `<p class="result-empty">Create a tracked query to review daily totals and deltas.</p>`;
+  if (observationTableWrap) observationTableWrap.hidden = true;
   observationsBody.innerHTML = `<tr><td colspan="6">No query selected.</td></tr>`;
+}
+
+function formValues() {
+  return {
+    label: document.querySelector("#trackedLabel")?.value.trim() || null,
+    query: document.querySelector("#trackedQuery")?.value.trim(),
+    runTimeLocal: document.querySelector("#trackedRunTime")?.value || "08:00",
+    timezone: document.querySelector("#trackedTimezone")?.value.trim() || "Asia/Calcutta",
+    active: Boolean(document.querySelector("#trackedActive")?.checked),
+  };
+}
+
+function resetTrackedForm() {
+  editingId = null;
+  trackedForm?.reset();
+  document.querySelector("#trackedRunTime").value = "08:00";
+  document.querySelector("#trackedTimezone").value = "Asia/Calcutta";
+  document.querySelector("#trackedActive").checked = true;
+  if (formTitle) formTitle.textContent = "Add tracked query";
+  if (createTrackedBtn) createTrackedBtn.textContent = "Save query";
+  if (cancelEditBtn) cancelEditBtn.hidden = true;
+}
+
+function editTrackedQuery(item) {
+  editingId = item.id;
+  document.querySelector("#trackedLabel").value = item.label || "";
+  document.querySelector("#trackedQuery").value = item.query || "";
+  document.querySelector("#trackedRunTime").value = item.runTimeLocal || "08:00";
+  document.querySelector("#trackedTimezone").value = item.timezone || "Asia/Calcutta";
+  document.querySelector("#trackedActive").checked = Boolean(item.active);
+  if (formTitle) formTitle.textContent = "Edit tracked query";
+  if (createTrackedBtn) createTrackedBtn.textContent = "Update query";
+  if (cancelEditBtn) cancelEditBtn.hidden = false;
+  trackedForm?.scrollIntoView({ behavior: "smooth", block: "center" });
+  document.querySelector("#trackedLabel")?.focus();
 }
 
 async function loadObservations(id) {
@@ -163,12 +205,17 @@ async function loadObservations(id) {
   detailMeta.textContent = `${item.runTimeLocal} ${item.timezone}`;
   detailStatus.textContent = item.active ? "Active" : "Paused";
   detailStatus.className = `status-pill ${item.active ? "tracked-status-active" : "tracked-status-paused"}`;
+  observationSummary.classList.remove("empty-observation-state");
+  if (observationTableWrap) observationTableWrap.hidden = true;
   observationSummary.innerHTML = `<p class="result-empty">Loading observations.</p>`;
   observationsBody.innerHTML = `<tr><td colspan="6">Loading.</td></tr>`;
 
   const body = await apiJson(`/api/tracked-queries/${id}/observations?limit=30`);
   const observations = body.observations ?? [];
   const latest = observations[0] ?? null;
+  const hasObservations = observations.length > 0;
+  observationSummary.classList.toggle("empty-observation-state", !hasObservations);
+  if (observationTableWrap) observationTableWrap.hidden = !hasObservations;
 
   observationSummary.innerHTML = latest
     ? `
@@ -185,22 +232,28 @@ async function loadObservations(id) {
         <strong>${deltaText(latest.weeklyDelta)}</strong>
       </div>
       <div class="tracked-actions">
+        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
         <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
-        <button type="button" class="secondary-action danger-action" data-action="delete">Disable</button>
+        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
+        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
       </div>
     `
     : `
       <p class="result-empty">The daily runner has not stored observations for this query yet.</p>
       <div class="tracked-actions">
+        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
         <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
-        <button type="button" class="secondary-action danger-action" data-action="delete">Disable</button>
+        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
+        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
       </div>
     `;
 
+  observationSummary.querySelector("[data-action='edit']")?.addEventListener("click", () => editTrackedQuery(item));
   observationSummary.querySelector("[data-action='toggle']")?.addEventListener("click", () => toggleTrackedQuery(item));
-  observationSummary.querySelector("[data-action='delete']")?.addEventListener("click", () => disableTrackedQuery(item));
+  observationSummary.querySelector("[data-action='disable']")?.addEventListener("click", () => disableTrackedQuery(item));
+  observationSummary.querySelector("[data-action='delete']")?.addEventListener("click", () => deleteTrackedQuery(item));
 
-  observationsBody.innerHTML = observations.length
+  observationsBody.innerHTML = hasObservations
     ? observations.map((row) => `
       <tr>
         <td>${escapeHtml(row.observationDate)}</td>
@@ -211,7 +264,7 @@ async function loadObservations(id) {
         <td>${fmt.format(row.warnings?.length ?? 0)}</td>
       </tr>
     `).join("")
-    : `<tr><td colspan="6">No observations yet. Run <code>npm run tracked:run</code> after saving the query. If the query has no month, the worker uses the run month.</td></tr>`;
+    : "";
 }
 
 async function toggleTrackedQuery(item) {
@@ -229,29 +282,31 @@ async function disableTrackedQuery(item) {
   await loadTrackedQueries();
 }
 
+async function deleteTrackedQuery(item) {
+  const confirmed = window.confirm(`Delete "${displayLabel(item)}" and all of its observations?`);
+  if (!confirmed) return;
+  await apiJson(`/api/tracked-queries/${item.id}?hard=true`, { method: "DELETE" });
+  showNotice(`Deleted ${displayLabel(item)}.`, "success");
+  if (selectedId === item.id) selectedId = null;
+  if (editingId === item.id) resetTrackedForm();
+  await loadTrackedQueries();
+}
+
 trackedForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const submit = document.querySelector("#createTrackedBtn");
+  const submit = createTrackedBtn;
   submit.disabled = true;
   showNotice("");
   try {
-    const body = {
-      label: document.querySelector("#trackedLabel")?.value.trim() || null,
-      query: document.querySelector("#trackedQuery")?.value.trim(),
-      runTimeLocal: document.querySelector("#trackedRunTime")?.value || "08:00",
-      timezone: document.querySelector("#trackedTimezone")?.value.trim() || "Asia/Calcutta",
-      active: Boolean(document.querySelector("#trackedActive")?.checked),
-    };
-    const created = await apiJson("/api/tracked-queries", {
-      method: "POST",
+    const body = formValues();
+    const url = editingId ? `/api/tracked-queries/${editingId}` : "/api/tracked-queries";
+    const saved = await apiJson(url, {
+      method: editingId ? "PATCH" : "POST",
       body: JSON.stringify(body),
     });
-    selectedId = created.trackedQuery.id;
-    trackedForm.reset();
-    document.querySelector("#trackedRunTime").value = "08:00";
-    document.querySelector("#trackedTimezone").value = "Asia/Calcutta";
-    document.querySelector("#trackedActive").checked = true;
-    showNotice("Tracked query saved.", "success");
+    selectedId = saved.trackedQuery.id;
+    showNotice(editingId ? "Tracked query updated." : "Tracked query saved.", "success");
+    resetTrackedForm();
     await loadTrackedQueries();
   } catch (error) {
     showNotice(error.message, "error");
@@ -259,6 +314,8 @@ trackedForm?.addEventListener("submit", async (event) => {
     submit.disabled = false;
   }
 });
+
+cancelEditBtn?.addEventListener("click", resetTrackedForm);
 
 refreshTrackedBtn?.addEventListener("click", () => {
   loadTrackedQueries().catch((error) => showNotice(error.message, "error"));
