@@ -28,6 +28,7 @@ import {
 } from "./lib/telegram-bot.mjs";
 import {
   createTrackedQuery,
+  deleteTrackedQuery,
   disableTrackedQuery,
   getTrackedQuery,
   listTrackedQueries,
@@ -3058,12 +3059,15 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (trackedQueryMatch && request.method === "DELETE") {
-      const trackedQuery = await disableTrackedQuery(Number(trackedQueryMatch[1]));
+      const hardDelete = /^(1|true|yes)$/i.test(url.searchParams.get("hard") ?? "");
+      const trackedQuery = hardDelete
+        ? await deleteTrackedQuery(Number(trackedQueryMatch[1]))
+        : await disableTrackedQuery(Number(trackedQueryMatch[1]));
       if (!trackedQuery) {
         sendJson(response, 404, { error: "Tracked query not found" });
         return;
       }
-      sendJson(response, 200, { trackedQuery });
+      sendJson(response, 200, { trackedQuery, deleted: hardDelete });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/registrations") {

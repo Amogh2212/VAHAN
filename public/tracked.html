@@ -85,7 +85,7 @@
 
         <section class="tracked-create panel">
           <div class="panel-head">
-            <h2>Add tracked query</h2>
+            <h2 id="trackedFormTitle">Add tracked query</h2>
             <span class="panel-kicker">External cron runs the daily batch</span>
           </div>
           <form id="trackedForm" class="tracked-form" autocomplete="off">
@@ -110,6 +110,7 @@
               <span>Active</span>
             </label>
             <button type="submit" id="createTrackedBtn">Save query</button>
+            <button type="button" class="secondary-action tracked-cancel-edit" id="cancelEditBtn" hidden>Cancel edit</button>
           </form>
         </section>
 
