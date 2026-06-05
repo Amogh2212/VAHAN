@@ -57,6 +57,16 @@ function extractBracketMeta(query) {
   return ` [${location.trim()} | ${from.trim()} - ${to.trim()}]`;
 }
 
+function extractQueryLocation(query) {
+  const match = query.match(/in\s+(.+?)\s+from\s+.+?\s+to\s+.+/i);
+  return match ? match[1].trim() : "";
+}
+
+function queryLabel(baseLabel, query) {
+  const location = extractQueryLocation(query);
+  return location ? `${baseLabel} (${location})` : baseLabel;
+}
+
 function setMode(nextMode) {
   currentMode = nextMode;
   monthModeBtn.classList.toggle("active", nextMode === "month");
@@ -95,7 +105,8 @@ function dataWarnings(data) {
   const scraperMessage = data.scraper?.failedRuns?.length
     ? `Live VAHAN fetch failed for ${data.scraper.failedRuns.length} run(s).`
     : null;
-  return [...new Set([statusMessages[data.dataStatus], scraperMessage, ...(data.warnings ?? [])].filter(Boolean))];
+  return [...new Set([statusMessages[data.dataStatus], scraperMessage, ...(data.warnings ?? [])].filter(Boolean))]
+    .map((message) => /decode failed.*fallback/i.test(message) ? "AI parser fallback used successfully." : message);
 }
 
 function statusLabel(data) {
@@ -130,6 +141,16 @@ function renderBars(target, items, emptyText) {
     el.innerHTML = `<p class="compare-empty">${emptyText}</p>`;
     return;
   }
+  if (items.length === 1) {
+    const item = items[0];
+    el.innerHTML = `
+      <div class="single-trend">
+        <span>${escapeHtml(item.month ?? item.fuelType)}</span>
+        <strong>${fmt.format(item.count)}</strong>
+      </div>
+    `;
+    return;
+  }
   const max = Math.max(1, ...items.map((item) => item.count));
   el.innerHTML = items
     .map(
@@ -162,10 +183,12 @@ function renderFuel(target, items, emptyText) {
     .join("");
 }
 
-function renderDoubleBars(leftData, rightData) {
+function renderDoubleBars(leftData, rightData, leftQueryText = "", rightQueryText = "") {
   const leftTrend = new Map(leftData.trend.map((item) => [item.month, item.count]));
   const rightTrend = new Map(rightData.trend.map((item) => [item.month, item.count]));
   const months = [...new Set([...leftTrend.keys(), ...rightTrend.keys()])].sort((a, b) => a.localeCompare(b));
+  const leftLabel = queryLabel("Left query", leftQueryText);
+  const rightLabel = queryLabel("Right query", rightQueryText);
 
   if (!months.length) {
     verticalBarChart.innerHTML = '<p class="compare-empty">No monthly comparison data is available for these queries.</p>';
@@ -175,38 +198,57 @@ function renderDoubleBars(leftData, rightData) {
 
   const max = Math.max(
     1,
-    ...months.flatMap((month) => [leftTrend.get(month) ?? 0, rightTrend.get(month) ?? 0]),
+    ...months.flatMap((month) => [leftTrend.get(month), rightTrend.get(month)].filter((value) => value !== undefined)),
   );
 
-  verticalBarChart.innerHTML = `
-    <div class="double-bar-legend">
-      <span><i class="legend-swatch left"></i>Left query</span>
-      <span><i class="legend-swatch right"></i>Right query</span>
-    </div>
-    <div class="vertical-bar-scroll" role="img" aria-label="Vertical monthly comparison chart">
-      <div class="vertical-bar-plot">
-        ${months
-          .map((month) => {
-            const leftCount = leftTrend.get(month) ?? 0;
-            const rightCount = rightTrend.get(month) ?? 0;
-            const leftHeight = (leftCount / max) * 100;
-            const rightHeight = (rightCount / max) * 100;
+  const leftTotal = leftData.summary.total ?? 0;
+  const rightTotal = rightData.summary.total ?? 0;
+  const combinedTotal = leftTotal + rightTotal;
+  const leftPercent = combinedTotal ? (leftTotal / combinedTotal) * 100 : 0;
+  const rightPercent = combinedTotal ? 100 - leftPercent : 0;
+  const horizontalObservedBar = (trend, month, side) => {
+    if (!trend.has(month)) {
+      return `
+        <div class="double-bar-pair missing">
+          <div class="double-bar-track" aria-label="${side} query not fetched for ${escapeHtml(month)}"></div>
+          <strong>n/a</strong>
+        </div>
+      `;
+    }
+    const width = (trend.get(month) / max) * 100;
+    return `
+      <div class="double-bar-pair">
+        <div class="double-bar-track">
+          <span class="double-bar-fill ${side}" style="width:${width}%"></span>
+        </div>
+        <strong>${fmt.format(trend.get(month))}</strong>
+      </div>
+    `;
+  };
 
-          return `
-              <div class="vertical-bar-group">
-                <div class="vertical-bar-values">
-                  <span>${fmt.format(leftCount)}</span>
-                  <span>${fmt.format(rightCount)}</span>
-                </div>
-                <div class="vertical-bar-columns">
-                  <span class="vertical-bar-fill left" style="height:${leftHeight}%"></span>
-                  <span class="vertical-bar-fill right" style="height:${rightHeight}%"></span>
-                </div>
-                <div class="vertical-bar-label">${escapeHtml(month)}</div>
-              </div>
-            `;
-          })
-          .join("")}
+  verticalBarChart.innerHTML = `
+    <div class="donut-compare" role="img" aria-label="Total registrations split between left and right query">
+      <div
+        class="donut-compare-chart"
+        style="--left-share:${leftPercent.toFixed(2)}%"
+        aria-hidden="true"
+      >
+        <div class="donut-compare-center">
+          <span>Total</span>
+          <strong>${fmt.format(combinedTotal)}</strong>
+        </div>
+      </div>
+      <div class="donut-compare-metrics">
+        <div class="donut-compare-item">
+          <span><i class="legend-swatch left"></i>${escapeHtml(leftLabel)}</span>
+          <strong>${fmt.format(leftTotal)}</strong>
+          <em>${leftPercent.toFixed(1)}%</em>
+        </div>
+        <div class="donut-compare-item">
+          <span><i class="legend-swatch right"></i>${escapeHtml(rightLabel)}</span>
+          <strong>${fmt.format(rightTotal)}</strong>
+          <em>${rightPercent.toFixed(1)}%</em>
+        </div>
       </div>
     </div>
   `;
@@ -214,32 +256,17 @@ function renderDoubleBars(leftData, rightData) {
   doubleBarChart.innerHTML = `
     <div class="normal-chart-label">Normal form representation</div>
     <div class="double-bar-legend">
-      <span><i class="legend-swatch left"></i>Left query</span>
-      <span><i class="legend-swatch right"></i>Right query</span>
+      <span><i class="legend-swatch left"></i>${escapeHtml(leftLabel)}</span>
+      <span><i class="legend-swatch right"></i>${escapeHtml(rightLabel)}</span>
     </div>
     <div class="double-bar-list">
       ${months
         .map((month) => {
-          const leftCount = leftTrend.get(month) ?? 0;
-          const rightCount = rightTrend.get(month) ?? 0;
-          const leftWidth = (leftCount / max) * 100;
-          const rightWidth = (rightCount / max) * 100;
-
-            return `
+          return `
             <div class="double-bar-row">
               <div class="double-bar-label">${escapeHtml(month)}</div>
-              <div class="double-bar-pair">
-                <div class="double-bar-track">
-                  <span class="double-bar-fill left" style="width:${leftWidth}%"></span>
-                </div>
-                <strong>${fmt.format(leftCount)}</strong>
-              </div>
-              <div class="double-bar-pair">
-                <div class="double-bar-track">
-                  <span class="double-bar-fill right" style="width:${rightWidth}%"></span>
-                </div>
-                <strong>${fmt.format(rightCount)}</strong>
-              </div>
+              ${horizontalObservedBar(leftTrend, month, "left")}
+              ${horizontalObservedBar(rightTrend, month, "right")}
             </div>
           `;
         })
@@ -254,7 +281,7 @@ function renderSide(prefix, query, data, status = statusLabel(data)) {
     statusEl.textContent = status;
     statusEl.className = `status-pill ${statusClass(data)}`;
   }
-  setText(`${prefix}QueryLabel`, `${query}${extractBracketMeta(query)}`);
+  setText(`${prefix}QueryLabel`, query);
   setText(`${prefix}ResultMeta`, extractBracketMeta(query));
   setText(`${prefix}Total`, fmt.format(data.summary.total));
   setText(`${prefix}Average`, fmt.format(data.summary.monthlyAverage));
@@ -325,7 +352,7 @@ async function refreshPendingCompare(runId, leftQueryText, rightQueryText, leftD
     if (activeCompareRun !== runId) return;
     renderSide("left", leftQueryText, leftFinal);
     renderSide("right", rightQueryText, rightFinal);
-    renderDoubleBars(leftFinal, rightFinal);
+    renderDoubleBars(leftFinal, rightFinal, leftQueryText, rightQueryText);
     renderDelta(leftFinal, rightFinal);
   } catch (error) {
     if (activeCompareRun !== runId) return;
@@ -355,7 +382,7 @@ async function runCompare(event) {
     if (activeCompareRun !== runId) return;
     renderSide("left", left, leftData);
     renderSide("right", right, rightData);
-    renderDoubleBars(leftData, rightData);
+    renderDoubleBars(leftData, rightData, left, right);
     renderDelta(leftData, rightData);
 
     if (leftData.liveRefresh?.status === "pending" || rightData.liveRefresh?.status === "pending") {

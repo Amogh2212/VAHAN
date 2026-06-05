@@ -44,6 +44,24 @@
             </span>
             <span>Map view</span>
           </a>
+          <a class="feature-link" href="/tracked.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 5h14v14H5z" />
+                <path d="M8 12h3l2-4 3 8 2-4" />
+              </svg>
+            </span>
+            <span>Tracked queries</span>
+          </a>
+          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" />
+                <path d="m10.3 12.9 4.8-4.8" />
+              </svg>
+            </span>
+            <span>Telegram bot</span>
+          </a>
         </nav>
       </aside>
     <main class="shell" id="app">
@@ -56,9 +74,9 @@
                 <span class="sidebar-mark trigger-mark">V</span>
               </button>
             </div>
-            <div class="query-panel-head">
-              <p class="eyebrow">VAHAN Aggregate Dashboard</p>
-              <h1>Registration Query Dashboard</h1>
+          <div class="query-panel-head">
+            <p class="eyebrow">VAHAN Aggregate Dashboard</p>
+              <h1>VAHAN Analyst Command Center</h1>
             </div>
           </div>
           <div class="download-menu">
@@ -84,65 +102,138 @@
             <span class="btn-text">Run Query</span>
           </button>
         </form>
+        <div class="query-shortcuts" aria-label="Example analyst queries">
+          <button type="button" data-query="EV registrations in Noida from May 2024 to May 2025">Noida EV trend</button>
+          <button type="button" data-query="how many ev cars were registered in haridwar between 2024-2025">Haridwar EV</button>
+          <button type="button" data-query="diesel fork lift registrations in Maharashtra from Jan 2024 to Dec 2024">Maharashtra forklifts</button>
+        </div>
         <p id="freshness" class="freshness"></p>
       </section>
 
       <!-- Warnings -->
       <section id="warnings" class="warnings" hidden></section>
 
-      <!-- Summary Cards -->
-      <section class="cards" id="summaryCards">
-        <article id="card-total">
-          <span>Total Registrations</span>
-          <strong id="total">0</strong>
-        </article>
-        <article id="card-average">
-          <span>Monthly Average</span>
-          <strong id="average">0</strong>
-        </article>
-        <article id="card-peak">
-          <span>Peak Month</span>
-          <strong id="peak">-</strong>
-        </article>
-        <article id="card-rows">
-          <span>Rows Returned</span>
-          <strong id="rowCount">0</strong>
-        </article>
+      <section class="workspace-switcher" aria-label="Dashboard template preview">
+        <div>
+          <p class="eyebrow">Preview template</p>
+          <h2>Command center + analyst console</h2>
+        </div>
+        <div class="mode-toggle dashboard-mode-toggle" role="tablist" aria-label="Dashboard display mode">
+          <button type="button" class="active" data-dashboard-mode="command" aria-pressed="true">Command center</button>
+          <button type="button" data-dashboard-mode="analyst" aria-pressed="false">Analyst console</button>
+          <button type="button" data-dashboard-mode="executive" aria-pressed="false">Executive view</button>
+        </div>
       </section>
 
-      <!-- Filters + Trend -->
-      <section class="grid">
-        <article class="panel" id="filtersPanel">
-          <div class="panel-head">
-            <h2>Parsed Filters</h2>
-          </div>
-          <dl id="filters" class="filters"></dl>
-        </article>
+      <section class="dashboard-layout" id="dashboardLayout" data-mode="command">
+        <div class="dashboard-main">
+          <!-- Summary Cards -->
+          <section class="cards" id="summaryCards">
+            <article id="card-total">
+              <span>Total Registrations</span>
+              <strong id="total">0</strong>
+            </article>
+            <article id="card-average">
+              <span>Monthly Average</span>
+              <strong id="average">0</strong>
+            </article>
+            <article id="card-peak">
+              <span>Peak Month</span>
+              <strong id="peak">-</strong>
+            </article>
+            <article id="card-rows">
+              <span>Rows Returned</span>
+              <strong id="rowCount">0</strong>
+            </article>
+          </section>
 
-        <article class="panel" id="trendPanel">
-          <div class="panel-head">
-            <h2>Monthly Trend</h2>
-          </div>
-          <div id="trend" class="bars"></div>
-        </article>
-      </section>
+          <!-- Filters + Trend -->
+          <section class="grid">
+            <article class="panel" id="filtersPanel">
+              <div class="panel-head">
+                <h2>Parsed Filters</h2>
+                <span class="status-pill" id="filterConfidence">Rule parsed</span>
+              </div>
+              <dl id="filters" class="filters"></dl>
+            </article>
 
-      <!-- Fuel Breakdown -->
-      <section class="panel" id="fuelPanel">
-        <div class="panel-head">
-          <h2>Fuel Breakdown</h2>
-        </div>
-        <div id="fuelBreakdown" class="fuel-list"></div>
-      </section>
+            <article class="panel" id="trendPanel">
+              <div class="panel-head">
+                <h2>Monthly Trend</h2>
+                <span class="panel-kicker" id="trendRange">Waiting for data</span>
+              </div>
+              <div id="trend" class="bars"></div>
+            </article>
+          </section>
 
-      <!-- Result Table -->
-      <section class="panel" id="tablePanel">
-        <div class="panel-head">
-          <h2>Result Rows</h2>
+          <!-- Fuel Breakdown -->
+          <section class="panel" id="fuelPanel">
+            <div class="panel-head">
+              <h2>Fuel Breakdown</h2>
+              <span class="panel-kicker" id="fuelLeader">No leader yet</span>
+            </div>
+            <div id="fuelBreakdown" class="fuel-list"></div>
+          </section>
+
+          <!-- Result Table -->
+          <section class="panel" id="tablePanel">
+            <div class="panel-head">
+              <h2>Result Rows</h2>
+              <span class="panel-kicker">Grouped by month and fuel</span>
+            </div>
+            <div id="rowChart" class="row-chart">
+              <p class="result-empty">Run a query to review results grouped by month.</p>
+            </div>
+          </section>
         </div>
-        <div id="rowChart" class="row-chart">
-          <p class="result-empty">Run a query to review results grouped by month.</p>
-        </div>
+
+        <aside class="insight-rail" aria-label="Query insights and data status">
+          <article class="panel insight-card source-card">
+            <div class="panel-head">
+              <h2>Source Status</h2>
+              <span class="status-pill" id="sourceStatusPill">Waiting</span>
+            </div>
+            <div class="source-meter">
+              <strong id="sourceMetric">0</strong>
+              <span>rows loaded for current answer</span>
+            </div>
+            <dl class="insight-list">
+              <div>
+                <dt>Latest month</dt>
+                <dd id="railLatestMonth">-</dd>
+              </div>
+              <div>
+                <dt>Save state</dt>
+                <dd id="railSaveStatus">-</dd>
+              </div>
+              <div>
+                <dt>Auto scrape</dt>
+                <dd id="railScrapeStatus">Idle</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="panel insight-card">
+            <div class="panel-head">
+              <h2>Analyst Notes</h2>
+            </div>
+            <div class="analyst-notes" id="analystNotes">
+              <p>Run a query to generate trend, peak, and source quality notes.</p>
+            </div>
+          </article>
+
+          <article class="panel insight-card">
+            <div class="panel-head">
+              <h2>Workflow</h2>
+            </div>
+            <ol class="workflow-list">
+              <li class="active">Decode natural-language query</li>
+              <li>Check saved VAHAN rows</li>
+              <li>Fetch missing months if needed</li>
+              <li>Export CSV or printable report</li>
+            </ol>
+          </article>
+        </aside>
       </section>
     </main>
     </div>

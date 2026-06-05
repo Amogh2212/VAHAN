@@ -9,6 +9,7 @@ import { hasDatabaseUrl } from "./lib/db.mjs";
 import {
   REGISTRATION_HEADERS,
   loadRegistrationRowsFromDb,
+  queryAvailableMonthFuelTypes,
   queryAvailableMonths,
   queryRegistrationFreshness,
   queryRegistrationRows,
@@ -25,6 +26,15 @@ import {
   createTelegramBot,
   parseAllowedChatIds,
 } from "./lib/telegram-bot.mjs";
+import {
+  createTrackedQuery,
+  deleteTrackedQuery,
+  disableTrackedQuery,
+  getTrackedQuery,
+  listTrackedQueries,
+  listTrackedQueryObservations,
+  updateTrackedQuery,
+} from "./lib/tracked-queries.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -40,6 +50,8 @@ const LIVE_REFRESH_DISABLED = /^(1|true|yes)$/i.test(process.env.VAHAN_DISABLE_L
 const TELEGRAM_ENABLE_POLLING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_ENABLE_POLLING ?? "true");
 const TELEGRAM_ALERT_THRESHOLD_POINTS = Number(process.env.TELEGRAM_ALERT_THRESHOLD_POINTS ?? 2);
 const TELEGRAM_SUMMARY_FETCH_MISSING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_SUMMARY_FETCH_MISSING ?? "true");
+const TELEGRAM_PUBLIC_DAILY_LIMIT = Math.max(0, Number(process.env.TELEGRAM_PUBLIC_DAILY_LIMIT ?? 0) || 0);
+const TELEGRAM_PUBLIC_ACCESS = TELEGRAM_PUBLIC_DAILY_LIMIT > 0;
 const FILTER_CONTEXT_FIELDS = [
   "fuel_filter",
   "vehicle_category_filter",
@@ -48,7 +60,9 @@ const FILTER_CONTEXT_FIELDS = [
 ];
 let rtoCatalogCache = null;
 let telegramBot = null;
+let telegramAllowedChatIds = new Set();
 const telegramChatModes = new Map();
+const telegramPublicUsage = new Map();
 const sentTelegramAlertKeys = new Set();
 const sentTelegramSummaryKeys = new Set();
 
@@ -278,11 +292,56 @@ const FUEL_FILTER_ALIASES = [
   { aliases: ["strong hybrid"], value: "STRONG HYBRID EV", fuelSegment: "EV", fuelType: "STRONG HYBRID EV" },
 ];
 
+const BATTERY_ELECTRIC_FUELS = ["ELECTRIC(BOV)", "PURE EV"];
+const HYBRID_FUELS = [
+  "DIESEL/HYBRID",
+  "PETROL(E20)/HYBRID",
+  "PETROL(E20)/HYBRID/CNG",
+  "PETROL/HYBRID",
+  "PETROL/HYBRID/CNG",
+  "PLUG-IN HYBRID EV",
+  "STRONG HYBRID EV",
+];
+const KNOWN_FUEL_TYPES = [
+  "CNG ONLY",
+  "DIESEL",
+  "DIESEL/HYBRID",
+  "DUAL DIESEL/CNG",
+  "DUAL DIESEL/LNG",
+  "ELECTRIC(BOV)",
+  "ETHANOL(E100)",
+  "FUEL CELL HYDROGEN",
+  "LNG",
+  "LPG ONLY",
+  "METHANOL",
+  "NOT APPLICABLE",
+  "PETROL",
+  "PETROL(E20)",
+  "PETROL(E20)/CNG",
+  "PETROL(E20)/HYBRID",
+  "PETROL(E20)/HYBRID/CNG",
+  "PETROL(E20)/LPG",
+  "PETROL/CNG",
+  "PETROL/HYBRID",
+  "PETROL/HYBRID/CNG",
+  "PETROL/LPG",
+  "PETROL/METHANOL",
+  "PLUG-IN HYBRID EV",
+  "PURE EV",
+  "STRONG HYBRID EV",
+];
+
 const VEHICLE_CATEGORY_ALIASES = [
   { aliases: ["lmv", "light motor vehicle"], value: "LIGHT MOTOR VEHICLE" },
   { aliases: ["hmv", "heavy motor vehicle"], value: "HEAVY MOTOR VEHICLE" },
   { aliases: ["mmv", "medium motor vehicle"], value: "MEDIUM MOTOR VEHICLE" },
   { aliases: ["four wheeler invalid carriage"], value: "FOUR WHEELER (Invalid Carriage)" },
+];
+
+const VEHICLE_GROUP_ALIASES = [
+  { aliases: ["two wheeler", "two wheelers", "2 wheeler", "2 wheelers", "2w"], value: "TWO WHEELER" },
+  { aliases: ["three wheeler", "three wheelers", "3 wheeler", "3 wheelers", "3w"], value: "THREE WHEELER" },
+  { aliases: ["four wheeler", "four wheelers", "4 wheeler", "4 wheelers", "4w"], value: "FOUR WHEELER" },
 ];
 
 const NORMS_ALIASES = [
@@ -304,11 +363,14 @@ const VEHICLE_CLASS_ALIASES = [
   { aliases: ["bus", "buses"], value: "BUS" },
   { aliases: ["school bus"], value: "SCHOOL BUS" },
   { aliases: ["omni bus"], value: "OMNI BUS" },
-  { aliases: ["m-cycle/scooter", "motorcycle", "motor cycle", "scooter", "two wheeler"], value: "M-CYCLE/SCOOTER" },
+  { aliases: ["m-cycle/scooter", "motorcycle", "motor cycle", "scooter"], value: "M-CYCLE/SCOOTER" },
   { aliases: ["moped"], value: "MOPED" },
   { aliases: ["goods carrier"], value: "GOODS CARRIER" },
   { aliases: ["tractor"], value: "TRACTOR (COMMERCIAL)" },
-  { aliases: ["e-rickshaw", "erickshaw"], value: "E-RICKSHAW(P)" },
+  { aliases: ["e-rickshaw passenger", "erickshaw passenger", "passenger e-rickshaw", "passenger erickshaw"], value: "E-RICKSHAW(P)" },
+  { aliases: ["e-rickshaw cart", "erickshaw cart", "e-rickshaw goods", "erickshaw goods", "goods e-rickshaw", "goods erickshaw", "cargo e-rickshaw", "cargo erickshaw", "electric goods rickshaw"], value: "E-RICKSHAW WITH CART (G)" },
+  { aliases: ["three wheeler passenger", "three wheelers passenger", "3 wheeler passenger", "3w passenger", "passenger three wheeler", "passenger 3 wheeler"], value: "THREE WHEELER (PASSENGER)" },
+  { aliases: ["three wheeler goods", "three wheelers goods", "3 wheeler goods", "3w goods", "goods three wheeler", "goods 3 wheeler"], value: "THREE WHEELER (GOODS)" },
   { aliases: ["fork lift", "forklift", "fork lifts", "forklifts"], value: "FORK LIFT" },
   { aliases: ["tow truck"], value: "TOW TRUCK" },
   { aliases: ["fire tenders", "fire tender"], value: "FIRE TENDERS" },
@@ -316,6 +378,7 @@ const VEHICLE_CLASS_ALIASES = [
 ];
 
 let dataCache = null;
+let databaseUnavailable = false;
 let persistenceQueue = Promise.resolve();
 let nextRefreshJobId = 1;
 const refreshJobs = new Map();
@@ -330,8 +393,32 @@ function normalizeLookup(value) {
   return compact(value).toLowerCase();
 }
 
+function isSameStateLocation(value, state) {
+  if (!value || !state) return false;
+  const location = normalizeLookup(value);
+  const stateLookup = normalizeLookup(state);
+  return (
+    location === stateLookup ||
+    location === `${stateLookup} state` ||
+    location === `state of ${stateLookup}`
+  );
+}
+
 function uniqueSorted(values) {
   return [...new Set((values ?? []).filter(Boolean).map((value) => compact(value)))].sort((a, b) => a.localeCompare(b));
+}
+
+function uniqueLabelValues(values) {
+  const labels = [];
+  const seen = new Set();
+  for (const value of values ?? []) {
+    const label = compact(value);
+    const key = label.toLowerCase();
+    if (!label || seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+  }
+  return labels.sort((a, b) => a.localeCompare(b));
 }
 
 function filterContextValue(values) {
@@ -508,11 +595,12 @@ function parseCsvLine(line) {
 async function loadRows() {
   if (dataCache) return dataCache;
 
-  if (hasDatabaseUrl()) {
+  if (hasDatabaseUrl() && !databaseUnavailable) {
     try {
       dataCache = await loadRegistrationRowsFromDb();
       return dataCache;
     } catch (error) {
+      databaseUnavailable = true;
       console.warn(`[data] Neon read failed, falling back to CSV: ${error.message}`);
     }
   }
@@ -524,12 +612,22 @@ async function loadRows() {
 async function loadCatalog(rows = []) {
   if (!rtoCatalogCache) {
     const fileCatalog = await loadRtoCatalog(RTO_CATALOG_FILE);
-    const rowCatalog = hasDatabaseUrl()
-      ? buildRtoCatalogFromRows((await queryRtos()).map((item) => ({ state: item.state, rto: item.rto })))
-      : buildRtoCatalogFromRows(rows);
+    let rowCatalog = buildRtoCatalogFromRows(rows);
+    if (hasDatabaseUrl() && !databaseUnavailable) {
+      try {
+        rowCatalog = buildRtoCatalogFromRows((await queryRtos()).map((item) => ({ state: item.state, rto: item.rto })));
+      } catch (error) {
+        databaseUnavailable = true;
+        console.warn(`[data] Neon RTO catalog read failed, using CSV catalog: ${error.message}`);
+      }
+    }
     rtoCatalogCache = mergeRtoCatalogs(fileCatalog, rowCatalog);
   }
   return rtoCatalogCache;
+}
+
+function useDatabaseStorage() {
+  return hasDatabaseUrl() && !databaseUnavailable;
 }
 
 function mergeRtoCatalogs(primary, fallback) {
@@ -558,13 +656,19 @@ function mergeRtoCatalogs(primary, fallback) {
 async function persistScrapedRows(rows) {
   if (!rows.length) return;
 
-  if (hasDatabaseUrl()) {
-    await upsertRegistrationRows(rows);
-  }
-
   const csvRows = mergeRegistrationRows(await readRegistrationsCsv(DATA_FILE), rows);
   await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
   await fs.writeFile(DATA_FILE, toRegistrationsCsv(csvRows), "utf8");
+
+  if (hasDatabaseUrl()) {
+    try {
+      await upsertRegistrationRows(rows);
+      databaseUnavailable = false;
+    } catch (error) {
+      databaseUnavailable = true;
+      console.warn(`[persist] Saved scraped rows to CSV, but Neon upsert failed: ${error.message}`);
+    }
+  }
 }
 
 function queueScrapedRowsPersistence(rows) {
@@ -660,6 +764,30 @@ function parseDateRange(text) {
   return parseYearRange(text) ?? parseYearOnly(text);
 }
 
+function currentMonthKey(date = new Date()) {
+  return monthKey(date.getFullYear(), date.getMonth() + 1);
+}
+
+function clampFutureDateRange(filters, maxMonth = currentMonthKey()) {
+  if (!filters?.from || !filters?.to || filters.to <= maxMonth) return filters;
+  if (filters.from > maxMonth) return filters;
+  return { ...filters, to: maxMonth, cappedFutureDateRange: true };
+}
+
+function applyDefaultDateRange(filters, defaultDateRange = null, { force = false } = {}) {
+  if (!defaultDateRange || (!force && (filters?.from || filters?.to))) return filters;
+  const from = defaultDateRange.from ?? defaultDateRange.month ?? null;
+  const to = defaultDateRange.to ?? defaultDateRange.month ?? from;
+  if (!from || !to) return filters;
+  return {
+    ...filters,
+    from,
+    to,
+    defaultedDateRange: true,
+    defaultedDateRangeReason: defaultDateRange.reason ?? "No date was provided, so the daily tracker used its run month",
+  };
+}
+
 function editDistanceWithin(a, b, maxDistance) {
   if (Math.abs(a.length - b.length) > maxDistance) return maxDistance + 1;
   const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
@@ -711,6 +839,15 @@ function findFuzzyCityAlias(text) {
   return null;
 }
 
+function hasExplicitRtoIntent(text) {
+  return /\b(?:rto|rtos|office|regional\s+transport|transport\s+office)\b/i.test(text);
+}
+
+function shouldTreatAliasAsStateOnly(alias, state, text) {
+  if (!alias || !state || hasExplicitRtoIntent(text)) return false;
+  return normalizeLookup(alias) === normalizeLookup(state);
+}
+
 function decodeWithRules(query) {
   const text = compact(query).toLowerCase();
   const yearRange = parseDateRange(text);
@@ -743,6 +880,7 @@ function decodeWithRules(query) {
   let locationText = null;
   for (const alias of RTO_ALIASES) {
     if (!text.includes(alias.alias)) continue;
+    if (shouldTreatAliasAsStateOnly(alias.alias, alias.state, text)) continue;
     locationText = alias.alias;
     if (alias.state) state = alias.state;
     rto = alias.rto ?? alias.rtoIncludes;
@@ -775,21 +913,221 @@ function decodeWithRules(query) {
   };
 }
 
-async function decodeWithGemini(query) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+function buildSemanticVocabulary(rows = []) {
+  return {
+    fuelTypes: uniqueLabelValues([
+      ...KNOWN_FUEL_TYPES,
+      ...FUEL_FILTER_ALIASES.map((item) => item.value),
+      ...rows.map((row) => row.fuel_type),
+    ]),
+    vehicleClasses: uniqueLabelValues([
+      ...VEHICLE_CLASS_ALIASES.map((item) => item.value),
+      ...rows.map((row) => row.vehicle_class_filter).filter((value) => value && value !== ALL_FILTER),
+    ]),
+    vehicleCategories: uniqueLabelValues([
+      ...VEHICLE_CATEGORY_ALIASES.map((item) => item.value),
+      ...rows.map((row) => row.vehicle_category_filter).filter((value) => value && value !== ALL_FILTER),
+    ]),
+    vehicleGroups: uniqueLabelValues(VEHICLE_GROUP_ALIASES.map((item) => item.value)),
+    norms: uniqueLabelValues([
+      ...NORMS_ALIASES.map((item) => item.value),
+      ...rows.map((row) => row.norms_filter).filter((value) => value && value !== ALL_FILTER),
+    ]),
+  };
+}
 
-  const prompt = [
-    "Normalize and extract filters from this Indian VAHAN vehicle registration query.",
+function exactVocabularyLabels(values, vocabularyLabels) {
+  const byKey = new Map((vocabularyLabels ?? []).map((label) => [normalizeLookup(label), label]));
+  return uniqueLabelValues((values ?? []).map((value) => byKey.get(normalizeLookup(value))).filter(Boolean));
+}
+
+function findVehicleGroups(text, vocabulary) {
+  const normalizedText = normalizeLookup(text);
+  return exactVocabularyLabels(
+    VEHICLE_GROUP_ALIASES
+      .filter((definition) => definition.aliases.some((alias) => {
+        const normalizedAlias = normalizeLookup(alias);
+        return new RegExp(`\\b${normalizedAlias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalizedText);
+      }))
+      .map((definition) => definition.value),
+    vocabulary.vehicleGroups,
+  );
+}
+
+function semanticFuelSelection(text, vocabulary) {
+  const normalized = normalizeLookup(text);
+  const exactFuelMatches = FUEL_FILTER_ALIASES.filter((definition) =>
+    definition.aliases.some((alias) => new RegExp(`\\b${normalizeLookup(alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalized)),
+  ).map((definition) => definition.value);
+
+  if (/\b(non[-\s]?ev)\b/i.test(normalized)) return [];
+  if (/\b(?:plug[-\s]?in\s+hybrid|phev)\b/i.test(normalized)) return exactVocabularyLabels(["PLUG-IN HYBRID EV"], vocabulary.fuelTypes);
+  if (/\bstrong\s+hybrid\b/i.test(normalized)) return exactVocabularyLabels(["STRONG HYBRID EV"], vocabulary.fuelTypes);
+  if (/\bhybrid\b/i.test(normalized)) return exactVocabularyLabels(HYBRID_FUELS, vocabulary.fuelTypes);
+  if (exactFuelMatches.length) return exactVocabularyLabels(exactFuelMatches, vocabulary.fuelTypes);
+  if (/\b(?:ev|electric|battery|bov)\b/i.test(normalized)) return exactVocabularyLabels(BATTERY_ELECTRIC_FUELS, vocabulary.fuelTypes);
+  return [];
+}
+
+function semanticVehicleClassSelection(text, ruleFilters, vocabulary) {
+  const normalized = normalizeLookup(text);
+  const selected = [...(ruleFilters.vehicleClasses ?? [])];
+  const mentionsErickshaw = /\b(?:e[-\s]?rickshaw|erickshaw)\b/i.test(normalized);
+  const mentionsGoods = /\b(?:goods|cargo|cart)\b/i.test(normalized);
+  const mentionsPassenger = /\b(?:passenger|passengers|public|people)\b/i.test(normalized);
+
+  if (mentionsErickshaw && mentionsGoods && !mentionsPassenger) {
+    selected.push("E-RICKSHAW WITH CART (G)");
+  } else if (mentionsErickshaw && mentionsPassenger && !mentionsGoods) {
+    selected.push("E-RICKSHAW(P)");
+  } else if (mentionsErickshaw && !mentionsGoods && !mentionsPassenger) {
+    selected.push("E-RICKSHAW(P)", "E-RICKSHAW WITH CART (G)");
+  }
+
+  return exactVocabularyLabels(selected, vocabulary.vehicleClasses);
+}
+
+function semanticPlanFromRules(query, ruleFilters, vocabulary) {
+  const selectedFuelTypes = semanticFuelSelection(query, vocabulary);
+  const selectedVehicleClasses = semanticVehicleClassSelection(query, ruleFilters, vocabulary);
+  const selectedVehicleCategories = exactVocabularyLabels(ruleFilters.vehicleCategories, vocabulary.vehicleCategories);
+  const selectedNorms = exactVocabularyLabels(ruleFilters.norms, vocabulary.norms);
+  const selectedVehicleGroups = selectedVehicleClasses.length ? [] : findVehicleGroups(query, vocabulary);
+  const selectedParts = [
+    selectedFuelTypes.length ? `${selectedFuelTypes.join(", ")} fuel` : null,
+    selectedVehicleGroups.length ? `${selectedVehicleGroups.join(", ")} group` : null,
+    selectedVehicleClasses.length ? `${selectedVehicleClasses.join(", ")} class` : null,
+    selectedVehicleCategories.length ? `${selectedVehicleCategories.join(", ")} category` : null,
+  ].filter(Boolean);
+
+  return {
+    semanticIntent: selectedParts.length ? `Query matched ${selectedParts.join("; ")}` : null,
+    selectedFuelTypes,
+    selectedVehicleGroups,
+    selectedVehicleClasses,
+    selectedVehicleCategories,
+    selectedNorms,
+    semanticConfidence: selectedParts.length ? 0.78 : null,
+    semanticExplanation: selectedParts.length
+      ? "Selected exact VAHAN labels from deterministic query rules."
+      : null,
+  };
+}
+
+function normalizeConfidence(value) {
+  const confidence = Number(value);
+  if (!Number.isFinite(confidence)) return null;
+  return Math.max(0, Math.min(1, confidence));
+}
+
+function normalizeSemanticPlan(plan, vocabulary) {
+  if (!plan) return null;
+  return {
+    semanticIntent: compact(plan.semanticIntent ?? plan.intent ?? "") || null,
+    selectedFuelTypes: exactVocabularyLabels(plan.selectedFuelTypes ?? plan.fuelTypes ?? [], vocabulary.fuelTypes),
+    selectedVehicleGroups: exactVocabularyLabels(plan.selectedVehicleGroups ?? plan.vehicleGroups ?? [], vocabulary.vehicleGroups),
+    selectedVehicleClasses: exactVocabularyLabels(plan.selectedVehicleClasses ?? plan.vehicleClasses ?? [], vocabulary.vehicleClasses),
+    selectedVehicleCategories: exactVocabularyLabels(plan.selectedVehicleCategories ?? plan.vehicleCategories ?? [], vocabulary.vehicleCategories),
+    selectedNorms: exactVocabularyLabels(plan.selectedNorms ?? plan.norms ?? [], vocabulary.norms),
+    semanticConfidence: normalizeConfidence(plan.semanticConfidence ?? plan.confidence),
+    semanticExplanation: compact(plan.semanticExplanation ?? plan.explanation ?? "") || null,
+  };
+}
+
+function selectedFuelSegment(selectedFuelTypes) {
+  if (!selectedFuelTypes?.length) return null;
+  const fuelSet = new Set(selectedFuelTypes.map((value) => normalizeLookup(value)));
+  const batterySet = new Set(BATTERY_ELECTRIC_FUELS.map((value) => normalizeLookup(value)));
+  return [...fuelSet].every((value) => batterySet.has(value)) ? "EV" : null;
+}
+
+function combineSemanticPlan(query, ruleFilters, llmFilters, vocabulary) {
+  const rulePlan = semanticPlanFromRules(query, ruleFilters, vocabulary);
+  const llmPlan = normalizeSemanticPlan(llmFilters, vocabulary);
+  const useLlm = llmPlan && (
+    llmPlan.selectedFuelTypes.length ||
+    llmPlan.selectedVehicleGroups.length ||
+    llmPlan.selectedVehicleClasses.length ||
+    llmPlan.selectedVehicleCategories.length ||
+    llmPlan.selectedNorms.length
+  );
+  const selectedFuelTypes = uniqueLabelValues([
+    ...(useLlm ? llmPlan.selectedFuelTypes : []),
+    ...rulePlan.selectedFuelTypes,
+  ]);
+  const selectedVehicleClasses = uniqueLabelValues([
+    ...(useLlm ? llmPlan.selectedVehicleClasses : []),
+    ...rulePlan.selectedVehicleClasses,
+  ]);
+  const selectedVehicleGroups = selectedVehicleClasses.length
+    ? []
+    : uniqueLabelValues([
+      ...(useLlm ? llmPlan.selectedVehicleGroups : []),
+      ...rulePlan.selectedVehicleGroups,
+    ]);
+  const selectedVehicleCategories = rulePlan.selectedVehicleCategories;
+  const selectedNorms = uniqueLabelValues([
+    ...(useLlm ? llmPlan.selectedNorms : []),
+    ...rulePlan.selectedNorms,
+  ]);
+  const hasSelection = selectedFuelTypes.length || selectedVehicleGroups.length || selectedVehicleClasses.length || selectedVehicleCategories.length || selectedNorms.length;
+  if (!hasSelection) return {};
+
+  const baseConfidence = useLlm ? llmPlan.semanticConfidence ?? 0.7 : rulePlan.semanticConfidence ?? 0.65;
+  const directScore = [
+    selectedFuelTypes.length,
+    selectedVehicleGroups.length,
+    selectedVehicleClasses.length,
+    selectedVehicleCategories.length,
+    selectedNorms.length,
+  ].filter(Boolean).length * 0.04;
+  const semanticConfidence = Math.min(0.98, Math.max(0.35, baseConfidence + directScore));
+  return {
+    selectedFuelTypes,
+    selectedVehicleGroups,
+    selectedVehicleClasses,
+    selectedVehicleCategories,
+    selectedNorms,
+    semanticIntent: (useLlm ? llmPlan.semanticIntent : rulePlan.semanticIntent) ?? rulePlan.semanticIntent ?? "VAHAN semantic filter match",
+    semanticConfidence,
+    semanticExplanation: (useLlm ? llmPlan.semanticExplanation : rulePlan.semanticExplanation) ?? rulePlan.semanticExplanation,
+  };
+}
+
+function semanticPlannerPrompt(query, vocabulary = buildSemanticVocabulary()) {
+  return [
+    "Plan exact filters for this Indian VAHAN vehicle registration query.",
     "Correct obvious spelling mistakes in Indian city/state/RTO names before extracting filters.",
     "Examples: bengluru means Bengaluru/Bangalore, gurgao means Gurugram/Gurgaon, mumabi means Mumbai.",
-    "Return only compact JSON with keys: fuelSegment, fuelType, fuelFilters, vehicleCategories, norms, vehicleClasses, state, rtoText, locationText, locationType, from, to, metric, confidence.",
-    "Use exact VAHAN labels for checkbox filters when obvious, for example AMBULANCE, MOTOR CAR, LIGHT MOTOR VEHICLE, BHARAT STAGE VI, DIESEL.",
+    "Choose only exact labels from the allowed VAHAN label lists below. Do not invent labels.",
+    "Plain EV means battery-electric unless the user explicitly says hybrid or plug-in hybrid.",
+    "Hybrid means hybrid labels only. Car means MOTOR CAR when a vehicle class is needed.",
+    "Only select vehicle category labels when the user directly asks for that category, such as LMV, HMV, transport, non-transport, or light/heavy motor vehicle. Do not infer a vehicle category from a vehicle class.",
+    "Return only compact JSON with keys: semanticIntent, selectedFuelTypes, selectedVehicleGroups, selectedVehicleClasses, selectedVehicleCategories, selectedNorms, state, rtoText, locationText, locationType, from, to, metric, semanticConfidence, semanticExplanation.",
+    "Use selectedFuelTypes for exact row fuel labels. Use selectedVehicleClasses for exact VAHAN vehicle class labels.",
+    "Use selectedVehicleGroups for broad vehicle groups. Do not combine a broad group with child classes in the same answer.",
     "Use official VAHAN-style state names when possible. For city/RTO queries, set state and rtoText to the likely RTO search text.",
     "Use YYYY-MM for dates. Use metric='registrations'. Never invent counts.",
     "If the user names an Indian city/RTO, infer the Indian state only when you are confident. If unsure, use null values and confidence below 0.6.",
+    `Allowed fuel labels: ${vocabulary.fuelTypes.join(", ")}`,
+    `Allowed vehicle class labels: ${vocabulary.vehicleClasses.join(", ")}`,
+    `Allowed vehicle category labels: ${vocabulary.vehicleCategories.join(", ")}`,
+    `Allowed vehicle group labels: ${vocabulary.vehicleGroups.join(", ")}`,
+    `Allowed norms labels: ${vocabulary.norms.join(", ")}`,
     `Query: ${query}`,
   ].join("\n");
+}
+
+function parseJsonFromModelText(text) {
+  const match = String(text ?? "").match(/\{[\s\S]*\}/);
+  return match ? JSON.parse(match[0]) : null;
+}
+
+async function decodeWithGemini(query, vocabulary = buildSemanticVocabulary()) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const prompt = semanticPlannerPrompt(query, vocabulary);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -802,24 +1140,77 @@ async function decodeWithGemini(query) {
   if (!response.ok) throw new Error(`Gemini decode failed: ${response.status}`);
   const json = await response.json();
   const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? JSON.parse(match[0]) : null;
+  return parseJsonFromModelText(text);
+}
+
+async function decodeWithGroq(query, vocabulary = buildSemanticVocabulary()) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const prompt = semanticPlannerPrompt(query, vocabulary);
+  const model = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      messages: [
+        { role: "system", content: "Return only compact JSON. Do not include markdown." },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error(`Groq decode failed: ${response.status}`);
+  const json = await response.json();
+  return parseJsonFromModelText(json.choices?.[0]?.message?.content ?? "");
+}
+
+async function decodeWithAiProviders(query, vocabulary = buildSemanticVocabulary()) {
+  const warnings = [];
+  const providers = [
+    { name: "Gemini", enabled: Boolean(process.env.GEMINI_API_KEY), decode: () => decodeWithGemini(query, vocabulary) },
+    { name: "Groq", enabled: Boolean(process.env.GROQ_API_KEY), decode: () => decodeWithGroq(query, vocabulary) },
+  ];
+
+  for (const provider of providers) {
+    if (!provider.enabled) continue;
+    try {
+      const filters = await provider.decode();
+      if (filters) return { filters: { ...filters, aiProvider: provider.name }, warnings };
+      warnings.push(`${provider.name} returned no filter plan.`);
+    } catch (error) {
+      warnings.push(error.message);
+    }
+  }
+
+  return { filters: null, warnings };
 }
 
 function normalizeGeminiFilters(filters) {
   if (!filters) return null;
-  const confidence = Number(filters.confidence ?? 1);
+  const confidence = Number(filters.confidence ?? filters.semanticConfidence ?? 1);
   if (Number.isFinite(confidence) && confidence < 0.6) {
     return { decodeWarning: "Gemini could not confidently resolve the location or filters." };
   }
   return {
     ...filters,
+    aiProvider: filters.aiProvider ?? null,
     fuelFilters: uniqueSorted(filters.fuelFilters),
+    selectedFuelTypes: uniqueSorted(filters.selectedFuelTypes),
+    selectedVehicleGroups: uniqueSorted(filters.selectedVehicleGroups),
+    selectedVehicleClasses: uniqueSorted(filters.selectedVehicleClasses),
+    selectedVehicleCategories: uniqueSorted(filters.selectedVehicleCategories),
+    selectedNorms: uniqueSorted(filters.selectedNorms),
     vehicleCategories: uniqueSorted(filters.vehicleCategories),
     norms: uniqueSorted(filters.norms),
     vehicleClasses: uniqueSorted(filters.vehicleClasses),
     rto: filters.rto ?? filters.rtoText ?? null,
     locationText: filters.locationText ?? filters.rtoText ?? null,
+    confidence,
   };
 }
 
@@ -829,9 +1220,17 @@ function mergeFilters(ruleFilters, llmFilters) {
   const ruleHasWeakLocation = ruleFilters.locationSource === "fuzzy_city";
   const preferredRuleLocation = ruleHasLocation && !ruleHasWeakLocation;
   const llmHasLocation = Boolean(llmFilters.state || llmFilters.rto || llmFilters.rtoText || llmFilters.locationText);
+  const llmLocationIsOnlyRuleState = Boolean(
+    ruleFilters.state &&
+      !ruleFilters.rto &&
+      !ruleFilters.locationText &&
+      [llmFilters.rto, llmFilters.rtoText, llmFilters.locationText].some((value) => isSameStateLocation(value, ruleFilters.state)),
+  );
   const fuelType = ruleFilters.fuelType ?? llmFilters.fuelType ?? null;
   const fuelFilters = uniqueSorted([...(ruleFilters.fuelFilters ?? []), ...(llmFilters.fuelFilters ?? [])])
     .filter((value) => !isRedundantFuelFilter(value, fuelType));
+  const preferredRto = llmLocationIsOnlyRuleState ? null : llmFilters.rto ?? llmFilters.rtoText ?? null;
+  const preferredLocationText = llmLocationIsOnlyRuleState ? null : llmFilters.locationText ?? llmFilters.rtoText ?? null;
   return {
     fuelSegment: ruleFilters.fuelSegment ?? llmFilters.fuelSegment ?? null,
     fuelType,
@@ -840,9 +1239,9 @@ function mergeFilters(ruleFilters, llmFilters) {
     norms: uniqueSorted([...(ruleFilters.norms ?? []), ...(llmFilters.norms ?? [])]),
     vehicleClasses: uniqueSorted([...(ruleFilters.vehicleClasses ?? []), ...(llmFilters.vehicleClasses ?? [])]),
     state: preferredRuleLocation ? ruleFilters.state ?? llmFilters.state ?? null : llmFilters.state ?? ruleFilters.state ?? null,
-    rto: preferredRuleLocation ? ruleFilters.rto ?? llmFilters.rto ?? llmFilters.rtoText ?? null : llmFilters.rto ?? llmFilters.rtoText ?? ruleFilters.rto ?? null,
-    locationText: preferredRuleLocation ? ruleFilters.locationText ?? llmFilters.locationText ?? null : llmFilters.locationText ?? llmFilters.rtoText ?? ruleFilters.locationText ?? null,
-    locationSource: preferredRuleLocation ? ruleFilters.locationSource : llmHasLocation ? "gemini" : ruleFilters.locationSource,
+    rto: preferredRuleLocation ? ruleFilters.rto ?? preferredRto : preferredRto ?? ruleFilters.rto ?? null,
+    locationText: preferredRuleLocation ? ruleFilters.locationText ?? preferredLocationText : preferredLocationText ?? ruleFilters.locationText ?? null,
+    locationSource: preferredRuleLocation ? ruleFilters.locationSource : llmHasLocation && !llmLocationIsOnlyRuleState ? "gemini" : ruleFilters.locationSource,
     from: ruleFilters.from ?? llmFilters.from ?? null,
     to: ruleFilters.to ?? llmFilters.to ?? null,
     correctedByGemini: (!ruleHasLocation || ruleHasWeakLocation) && llmHasLocation ? true : undefined,
@@ -851,6 +1250,26 @@ function mergeFilters(ruleFilters, llmFilters) {
 }
 
 function resolveRto(filters, rows, catalog = null) {
+  if (filters.state) {
+    const cleanedFilters = { ...filters };
+    let changed = false;
+    for (const key of ["rtoText", "locationText"]) {
+      if (isSameStateLocation(cleanedFilters[key], filters.state)) {
+        cleanedFilters[key] = null;
+        changed = true;
+      }
+    }
+    if (filters.aiProvider) {
+      for (const key of ["rto", "rtoSearch"]) {
+        if (isSameStateLocation(cleanedFilters[key], filters.state)) {
+          cleanedFilters[key] = null;
+          changed = true;
+        }
+      }
+    }
+    if (changed) return resolveRto(cleanedFilters, rows, catalog);
+  }
+
   const rtoNeedle = filters.rto ?? filters.rtoSearch;
 
   if (catalog) {
@@ -966,9 +1385,7 @@ function refreshMonthsForFilters(filters, rows) {
 async function refreshMonthsForFiltersFromDb(filters) {
   if (!filters.from || !filters.to) return [];
   const requested = new Set(requestedMonthKeys(filters));
-  const loaded = new Set(
-    (await queryAvailableMonths(filters)).map((row) => monthKey(row.year, row.month)),
-  );
+  const loaded = await completeLoadedMonthKeysFromDb(filters);
   const refreshKeys = new Set();
 
   for (const key of requested) {
@@ -984,15 +1401,62 @@ async function refreshMonthsForFiltersFromDb(filters) {
 
 async function findMissingMonthsFromDb(filters) {
   if (!filters.from || !filters.to) return [];
-  const loaded = new Set(
-    (await queryAvailableMonths(filters)).map((row) => monthKey(row.year, row.month)),
-  );
+  const loaded = await completeLoadedMonthKeysFromDb(filters);
   return monthsByYear(filters.from, filters.to)
     .map((group) => ({
       year: group.year,
       months: group.months.filter((month) => !loaded.has(monthKey(group.year, month))),
     }))
     .filter((group) => group.months.length > 0);
+}
+
+async function completeLoadedMonthKeysFromDb(filters) {
+  const requiredFuelTypes = new Set((filters.selectedFuelTypes ?? []).map((value) => normalizeLookup(value)));
+  if (!requiredFuelTypes.size) {
+    return new Set((await queryAvailableMonths(filters)).map((row) => monthKey(row.year, row.month)));
+  }
+  const fuelsByMonth = new Map();
+  for (const row of await queryAvailableMonthFuelTypes(filters)) {
+    const key = monthKey(row.year, row.month);
+    if (!fuelsByMonth.has(key)) fuelsByMonth.set(key, new Set());
+    fuelsByMonth.get(key).add(normalizeLookup(row.fuelType));
+  }
+  return new Set([...fuelsByMonth.entries()]
+    .filter(([, fuels]) => [...requiredFuelTypes].every((fuel) => fuels.has(fuel)))
+    .map(([key]) => key));
+}
+
+function completeLoadedMonthKeys(filters, rows) {
+  const requiredFuelTypes = new Set((filters.selectedFuelTypes ?? []).map((value) => normalizeLookup(value)));
+  const stateFilter = filters.state;
+  const rtoFilter = filters.rto;
+  const rtoSearch = filters.rtoSearch ?? filters.rto;
+  const requestedContext = filterContext(filters);
+  const loadedKeys = new Set();
+  const fuelsByMonth = new Map();
+
+  for (const row of rows) {
+    if (stateFilter && row.state !== stateFilter) continue;
+    if (rtoFilter && row.rto !== rtoFilter) continue;
+    if (!rtoFilter && rtoSearch) {
+      if (!row.rto.toLowerCase().includes(String(rtoSearch).toLowerCase())) continue;
+    } else if (!rtoFilter && !rtoSearch) {
+      if (row.rto !== ALL_RTO) continue;
+    }
+    if (!rowMatchesContext(row, requestedContext)) continue;
+    const key = monthKey(row.year, row.month);
+    if (!requiredFuelTypes.size) {
+      loadedKeys.add(key);
+      continue;
+    }
+    if (!fuelsByMonth.has(key)) fuelsByMonth.set(key, new Set());
+    fuelsByMonth.get(key).add(normalizeLookup(row.fuel_type));
+  }
+
+  if (!requiredFuelTypes.size) return loadedKeys;
+  return new Set([...fuelsByMonth.entries()]
+    .filter(([, fuels]) => [...requiredFuelTypes].every((fuel) => fuels.has(fuel)))
+    .map(([key]) => key));
 }
 
 // Find which specific year+month combos are missing from the CSV for this location
@@ -1021,10 +1485,12 @@ function findMissingMonths(filters, rows) {
     loadedKeys.add(`${row.year}-${row.month}`);
   }
 
+  const completeKeys = completeLoadedMonthKeys(filters, rows);
+
   // Find year-month pairs NOT in CSV
   const missing = [];
   for (const group of groups) {
-    const missingMonths = group.months.filter((m) => !loadedKeys.has(`${group.year}-${m}`));
+    const missingMonths = group.months.filter((m) => !completeKeys.has(monthKey(group.year, m)));
     if (missingMonths.length > 0) {
       missing.push({ year: group.year, months: missingMonths });
     }
@@ -1291,6 +1757,7 @@ async function runScraperForMapFiltersWithProgress(filters, groups, progress, on
 
 function filterRows(rows, filters) {
   const requestedContext = filterContext(filters);
+  const selectedFuelTypes = new Set((filters.selectedFuelTypes ?? []).map((value) => normalizeLookup(value)));
   return rows.filter((row) => {
     const key = monthKey(row.year, row.month);
     if (filters.from && key < filters.from) return false;
@@ -1298,6 +1765,7 @@ function filterRows(rows, filters) {
     if (filters.state && row.state !== filters.state) return false;
     if (filters.rto && row.rto !== filters.rto) return false;
     if (filters.state && !filters.rto && !filters.rtoSearch && row.rto !== ALL_RTO) return false;
+    if (selectedFuelTypes.size && !selectedFuelTypes.has(normalizeLookup(row.fuel_type))) return false;
     if (filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
     if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     if (!rowMatchesContext(row, requestedContext)) return false;
@@ -1308,6 +1776,7 @@ function filterRows(rows, filters) {
 function filterMapRows(rows, filters) {
   const requestedContext = filterContext(filters);
   const shouldApplyFuelFilter = filters.metric !== "ev_share";
+  const selectedFuelTypes = new Set((filters.selectedFuelTypes ?? []).map((value) => normalizeLookup(value)));
   return rows.filter((row) => {
     const key = monthKey(row.year, row.month);
     if (filters.from && key < filters.from) return false;
@@ -1315,6 +1784,7 @@ function filterMapRows(rows, filters) {
     if (filters.state && row.state !== filters.state) return false;
     if (filters.rto && row.rto !== filters.rto) return false;
     if (filters.rtoSearch && !row.rto.toLowerCase().includes(String(filters.rtoSearch).toLowerCase())) return false;
+    if (shouldApplyFuelFilter && selectedFuelTypes.size && !selectedFuelTypes.has(normalizeLookup(row.fuel_type))) return false;
     if (shouldApplyFuelFilter && filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
     if (shouldApplyFuelFilter && filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     for (const field of FILTER_CONTEXT_FIELDS) {
@@ -1797,7 +2267,7 @@ function dashboardPayload({
     liveRefresh,
     warnings: [
       llmFilters?.decodeWarning,
-      liveRefresh?.status === "pending" ? `Showing saved data now. Fetching ${liveRefresh.requiredMonths.join(", ")} from VAHAN; the dashboard will update automatically.` : null,
+      liveRefresh?.status === "pending" ? `Fetching ${liveRefresh.requiredMonths.length} missing/latest month${liveRefresh.requiredMonths.length === 1 ? "" : "s"} from VAHAN. Saved data is shown now and will update automatically.` : null,
       liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may still be incomplete." : null,
       scraper.failedRuns.length
         ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
@@ -1805,7 +2275,15 @@ function dashboardPayload({
       persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
       status === "partial" ? "Some requested months are missing from local data." : null,
-      filters.correctedByGemini ? "Gemini helped interpret the location or filters; counts still come only from VAHAN data." : null,
+      filters.semanticConfidence !== null && filters.semanticConfidence !== undefined && filters.semanticConfidence < 0.75
+        ? "Semantic filter confidence is medium/low. Review the interpreted filters before using the result."
+        : null,
+      filters.selectedVehicleGroups?.length
+        ? `Interpreted broad vehicle group: ${filters.selectedVehicleGroups.join(", ")}. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added.`
+        : null,
+      filters.cappedFutureDateRange ? `Date range was capped at ${filters.to} because future VAHAN months are not available yet.` : null,
+      filters.defaultedDateRange ? `${filters.defaultedDateRangeReason} (${filters.from} to ${filters.to}).` : null,
+      filters.correctedByGemini ? `${filters.aiProvider ?? "AI"} helped interpret the location or filters; counts still come only from VAHAN data.` : null,
       filters.rtoResolution?.status === "resolved" && filters.rtoResolution.query
         ? `Resolved ${filters.rtoResolution.query} to ${filters.rtoResolution.rto} using the VAHAN RTO catalog.`
         : null,
@@ -1906,7 +2384,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
   return job;
 }
 
-async function queryData(input) {
+export async function queryData(input) {
   const query = String(input.query ?? "").trim();
   if (!query) {
     const error = new Error("Enter a query before running the dashboard.");
@@ -1914,36 +2392,70 @@ async function queryData(input) {
     throw error;
   }
 
-  const useDatabase = hasDatabaseUrl();
-  let rows = useDatabase ? [] : await loadRows();
+  let rows = await loadRows();
+  const useDatabase = useDatabaseStorage();
+  const semanticVocabulary = buildSemanticVocabulary(rows);
   const catalog = await loadCatalog(rows);
   const ruleFilters = decodeWithRules(query);
   let llmFilters = null;
-  const ruleHasAnyLocation = Boolean(ruleFilters.state || ruleFilters.rto || ruleFilters.locationText);
-  const ruleHasWeakLocation = ruleFilters.locationSource === "fuzzy_city";
-  const needsGemini =
-    ruleHasWeakLocation ||
-    !ruleHasAnyLocation ||
-    !ruleFilters.from ||
-    !ruleFilters.to;
-  if (needsGemini) {
-    try {
-      llmFilters = normalizeGeminiFilters(await decodeWithGemini(query));
-    } catch (error) {
-      llmFilters = { decodeWarning: error.message };
+  if (process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY) {
+    const aiDecode = await decodeWithAiProviders(query, semanticVocabulary);
+    llmFilters = normalizeGeminiFilters(aiDecode.filters);
+    if (aiDecode.warnings.length) {
+      const recoveredBy = llmFilters?.aiProvider ? `${llmFilters.aiProvider} used successfully after fallback.` : null;
+      llmFilters = {
+        ...(llmFilters ?? {}),
+        decodeWarning: [...aiDecode.warnings, recoveredBy].filter(Boolean).join("; "),
+      };
     }
   }
-  let filters = resolveRto(mergeFilters(ruleFilters, llmFilters), rows, catalog);
-  const immediateRows = useDatabase && !filters.ambiguousRtos
-    ? await queryRegistrationRows(filters)
-    : rows;
+  const semanticPlan = combineSemanticPlan(query, ruleFilters, llmFilters, semanticVocabulary);
+  const mergedFilters = {
+    ...mergeFilters(ruleFilters, llmFilters),
+    ...semanticPlan,
+  };
+  if (semanticPlan.selectedFuelTypes?.length) {
+    const exactFuelType = semanticPlan.selectedFuelTypes.length === 1 ? semanticPlan.selectedFuelTypes[0] : null;
+    if (!exactFuelType || !mergedFilters.fuelType || !normalizeLookup(exactFuelType).includes(normalizeLookup(mergedFilters.fuelType))) {
+      mergedFilters.fuelType = null;
+    }
+    const semanticSegment = selectedFuelSegment(semanticPlan.selectedFuelTypes);
+    if (semanticSegment) {
+      mergedFilters.fuelSegment = semanticSegment;
+    } else if (mergedFilters.fuelSegment === "EV") {
+      mergedFilters.fuelSegment = null;
+    }
+  }
+  if ("selectedVehicleCategories" in semanticPlan) mergedFilters.vehicleCategories = semanticPlan.selectedVehicleCategories ?? [];
+  if (semanticPlan.selectedVehicleGroups?.length) mergedFilters.selectedVehicleGroups = semanticPlan.selectedVehicleGroups;
+  if (semanticPlan.selectedVehicleClasses?.length) mergedFilters.vehicleClasses = semanticPlan.selectedVehicleClasses;
+  if (semanticPlan.selectedNorms?.length) mergedFilters.norms = semanticPlan.selectedNorms;
+  const shouldUseDefaultDateRange = Boolean(input.defaultDateRange && !ruleFilters.from && !ruleFilters.to);
+  let filters = resolveRto(
+    clampFutureDateRange(applyDefaultDateRange(mergedFilters, input.defaultDateRange, { force: shouldUseDefaultDateRange })),
+    rows,
+    catalog,
+  );
+  let immediateRows = rows;
+  if (useDatabase && !filters.ambiguousRtos) {
+    try {
+      immediateRows = await queryRegistrationRows(filters);
+    } catch (error) {
+      databaseUnavailable = true;
+      rows = await readRegistrationsCsv(DATA_FILE);
+      dataCache = rows;
+      immediateRows = rows;
+      console.warn(`[data] Neon query failed, using CSV rows: ${error.message}`);
+    }
+  }
+  const queryUsesDatabase = useDatabaseStorage();
   const missingMonths = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? useDatabase
+    ? queryUsesDatabase
       ? await findMissingMonthsFromDb(filters)
       : findMissingMonths(filters, rows)
     : [];
   const refreshGroups = !LIVE_REFRESH_DISABLED && hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? useDatabase
+    ? queryUsesDatabase
       ? await refreshMonthsForFiltersFromDb(filters)
       : refreshMonthsForFilters(filters, rows)
     : [];
@@ -1957,9 +2469,29 @@ async function queryData(input) {
     missingMonths,
     llmFilters,
     liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
-    preFiltered: useDatabase,
-    freshnessInfo: useDatabase ? await freshnessFromDb() : null,
+    preFiltered: queryUsesDatabase,
+    freshnessInfo: queryUsesDatabase ? await freshnessFromDb().catch(() => null) : null,
   });
+}
+
+export async function waitForQueryRefresh(jobId, { timeoutMs = 300_000, pollMs = 1000 } = {}) {
+  const job = refreshJobs.get(String(jobId));
+  if (!job) {
+    const error = new Error("Refresh job not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const started = Date.now();
+  while (job.status === "pending" || !job.payload) {
+    if (Date.now() - started > timeoutMs) {
+      const error = new Error(`Timed out waiting for refresh job ${jobId}`);
+      error.statusCode = 504;
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+  return job.payload ?? { liveRefresh: liveRefreshInfo(job) };
 }
 
 function telegramNumber(value) {
@@ -2258,6 +2790,52 @@ function scheduleTelegramSummaries() {
   }, 60 * 60 * 1000);
 }
 
+function telegramUsageDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function isTrustedTelegramChat(chatId) {
+  return telegramAllowedChatIds.has(String(chatId));
+}
+
+function consumeTelegramPublicQuota(chatId) {
+  if (isTrustedTelegramChat(chatId)) {
+    return { allowed: true, trusted: true, remaining: Infinity, limit: Infinity };
+  }
+  if (!TELEGRAM_PUBLIC_ACCESS) {
+    return { allowed: false, trusted: false, remaining: 0, limit: 0 };
+  }
+
+  const key = `${telegramUsageDateKey()}:${chatId}`;
+  const used = telegramPublicUsage.get(key) ?? 0;
+  if (used >= TELEGRAM_PUBLIC_DAILY_LIMIT) {
+    return { allowed: false, trusted: false, remaining: 0, limit: TELEGRAM_PUBLIC_DAILY_LIMIT };
+  }
+  const nextUsed = used + 1;
+  telegramPublicUsage.set(key, nextUsed);
+  return {
+    allowed: true,
+    trusted: false,
+    remaining: TELEGRAM_PUBLIC_DAILY_LIMIT - nextUsed,
+    limit: TELEGRAM_PUBLIC_DAILY_LIMIT,
+  };
+}
+
+function telegramQuotaLine(quota) {
+  if (!quota || quota.trusted || !Number.isFinite(quota.remaining)) return null;
+  return `Free messages left today: ${quota.remaining}/${quota.limit}`;
+}
+
+function withTelegramQuota(text, quota) {
+  const quotaLine = telegramQuotaLine(quota);
+  return quotaLine ? `${text}\n\n${quotaLine}` : text;
+}
+
 async function handleTelegramMessage({ chatId, text, bot }) {
   try {
     const normalized = text.trim().toLowerCase();
@@ -2269,34 +2847,52 @@ async function handleTelegramMessage({ chatId, text, bot }) {
         "Query - ask dashboard questions",
         "Map - ask state/map questions",
         "Summary - get the latest EV ranking and coverage summary",
+        "If buttons are hidden, use Telegram's command menu or type /query, /map, /summary, /weekly, or /monthly.",
       ].join("\n"));
       return;
     }
+
+    const quota = consumeTelegramPublicQuota(chatId);
+    if (!quota.allowed) {
+      await bot.sendKeyboard(chatId, TELEGRAM_PUBLIC_ACCESS
+        ? [
+          "Daily public limit reached.",
+          `Public users get ${TELEGRAM_PUBLIC_DAILY_LIMIT} messages per day.`,
+          `Ask the admin to add your chat ID to TELEGRAM_ALLOWED_CHAT_IDS for unlimited access: ${chatId}`,
+        ].join("\n")
+        : [
+          "Access is private right now.",
+          `Ask the admin to add your chat ID to TELEGRAM_ALLOWED_CHAT_IDS: ${chatId}`,
+        ].join("\n"));
+      return;
+    }
+
     if (normalized === "query" || normalized === "/query") {
       telegramChatModes.set(String(chatId), "query");
-      await bot.sendKeyboard(chatId, "Send a VAHAN query.");
+      await bot.sendKeyboard(chatId, withTelegramQuota("Send a VAHAN query.", quota));
       return;
     }
     if (normalized === "map" || normalized === "/map") {
       telegramChatModes.set(String(chatId), "map");
-      await bot.sendKeyboard(chatId, "Send a map/state query.");
+      await bot.sendKeyboard(chatId, withTelegramQuota("Send a map/state query.", quota));
       return;
     }
     const sendSummary = async (summaryLabel) => {
       telegramChatModes.set(String(chatId), "neutral");
-      await bot.sendKeyboard(chatId, await buildTelegramSummary({
+      const summary = await buildTelegramSummary({
         label: summaryLabel,
         onFetchStart: ({ filters, refreshGroups }) => bot.sendMessage(chatId, [
           `${summaryLabel} EV Summary`,
           `Fetching ${telegramNumber(telegramSummaryFetchStateCount(refreshGroups))} missing states for ${filters.from} before creating the summary.`,
           "This can take a few minutes.",
         ].join("\n")),
-      }));
+      });
+      await bot.sendKeyboard(chatId, withTelegramQuota(summary, quota));
     };
 
     if (normalized === "summary" || normalized === "/summary") {
       telegramChatModes.set(String(chatId), "summary");
-      await bot.sendMessage(chatId, "Which summary do you want?", {
+      await bot.sendMessage(chatId, withTelegramQuota("Which summary do you want?", quota), {
         reply_markup: SUMMARY_CHOICE_KEYBOARD,
       });
       return;
@@ -2312,7 +2908,7 @@ async function handleTelegramMessage({ chatId, text, bot }) {
 
     const mode = telegramChatModes.get(String(chatId)) ?? "neutral";
     const reply = mode === "map" ? await handleTelegramMap(text) : await handleTelegramQuery(text);
-    await bot.sendKeyboard(chatId, reply);
+    await bot.sendKeyboard(chatId, withTelegramQuota(reply, quota));
   } catch (error) {
     console.warn(`[telegram] message failed: ${error.message}`);
     await bot.sendKeyboard(chatId, [
@@ -2326,21 +2922,31 @@ async function handleTelegramMessage({ chatId, text, bot }) {
 function startTelegramCommandCenter() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const allowedChatIds = parseAllowedChatIds(process.env.TELEGRAM_ALLOWED_CHAT_IDS);
-  if (!token || allowedChatIds.size === 0) {
-    console.log("[telegram] disabled; configure TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_CHAT_IDS to enable.");
+  telegramAllowedChatIds = allowedChatIds;
+  if (!token || (!TELEGRAM_PUBLIC_ACCESS && allowedChatIds.size === 0)) {
+    console.log("[telegram] disabled; configure TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_CHAT_IDS or TELEGRAM_PUBLIC_DAILY_LIMIT to enable.");
     return null;
   }
   const bot = createTelegramBot({
     token,
     allowedChatIds,
+    allowPublicAccess: TELEGRAM_PUBLIC_ACCESS,
     polling: TELEGRAM_ENABLE_POLLING,
     onMessage: handleTelegramMessage,
     logger: console,
   });
   telegramBot = bot;
+  void bot.setCommands([
+    { command: "start", description: "Show help and shortcuts" },
+    { command: "query", description: "Ask dashboard questions" },
+    { command: "map", description: "Ask map or state questions" },
+    { command: "summary", description: "Choose weekly or monthly summary" },
+    { command: "weekly", description: "Get weekly EV summary" },
+    { command: "monthly", description: "Get monthly EV summary" },
+  ]).catch((error) => console.warn(`[telegram] command menu setup failed: ${error.message}`));
   bot.start();
   scheduleTelegramSummaries();
-  console.log(`[telegram] command center enabled for ${allowedChatIds.size} allowed chat(s).`);
+  console.log(`[telegram] command center enabled for ${allowedChatIds.size} allowed chat(s); public daily limit=${TELEGRAM_PUBLIC_ACCESS ? TELEGRAM_PUBLIC_DAILY_LIMIT : "off"}.`);
   return bot;
 }
 
@@ -2412,6 +3018,56 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       sendJson(response, 200, job.payload ?? { liveRefresh: liveRefreshInfo(job) });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/tracked-queries") {
+      sendJson(response, 200, { trackedQueries: await listTrackedQueries() });
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/tracked-queries") {
+      const body = await readBody(request);
+      sendJson(response, 201, { trackedQuery: await createTrackedQuery(body) });
+      return;
+    }
+    const trackedObservationMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/observations$/);
+    if (request.method === "GET" && trackedObservationMatch) {
+      const trackedQueryId = Number(trackedObservationMatch[1]);
+      const trackedQuery = await getTrackedQuery(trackedQueryId);
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, {
+        trackedQuery,
+        observations: await listTrackedQueryObservations(trackedQueryId, {
+          from: url.searchParams.get("from"),
+          to: url.searchParams.get("to"),
+          limit: url.searchParams.get("limit"),
+        }),
+      });
+      return;
+    }
+    const trackedQueryMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)$/);
+    if (trackedQueryMatch && request.method === "PATCH") {
+      const body = await readBody(request);
+      const trackedQuery = await updateTrackedQuery(Number(trackedQueryMatch[1]), body);
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, { trackedQuery });
+      return;
+    }
+    if (trackedQueryMatch && request.method === "DELETE") {
+      const hardDelete = /^(1|true|yes)$/i.test(url.searchParams.get("hard") ?? "");
+      const trackedQuery = hardDelete
+        ? await deleteTrackedQuery(Number(trackedQueryMatch[1]))
+        : await disableTrackedQuery(Number(trackedQueryMatch[1]));
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, { trackedQuery, deleted: hardDelete });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/registrations") {
@@ -2507,8 +3163,8 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/metadata/rtos") {
-      const useDatabase = hasDatabaseUrl();
-      const rows = useDatabase ? [] : await loadRows();
+      const rows = await loadRows();
+      const useDatabase = useDatabaseStorage();
       const catalog = await loadCatalog(rows);
       const state = url.searchParams.get("state");
       const catalogRtos = (catalog.states ?? [])
@@ -2522,7 +3178,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/metadata/rto-resolve") {
-      const rows = hasDatabaseUrl() ? [] : await loadRows();
+      const rows = await loadRows();
       const catalog = await loadCatalog(rows);
       const filters = resolveRto({
         state: url.searchParams.get("state") || null,
@@ -2541,16 +3197,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/health") {
-      if (hasDatabaseUrl()) {
-        const dbFreshness = await freshnessFromDb();
-        sendJson(response, 200, {
-          status: "ok",
-          storage: "postgres",
-          rowCount: dbFreshness.rowCount,
-          latestMonth: dbFreshness.latestMonth,
-          source: dbFreshness.source,
-        });
-        return;
+      if (useDatabaseStorage()) {
+        try {
+          const dbFreshness = await freshnessFromDb();
+          sendJson(response, 200, {
+            status: "ok",
+            storage: "postgres",
+            rowCount: dbFreshness.rowCount,
+            latestMonth: dbFreshness.latestMonth,
+            source: dbFreshness.source,
+          });
+          return;
+        } catch (error) {
+          databaseUnavailable = true;
+          console.warn(`[data] Neon health read failed, using CSV health: ${error.message}`);
+        }
       }
       const rows = await loadRows();
       sendJson(response, 200, { status: "ok", storage: "csv", rowCount: rows.length, ...freshness(rows) });
@@ -2564,7 +3225,9 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`VAHAN dashboard running at http://localhost:${PORT}`);
-  startTelegramCommandCenter();
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  server.listen(PORT, () => {
+    console.log(`VAHAN dashboard running at http://localhost:${PORT}`);
+    startTelegramCommandCenter();
+  });
+}

@@ -87,6 +87,54 @@ The import is idempotent. Rows are upserted by:
 year, month, state, rto, fuel_type
 ```
 
+## Daily Tracked Queries
+
+Apply the schema first so the tracked query tables exist:
+
+```powershell
+npm run db:schema
+```
+
+Create tracked queries through the API, then run the daily batch from an
+external scheduler such as GitHub Actions:
+
+```powershell
+npm run tracked:run
+```
+
+This repo includes `.github/workflows/daily-tracked-queries.yml`, which runs the
+daily batch every day at `00:30 UTC` (`06:00 IST`). It can also be triggered
+manually from the GitHub Actions tab with `workflow_dispatch`.
+
+Add these GitHub Actions repository secrets before running it:
+
+- `DATABASE_URL`
+- `GEMINI_API_KEY`, if AI query interpretation should use Gemini
+- `GROQ_API_KEY`, if AI query interpretation should use Groq
+- `TELEGRAM_BOT_TOKEN`, if Telegram alerts are needed
+- `TELEGRAM_ALLOWED_CHAT_IDS`, if Telegram alerts are needed
+
+Optional non-secret GitHub Actions variables can be added for `GROQ_MODEL`,
+`TELEGRAM_ALERT_THRESHOLD_POINTS`, and `TELEGRAM_PUBLIC_DAILY_LIMIT`. Keep
+secrets in GitHub Actions secrets; do not commit them to the repo.
+
+Tracked queries do not need to include a month. If a saved query has no date
+range, the daily runner defaults it to the observation month, so a query such as
+`EV registrations in Maharashtra` is checked against the current month on each
+daily run.
+
+Preview due queries without writing run or observation rows:
+
+```powershell
+npm run tracked:dry-run
+```
+
+For a controlled rerun of a specific observation date:
+
+```powershell
+node --env-file=.env scripts/run-tracked-queries.mjs --date 2026-06-01 --all
+```
+
 Preview the planned combinations without launching the browser or writing files:
 
 ```powershell
