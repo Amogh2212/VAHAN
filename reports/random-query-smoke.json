@@ -1,0 +1,176 @@
+{
+  "generatedAt": "2026-06-01T11:36:48.407Z",
+  "updatedAt": "2026-06-01T11:36:48.635Z",
+  "seed": 42,
+  "count": 2,
+  "mode": "local",
+  "health": {
+    "status": "ok",
+    "storage": "csv",
+    "rowCount": 10170,
+    "latestMonth": "2026-06",
+    "source": "VAHAN public dashboard aggregate data"
+  },
+  "queue": [
+    {
+      "index": 1,
+      "query": "show CNG motorcycle in Jharkhand from August 2024 to December 2024",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "motorcycle"
+      }
+    },
+    {
+      "index": 2,
+      "query": "HMV registrations in Delhi September 2025 to November 2025",
+      "generated": {
+        "state": "Delhi",
+        "location": "Delhi",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "HMV"
+      }
+    }
+  ],
+  "summary": {
+    "completed": 2,
+    "passed": 2,
+    "failed": 0,
+    "okResponses": 2,
+    "refreshed": 0,
+    "refreshCompleted": 0,
+    "refreshFailed": 0,
+    "nonZeroRows": 0,
+    "averageDurationMs": 30
+  },
+  "results": [
+    {
+      "index": 1,
+      "query": "show CNG motorcycle in Jharkhand from August 2024 to December 2024",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 39,
+      "refreshDurationMs": 0,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-08",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": false,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [],
+        "errorSummary": "",
+        "runs": []
+      },
+      "liveRefresh": null,
+      "warnings": [],
+      "error": null,
+      "completedAt": "2026-06-01T11:36:48.610Z"
+    },
+    {
+      "index": 2,
+      "query": "HMV registrations in Delhi September 2025 to November 2025",
+      "generated": {
+        "state": "Delhi",
+        "location": "Delhi",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "HMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "refreshDurationMs": 0,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Delhi",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-09",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched HEAVY MOTOR VEHICLE category",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": false,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [],
+        "errorSummary": "",
+        "runs": []
+      },
+      "liveRefresh": null,
+      "warnings": [],
+      "error": null,
+      "completedAt": "2026-06-01T11:36:48.633Z"
+    }
+  ],
+  "status": "complete"
+}

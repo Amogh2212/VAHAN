@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-06-01T11:37:58.818Z",
+  "updatedAt": "2026-06-01T11:38:07.938Z",
+  "seed": 20260601,
+  "count": 1,
+  "mode": "live",
+  "health": {
+    "status": "ok",
+    "storage": "csv",
+    "rowCount": 10170,
+    "latestMonth": "2026-06",
+    "source": "VAHAN public dashboard aggregate data"
+  },
+  "queue": [
+    {
+      "index": 1,
+      "query": "bus EV registrations at Goa November 2025 to December 2025",
+      "generated": {
+        "state": "Goa",
+        "location": "Goa",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "bus"
+      }
+    }
+  ],
+  "summary": {
+    "completed": 1,
+    "passed": 1,
+    "failed": 0,
+    "okResponses": 1,
+    "refreshed": 1,
+    "refreshCompleted": 0,
+    "refreshFailed": 1,
+    "nonZeroRows": 0,
+    "averageDurationMs": 9089
+  },
+  "results": [
+    {
+      "index": 1,
+      "query": "bus EV registrations at Goa November 2025 to December 2025",
+      "generated": {
+        "state": "Goa",
+        "location": "Goa",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 53,
+      "refreshDurationMs": 9036,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Goa",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-11",
+        "to": "2025-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2025,
+            "months": [
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Goa --years 2025 --months 11,12 --vehicle-classes BUS\n[scraper] attempt 1/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170801_goa_2025_all-rtos_attempt1.json\n[scraper] attempt 2/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170802_goa_2025_all-rtos_attempt2.json\n[scraper] attempt 3/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170803_goa_2025_all-rtos_attempt3.json\nFailed: 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n\nError: 2 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1378:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1407:7)\n"
+          }
+        ],
+        "errorSummary": "2025 months 11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Goa --years 2025 --months 11,12 --vehicle-classes BUS\n[scraper] attempt 1/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170801_goa_2025_all-rtos_attempt1.json\n[scraper] attempt 2/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170802_goa_2025_all-rtos_attempt2.json\n[scraper] attempt 3/3 failed for 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n. Artifact: data\\vahan\\failures\\20260601_170803_goa_2025_all-rtos_attempt3.json\nFailed: 2025 Goa All RTOs: page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n\nError: 2 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1378:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1407:7)\n",
+        "runs": [
+          {
+            "year": 2025,
+            "months": [
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "1",
+        "status": "failed",
+        "requiredMonths": [
+          "2025-11",
+          "2025-12"
+        ],
+        "error": null
+      },
+      "warnings": [
+        "Live VAHAN refresh failed. Results may still be incomplete.",
+        "Live VAHAN fetch failed for this query. Results may be missing or stale."
+      ],
+      "error": null,
+      "completedAt": "2026-06-01T11:38:07.935Z"
+    }
+  ],
+  "status": "complete"
+}

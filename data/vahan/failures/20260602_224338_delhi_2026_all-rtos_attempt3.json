@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-06-02T17:13:38.985Z",
+  "attempt": 3,
+  "error": "page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "report": {
+    "year": 2026,
+    "months": [
+      6
+    ],
+    "state": "Delhi",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260602_224338_delhi_2026_all-rtos_attempt3.png",
+    "html": "data\\vahan\\failures\\20260602_224338_delhi_2026_all-rtos_attempt3.html"
+  }
+}

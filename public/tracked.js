@@ -15,11 +15,17 @@ const observationTableWrap = document.querySelector(".tracked-table-wrap");
 const formTitle = document.querySelector("#trackedFormTitle");
 const createTrackedBtn = document.querySelector("#createTrackedBtn");
 const cancelEditBtn = document.querySelector("#cancelEditBtn");
+const authGate = document.querySelector("#authGate");
+const trackedWorkspace = document.querySelector("#trackedWorkspace");
+const accountStatus = document.querySelector("#accountStatus");
+const logoutBtn = document.querySelector("#logoutBtn");
+const telegramLinkBtn = document.querySelector("#telegramLinkBtn");
 
 const fmt = new Intl.NumberFormat("en-IN");
 let trackedQueries = [];
 let selectedId = null;
 let editingId = null;
+let currentUser = null;
 
 function setSidebarOpen(open) {
   appFrame?.classList.toggle("sidebar-open", open);
@@ -52,8 +58,34 @@ async function apiJson(url, options = {}) {
     },
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "Request failed.");
+  if (!response.ok) {
+    const error = new Error(body.error || "Request failed.");
+    error.status = response.status;
+    throw error;
+  }
   return body;
+}
+
+function setAuthState(user) {
+  currentUser = user;
+  const authenticated = Boolean(user);
+  if (authGate) authGate.hidden = authenticated;
+  if (trackedWorkspace) trackedWorkspace.hidden = !authenticated;
+  if (logoutBtn) logoutBtn.hidden = !authenticated;
+  if (telegramLinkBtn) telegramLinkBtn.hidden = !authenticated;
+  if (refreshTrackedBtn) refreshTrackedBtn.hidden = !authenticated;
+  if (accountStatus) {
+    accountStatus.textContent = authenticated ? user.email : "Signed out";
+  }
+}
+
+async function loadCurrentUser() {
+  const body = await apiJson("/api/me");
+  setAuthState(body.user);
+  if (!body.authenticated && !body.googleConfigured) {
+    showNotice("Google login is not configured. Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, and APP_BASE_URL.", "error");
+  }
+  return body.user;
 }
 
 function displayLabel(item) {
@@ -88,6 +120,7 @@ async function latestObservation(id) {
 }
 
 async function loadTrackedQueries() {
+  if (!currentUser) return;
   showNotice("");
   trackedList.innerHTML = `<p class="result-empty">Loading tracked queries.</p>`;
   trackedCount.textContent = "Loading";
@@ -321,8 +354,39 @@ refreshTrackedBtn?.addEventListener("click", () => {
   loadTrackedQueries().catch((error) => showNotice(error.message, "error"));
 });
 
-loadTrackedQueries().catch((error) => {
-  trackedCount.textContent = "Unavailable";
-  trackedList.innerHTML = `<p class="result-empty">Could not load tracked queries.</p>`;
-  showNotice(error.message, "error");
+logoutBtn?.addEventListener("click", async () => {
+  await apiJson("/auth/logout", { method: "POST" });
+  trackedQueries = [];
+  selectedId = null;
+  resetTrackedForm();
+  setAuthState(null);
+  renderEmptyDetail();
 });
+
+telegramLinkBtn?.addEventListener("click", async () => {
+  try {
+    const body = await apiJson("/api/telegram/link-code", { method: "POST" });
+    const command = `/link ${body.code}`;
+    const linkText = body.deepLink
+      ? `Open Telegram: ${body.deepLink}`
+      : `Send this command to the bot: ${command}`;
+    await navigator.clipboard?.writeText(command).catch(() => {});
+    showNotice(`${linkText}. The command has been copied if clipboard access is available.`, "success");
+  } catch (error) {
+    showNotice(error.message, "error");
+  }
+});
+
+loadCurrentUser()
+  .then((user) => {
+    if (user) return loadTrackedQueries();
+    trackedCount.textContent = "Login required";
+    trackedList.innerHTML = `<p class="result-empty">Sign in to load your tracked queries.</p>`;
+    renderEmptyDetail();
+    return null;
+  })
+  .catch((error) => {
+    trackedCount.textContent = "Unavailable";
+    trackedList.innerHTML = `<p class="result-empty">Could not load tracked queries.</p>`;
+    showNotice(error.message, "error");
+  });
