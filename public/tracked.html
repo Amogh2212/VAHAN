@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Manage daily VAHAN tracked queries and review stored observations." />
     <title>VAHAN Tracked Queries</title>
-    <link rel="stylesheet" href="/styles.css?v=map-scale-20260605" />
+    <link rel="stylesheet" href="/styles.css?v=pro-theme-1-20260606" />
   </head>
   <body class="tracked-page">
     <div class="app-frame">
@@ -78,26 +78,11 @@
               <p class="compare-empty">Save location, fuel, and vehicle queries; the daily runner uses the run month when no month is written.</p>
             </div>
           </div>
-          <div class="tracked-account-actions">
-            <span class="account-pill" id="accountStatus">Checking login</span>
-            <button type="button" class="secondary-action" id="telegramLinkBtn" hidden>Link Telegram</button>
-            <button type="button" class="secondary-action" id="logoutBtn" hidden>Logout</button>
-            <button type="button" class="secondary-action tracked-refresh" id="refreshTrackedBtn">Refresh</button>
-          </div>
+          <button type="button" class="secondary-action tracked-refresh" id="refreshTrackedBtn">Refresh</button>
         </section>
 
         <section id="trackedNotice" class="warnings tracked-notice" hidden></section>
 
-        <section id="authGate" class="panel tracked-auth-gate" hidden>
-          <div class="panel-head">
-            <h2>Login required</h2>
-            <span class="panel-kicker">Google account</span>
-          </div>
-          <p class="result-empty">Tracked queries and Telegram access are saved to your Google account.</p>
-          <a class="auth-action" href="/auth/google?returnTo=/tracked.html">Continue with Google</a>
-        </section>
-
-        <div id="trackedWorkspace" hidden>
         <section class="tracked-create panel">
           <div class="panel-head">
             <h2 id="trackedFormTitle">Add tracked query</h2>
@@ -172,7 +157,6 @@
             </div>
           </article>
         </section>
-        </div>
       </main>
     </div>
     <script src="/tracked.js" defer></script>
