@@ -1,2 +1,1 @@
 year,month,state,maker,fuel_type,vehicle_count,source_url,collected_at,notes
-2025,6,Maharashtra,TATA MOTORS LTD,ELECTRIC,,https://analytics.parivahan.gov.in/,2026-05-14,Fill vehicle_count manually from VAHAN dashboard

@@ -74,17 +74,27 @@ the scraper continues to write CSV only.
 
 ## Neon Import
 
-Create the Neon schema from `db/schema.sql`, then import the existing local CSV:
+Create the Neon schema from `db/schema.sql`, then import the existing local CSV
+files:
 
 ```powershell
 npm run db:schema
 npm run import:neon
 ```
 
-The import is idempotent. Rows are upserted by:
+The import is idempotent. Fuel rows are upserted by:
 
 ```text
-year, month, state, rto, fuel_type
+year, month, state, rto, fuel_type, filter context
+```
+
+Maker rows are imported from `data/vahan/vahan_maker_monthly.csv` when present,
+from the legacy `data/vahan/vahan_state_maker_fuel.csv` fallback, and from the
+TDC history file `data/tdc-history/vahan-vehicle-registrations-by-maker.csv`.
+They are upserted by:
+
+```text
+year, month, state, rto, maker, filter context
 ```
 
 ## Daily Tracked Queries

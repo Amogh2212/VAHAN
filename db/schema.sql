@@ -59,6 +59,44 @@ create index if not exists registrations_fuel_idx
 create index if not exists registrations_context_filter_idx
   on registrations (fuel_filter, vehicle_category_filter, norms_filter, vehicle_class_filter);
 
+create table if not exists maker_registrations (
+  id bigserial primary key,
+  year integer not null check (year between 2000 and 2100),
+  month integer not null check (month between 1 and 12),
+  state text not null,
+  rto text not null,
+  maker text not null,
+  fuel_filter text not null default 'ALL',
+  vehicle_category_filter text not null default 'ALL',
+  norms_filter text not null default 'ALL',
+  vehicle_class_filter text not null default 'ALL',
+  vehicle_count integer not null check (vehicle_count >= 0),
+  source_url text not null,
+  scraped_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (
+    year,
+    month,
+    state,
+    rto,
+    maker,
+    fuel_filter,
+    vehicle_category_filter,
+    norms_filter,
+    vehicle_class_filter
+  )
+);
+
+create index if not exists maker_registrations_filter_idx
+  on maker_registrations (state, rto, year, month);
+
+create index if not exists maker_registrations_maker_idx
+  on maker_registrations (maker);
+
+create index if not exists maker_registrations_context_filter_idx
+  on maker_registrations (fuel_filter, vehicle_category_filter, norms_filter, vehicle_class_filter);
+
 create table if not exists tracked_queries (
   id bigserial primary key,
   label text,

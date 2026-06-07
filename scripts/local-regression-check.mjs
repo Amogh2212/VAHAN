@@ -3,6 +3,13 @@ import process from "node:process";
 
 const PORT = Number(process.env.TEST_PORT || 3101);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
+const PRIVATE_FOUR_WHEELER_CLASSES = [
+  "MOTOR CAR",
+  "MOTOR CARAVAN",
+  "OMNI BUS (PRIVATE USE)",
+  "ADAPTED VEHICLE",
+  "VINTAGE MOTOR VEHICLE",
+];
 
 const checks = [
   {
@@ -81,13 +88,38 @@ const checks = [
     },
   },
   {
+    label: "broad four wheeler private class bundle",
+    query: "four wheeler in Delhi Jan 2025",
+    expect: {
+      state: "Delhi",
+      exactVehicleClasses: PRIVATE_FOUR_WHEELER_CLASSES,
+      selectedVehicleGroups: [],
+      excludedVehicleCategories: ["FOUR WHEELER (Invalid Carriage)"],
+      from: "2025-01",
+      to: "2025-01",
+    },
+  },
+  {
+    label: "private four wheeler class bundle",
+    query: "private four wheeler in Maharashtra Jan 2024",
+    expect: {
+      state: "Maharashtra",
+      exactVehicleClasses: PRIVATE_FOUR_WHEELER_CLASSES,
+      selectedVehicleGroups: [],
+      excludedVehicleCategories: ["FOUR WHEELER (Invalid Carriage)"],
+      from: "2024-01",
+      to: "2024-01",
+    },
+  },
+  {
     label: "electric two wheelers semantic class",
     query: "electric two wheelers in Delhi Jan 2026",
     expect: {
       state: "Delhi",
       fuelSegment: "EV",
       selectedFuelTypes: ["ELECTRIC(BOV)", "PURE EV"],
-      selectedVehicleGroups: ["TWO WHEELER"],
+      selectedVehicleCategories: ["TWO WHEELER(NT)", "TWO WHEELER(T)"],
+      selectedVehicleGroups: [],
       excludedVehicleClasses: ["M-CYCLE/SCOOTER"],
       from: "2026-01",
       to: "2026-01",
@@ -98,7 +130,8 @@ const checks = [
     query: "three wheeler in Delhi Jan 2025",
     expect: {
       state: "Delhi",
-      selectedVehicleGroups: ["THREE WHEELER"],
+      selectedVehicleCategories: ["THREE WHEELER(NT)", "THREE WHEELER(T)"],
+      selectedVehicleGroups: [],
       excludedVehicleClasses: ["E-RICKSHAW(P)", "E-RICKSHAW WITH CART (G)", "THREE WHEELER (PASSENGER)", "THREE WHEELER (GOODS)"],
       from: "2025-01",
       to: "2025-01",
@@ -240,6 +273,33 @@ async function callMapSummary() {
   return body;
 }
 
+async function callMonthlySalesReport(params) {
+  const url = new URL(`${BASE_URL}/api/reports/monthly-sales`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null) url.searchParams.set(key, value);
+  }
+  const response = await fetch(url);
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+  return body;
+}
+
+async function callMonthlySalesPdf(params) {
+  const url = new URL(`${BASE_URL}/api/reports/monthly-sales/pdf`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null) url.searchParams.set(key, value);
+  }
+  const response = await fetch(url);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `HTTP ${response.status}`);
+  }
+  return {
+    contentType: response.headers.get("content-type") ?? "",
+    byteLength: (await response.arrayBuffer()).byteLength,
+  };
+}
+
 async function callRtoResolve(params) {
   const url = new URL(`${BASE_URL}/api/metadata/rto-resolve`);
   for (const [key, value] of Object.entries(params)) {
@@ -281,6 +341,11 @@ function assertQuery(item, data) {
   if ("rto" in expect) assert(data.filters.rto === expect.rto, `${item.label}: expected rto ${expect.rto}, got ${data.filters.rto}`);
   if (expect.rtoResolved) assert(Boolean(data.filters.rto), `${item.label}: expected a resolved RTO`);
   if (expect.vehicleClass) assert(data.filters.vehicleClasses?.includes(expect.vehicleClass), `${item.label}: expected vehicle class ${expect.vehicleClass}`);
+  if (expect.exactVehicleClasses) {
+    const actual = [...(data.filters.vehicleClasses ?? [])].sort();
+    const expected = [...expect.exactVehicleClasses].sort();
+    assert(JSON.stringify(actual) === JSON.stringify(expected), `${item.label}: expected exact vehicle classes ${expected}, got ${actual}`);
+  }
   for (const vehicleClass of expect.vehicleClasses ?? []) {
     assert(data.filters.vehicleClasses?.includes(vehicleClass), `${item.label}: expected vehicle class ${vehicleClass}, got ${data.filters.vehicleClasses}`);
   }
@@ -291,6 +356,23 @@ function assertQuery(item, data) {
   if (expect.to) assert(data.filters.to === expect.to, `${item.label}: expected to ${expect.to}, got ${data.filters.to}`);
   if (expect.total !== undefined) assert(data.summary.total === expect.total, `${item.label}: expected total ${expect.total}, got ${data.summary.total}`);
   if (expect.minRows) assert(data.rows.length >= expect.minRows, `${item.label}: expected at least ${expect.minRows} row(s), got ${data.rows.length}`);
+}
+
+function assertMonthlyReport(label, report, expect = {}) {
+  assert(report.kind === "monthly-sales", `${label}: expected monthly-sales report kind`);
+  assert(report.period?.month === expect.month, `${label}: expected month ${expect.month}, got ${report.period?.month}`);
+  assert(report.fuelSelection?.scope === expect.fuelScope, `${label}: expected fuel scope ${expect.fuelScope}, got ${report.fuelSelection?.scope}`);
+  if (expect.fuel) assert(report.fuelSelection?.fuel === expect.fuel, `${label}: expected fuel ${expect.fuel}, got ${report.fuelSelection?.fuel}`);
+  const sections = new Map((report.sections ?? []).map((section) => [section.id, section]));
+  for (const id of ["overview", "fuel_mix", "category_sales", "twelve_month_trend", "share_trend", "oem_leaders"]) {
+    assert(sections.has(id), `${label}: missing section ${id}`);
+  }
+  const overview = sections.get("overview");
+  assert(overview.metrics.total >= (expect.minTotal ?? 1), `${label}: expected report total >= ${expect.minTotal ?? 1}, got ${overview.metrics.total}`);
+  assert(Array.isArray(sections.get("twelve_month_trend").chartData), `${label}: expected trend chart data`);
+  assert(sections.get("twelve_month_trend").chartData.length === 12, `${label}: expected 12 trend months`);
+  assert(Array.isArray(sections.get("fuel_mix").chartData), `${label}: expected fuel mix chart data`);
+  assert(Array.isArray(report.dataNotes) && report.dataNotes.length >= 3, `${label}: expected data notes`);
 }
 
 async function stopServer(child) {
@@ -330,6 +412,27 @@ async function main() {
     assert(stateAsLocation.rto === null, `state cleanup: expected no RTO, got ${stateAsLocation.rto}`);
     assert(stateAsLocation.status === "none", `state cleanup: expected no RTO resolution, got ${stateAsLocation.status}`);
 
+    const monthlyReports = [];
+    for (const item of [
+      { label: "all-fuel report", params: { month: "2026-01", fuelScope: "all" }, expect: { month: "2026-01", fuelScope: "all", minTotal: 1 } },
+      { label: "EV segment report", params: { month: "2026-01", fuelScope: "segment", fuel: "EV" }, expect: { month: "2026-01", fuelScope: "segment", fuel: "EV", minTotal: 1 } },
+      { label: "diesel exact report", params: { month: "2026-01", fuelScope: "exact", fuel: "DIESEL" }, expect: { month: "2026-01", fuelScope: "exact", fuel: "DIESEL", minTotal: 1 } },
+      { label: "petrol exact report", params: { month: "2026-01", fuelScope: "exact", fuel: "PETROL" }, expect: { month: "2026-01", fuelScope: "exact", fuel: "PETROL", minTotal: 1 } },
+      { label: "hybrid segment report", params: { month: "2026-01", fuelScope: "segment", fuel: "HYBRID" }, expect: { month: "2026-01", fuelScope: "segment", fuel: "HYBRID", minTotal: 1 } },
+    ]) {
+      const report = await callMonthlySalesReport(item.params);
+      assertMonthlyReport(item.label, report, item.expect);
+      monthlyReports.push({
+        label: item.label,
+        total: report.sections.find((section) => section.id === "overview")?.metrics?.total ?? 0,
+        oemRows: report.coverage.makerRows,
+      });
+    }
+
+    const monthlyPdf = await callMonthlySalesPdf({ month: "2026-01", fuelScope: "all" });
+    assert(/application\/pdf/i.test(monthlyPdf.contentType), `monthly report PDF: expected application/pdf, got ${monthlyPdf.contentType}`);
+    assert(monthlyPdf.byteLength > 1000, `monthly report PDF: expected non-empty PDF, got ${monthlyPdf.byteLength} bytes`);
+
     console.log(JSON.stringify({
       health,
       queries: queryResults,
@@ -338,6 +441,8 @@ async function main() {
         rowCount: map.coverage.rowCount,
         latestMonth: map.coverage.latestMonth,
       },
+      monthlyReports,
+      monthlyPdf,
       stateAsLocation,
     }, null, 2));
   } finally {

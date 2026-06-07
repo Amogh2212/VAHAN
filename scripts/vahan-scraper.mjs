@@ -3,6 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
 import { closePool } from "../lib/db.mjs";
+import { replaceMakerRegistrationRows } from "../lib/maker-registrations.mjs";
 import { replaceRegistrationRows } from "../lib/registrations.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
 
@@ -63,16 +64,27 @@ const FUEL_NAMES = [
   "DUAL DIESEL/LNG",
   "ELECTRIC",
   "ETHANOL",
+  "FLEX-FUEL(BIO-DIESEL)",
+  "FLEX-FUEL(ETHANOL)",
   "FUEL CELL HYDROGEN",
+  "HCNG",
+  "HYDROGEN(ICE)",
   "LNG",
   "LPG ONLY",
   "METHANOL",
   "NOT APPLICABLE",
   "PETROL",
   "PETROL/CNG",
+  "PETROL(E20)",
+  "PETROL(E20)/CNG",
+  "PETROL(E20)/HYBRID",
+  "PETROL(E20)/HYBRID/CNG",
+  "PETROL(E20)/LPG",
   "PETROL/ETHANOL",
   "PETROL/HYBRID",
+  "PETROL/HYBRID/CNG",
   "PETROL/LPG",
+  "PETROL/METHANOL",
   "PLUG-IN HYBRID EV",
   "PURE EV",
   "SOLAR",
@@ -107,8 +119,8 @@ const MONTH_LABELS = new Map([
 ]);
 
 const FUEL_ALIASES = new Map([
-  ["ELECTRIC", "ELECTRIC(BOV)"],
-  ["PURE EV", "ELECTRIC(BOV)"],
+  ["ELECTRIC", "PURE EV"],
+  ["ELECTRIC(BOV)", "PURE EV"],
 ]);
 
 const FILTER_CONTEXT_KEYS = [
@@ -121,6 +133,7 @@ const FILTER_CONTEXT_KEYS = [
 function parseArgs(argv) {
   const args = {
     mode: "scrape",
+    dimension: "fuel",
     outputDir: DEFAULT_OUTPUT_DIR,
     delayMs: DEFAULT_DELAY_MS,
     headed: false,
@@ -163,6 +176,7 @@ function parseArgs(argv) {
       }
 
       if (key === "mode") args.mode = value;
+      else if (key === "dimension") args.dimension = value;
       else if (key === "output-dir") args.outputDir = value;
       else if (key === "delay-ms") args.delayMs = Number(value);
       else if (key === "limit") args.limit = Number(value);
@@ -186,6 +200,9 @@ function parseArgs(argv) {
 function validateArgs(args) {
   if (!["discover", "scrape", "rto-catalog"].includes(args.mode)) {
     throw new Error(`Unsupported mode: ${args.mode}`);
+  }
+  if (!["fuel", "maker"].includes(args.dimension)) {
+    throw new Error(`Unsupported dimension: ${args.dimension}. Use --dimension fuel or --dimension maker.`);
   }
   if (!Number.isFinite(args.delayMs) || args.delayMs < 0) {
     throw new Error("--delay-ms must be a non-negative number");
@@ -237,8 +254,21 @@ function csvEscape(value) {
   return text;
 }
 
-function toCsv(rows) {
-  const headers = [
+function csvHeadersForDimension(dimension) {
+  if (dimension === "maker") {
+    return [
+      "year",
+      "month",
+      "state",
+      "rto",
+      "maker",
+      ...FILTER_CONTEXT_KEYS,
+      "vehicle_count",
+      "scraped_at",
+      "source_url",
+    ];
+  }
+  return [
     "year",
     "month",
     "state",
@@ -250,6 +280,10 @@ function toCsv(rows) {
     "scraped_at",
     "source_url",
   ];
+}
+
+function toCsv(rows, dimension = "fuel") {
+  const headers = csvHeadersForDimension(dimension);
   const lines = [headers.join(",")];
 
   for (const row of rows) {
@@ -525,9 +559,9 @@ async function selectPrimeOption(page, controlConfig, value) {
   return control;
 }
 
-async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
+async function readPrimeCheckboxGroup(page, tableId, wantedLabels) {
   const wanted = new Set(wantedLabels.map((label) => normalizeLookup(label)));
-  const readMatches = () => page.locator(`table[id="${tableId}"] tr`).evaluateAll(
+  return page.locator(`table[id="${tableId}"] tr`).evaluateAll(
     (rows, wantedValues) => {
       const wantedSet = new Set(wantedValues);
       return rows.map((row) => {
@@ -544,8 +578,25 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
     },
     [...wanted],
   );
+}
 
-  const matches = await readMatches();
+async function assertPrimeCheckboxGroup(page, tableId, wantedLabels) {
+  if (!wantedLabels.length) return;
+
+  const matches = await readPrimeCheckboxGroup(page, tableId, wantedLabels);
+  const selected = matches.filter((match) => match.wanted);
+  if (!selected.length) {
+    throw new Error(`Could not verify ${tableId} checkbox for ${wantedLabels.join(", ")}`);
+  }
+
+  const missingSelection = selected.filter((match) => !match.checked).map((match) => match.text);
+  if (missingSelection.length) {
+    throw new Error(`VAHAN did not keep ${tableId} checkbox selected for ${missingSelection.join(", ")}`);
+  }
+}
+
+async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
+  const matches = await readPrimeCheckboxGroup(page, tableId, wantedLabels);
   let changed = false;
   for (const match of matches) {
     if (!match.id) continue;
@@ -560,7 +611,7 @@ async function setPrimeCheckboxGroup(page, tableId, wantedLabels) {
     }
   }
 
-  const afterMatches = await readMatches();
+  const afterMatches = await readPrimeCheckboxGroup(page, tableId, wantedLabels);
   const selected = afterMatches.filter((match) => match.wanted);
   if (wantedLabels.length && !selected.length) {
     throw new Error(`Could not find ${tableId} checkbox for ${wantedLabels.join(", ")}`);
@@ -585,7 +636,7 @@ async function applySideFilters(page) {
   await page.waitForTimeout(1500);
 }
 
-async function configureReport(page, { state, rto, year }) {
+async function configureReport(page, { state, rto, year, dimension = "fuel" }) {
   await openDashboard(page);
   await selectPrimeOption(
     page,
@@ -630,7 +681,7 @@ async function configureReport(page, { state, rto, year }) {
       labelPatterns: [/y.?axis/i],
       knownOptions: ["Fuel", "Maker"],
     },
-    "Fuel",
+    dimension === "maker" ? "Maker" : "Fuel",
   );
   await selectPrimeOption(
     page,
@@ -736,20 +787,29 @@ async function buildRtoCatalog(args) {
 }
 
 async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, vehicleClasses }) {
+  const expectedFuels = fuels.map(normalizeFuelName);
+  const expectedVehicleCategories = vehicleCategories.map(normalizeFilterName);
+  const expectedNorms = norms.map(normalizeFilterName);
+  const expectedVehicleClasses = vehicleClasses.map(normalizeFilterName);
   const sideFiltersChanged = [
-    fuels.length ? await setPrimeCheckboxGroup(page, "fuel", fuels.map(normalizeFuelName)) : false,
+    expectedFuels.length ? await setPrimeCheckboxGroup(page, "fuel", expectedFuels) : false,
     vehicleCategories.length
-      ? await setPrimeCheckboxGroup(page, "VhCatg", vehicleCategories.map(normalizeFilterName))
+      ? await setPrimeCheckboxGroup(page, "VhCatg", expectedVehicleCategories)
       : false,
-    norms.length ? await setPrimeCheckboxGroup(page, "norms", norms.map(normalizeFilterName)) : false,
+    expectedNorms.length ? await setPrimeCheckboxGroup(page, "norms", expectedNorms) : false,
     vehicleClasses.length
-      ? await setPrimeCheckboxGroup(page, "VhClass", vehicleClasses.map(normalizeFilterName))
+      ? await setPrimeCheckboxGroup(page, "VhClass", expectedVehicleClasses)
       : false,
   ].some(Boolean);
 
   if (sideFiltersChanged) {
     await applySideFilters(page);
   }
+
+  await assertPrimeCheckboxGroup(page, "fuel", expectedFuels);
+  await assertPrimeCheckboxGroup(page, "VhCatg", expectedVehicleCategories);
+  await assertPrimeCheckboxGroup(page, "norms", expectedNorms);
+  await assertPrimeCheckboxGroup(page, "VhClass", expectedVehicleClasses);
 }
 
 async function refreshReport(page) {
@@ -763,7 +823,7 @@ function monthFromHeader(value) {
   return MONTH_LABELS.get(cleaned) ?? null;
 }
 
-async function extractReportRows(page) {
+async function extractReportRows(page, { dimension = "fuel" } = {}) {
   const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
   if (/no data available|no records found|record not found|no data found/i.test(bodyText)) {
     return [];
@@ -820,10 +880,16 @@ async function extractReportRows(page) {
     );
   }
 
-  const labelColumn =
-    parentHeaders.findIndex((header) => /fuel/i.test(header)) !== -1
-      ? parentHeaders.findIndex((header) => /fuel/i.test(header))
-      : 1;
+  const labelPattern = dimension === "maker" ? /maker|manufacturer|oem/i : /fuel/i;
+  const parentLabelColumn = parentHeaders.findIndex((header) => labelPattern.test(header));
+  const headerLabelColumn = headers.findIndex((header) => labelPattern.test(header));
+  const labelColumn = parentLabelColumn !== -1 ? parentLabelColumn : headerLabelColumn;
+  if (labelColumn === -1) {
+    const expectedColumn = dimension === "maker" ? "maker/manufacturer/OEM" : "fuel";
+    throw new Error(
+      `Detected report table but could not find a ${expectedColumn} label column. Headers: ${JSON.stringify(headers)} Parent headers: ${JSON.stringify(parentHeaders)}`,
+    );
+  }
 
   return report.slice(headerIndex + 1).map((row) => ({
     label: normalizeText(row[labelColumn]),
@@ -837,7 +903,7 @@ async function scrapeReport(page, reportItem) {
   await configureReport(page, reportItem);
   await refreshReport(page);
   await applyReportSideFilters(page, reportItem);
-  return extractReportRows(page);
+  return extractReportRows(page, reportItem);
 }
 
 async function captureFailureArtifacts(page, outputDir, reportItem, attempt, error) {
@@ -1137,6 +1203,7 @@ function buildWorkItems(args) {
             month,
             state,
             rto,
+            dimension: args.dimension,
             fuels,
             vehicleCategories: args.vehicleCategories,
             norms: args.norms,
@@ -1154,6 +1221,7 @@ function buildReportItems(workItems) {
   const reports = new Map();
   for (const item of workItems) {
     const key = [
+      item.dimension,
       item.year,
       item.state,
       item.rto,
@@ -1167,6 +1235,7 @@ function buildReportItems(workItems) {
         year: item.year,
         state: item.state,
         rto: item.rto,
+        dimension: item.dimension,
         fuels: item.fuels,
         vehicleCategories: item.vehicleCategories,
         norms: item.norms,
@@ -1185,11 +1254,11 @@ function buildReportItems(workItems) {
 
 function keyForItem(item) {
   return [
+    item.dimension ?? (item.maker !== undefined ? "maker" : "fuel"),
     item.year,
     item.month,
     item.state,
     item.rto || "All Vahan4 Running Office",
-    item.fuel_type ?? "",
     item.fuel_filter ?? "ALL",
     item.vehicle_category_filter ?? "ALL",
     item.norms_filter ?? "ALL",
@@ -1239,19 +1308,20 @@ function parseCsvLine(line) {
 
 async function scrape(args) {
   await ensureDir(args.outputDir);
-  const outputFile = path.join(args.outputDir, "vahan_fuel_monthly.csv");
-  const errorFile = path.join(args.outputDir, "vahan_fuel_monthly_errors.jsonl");
-  const summaryFile = path.join(args.outputDir, "vahan_fuel_monthly_summary.json");
+  const outputBase = args.dimension === "maker" ? "vahan_maker_monthly" : "vahan_fuel_monthly";
+  const outputFile = path.join(args.outputDir, `${outputBase}.csv`);
+  const errorFile = path.join(args.outputDir, `${outputBase}_errors.jsonl`);
+  const summaryFile = path.join(args.outputDir, `${outputBase}_summary.json`);
   const rows = args.resume && args.persist ? await readExistingRows(outputFile) : [];
   const scrapedRows = [];
   const done = new Set(
     rows.map((row) =>
       keyForItem({
+        dimension: args.dimension,
         year: row.year,
         month: row.month,
         state: row.state,
         rto: row.rto,
-        fuel_type: row.fuel_type,
         fuel_filter: row.fuel_filter,
         vehicle_category_filter: row.vehicle_category_filter,
         norms_filter: row.norms_filter,
@@ -1272,7 +1342,7 @@ async function scrape(args) {
   }
 
   if (args.persist && (!rows.length || !(await exists(outputFile)))) {
-    await writeFileWithRetry(outputFile, toCsv(rows));
+    await writeFileWithRetry(outputFile, toCsv(rows, args.dimension));
   }
 
   const browser = await launchBrowser(args);
@@ -1303,15 +1373,13 @@ async function scrape(args) {
             if (!reportRow.label || /total/i.test(reportRow.label)) continue;
             const vehicleCount = reportRow.counts[item.month];
             if (vehicleCount === undefined || vehicleCount === null) {
-              throw new Error(`Could not find month ${item.month} for fuel "${reportRow.label}"`);
+              throw new Error(`Could not find month ${item.month} for ${args.dimension} "${reportRow.label}"`);
             }
-            newRows.push({
+            const common = {
               year: item.year,
               month: item.month,
               state: item.state,
               rto: item.rto || "All Vahan4 Running Office",
-              fuel_segment: fuelSegment(reportRow.label),
-              fuel_type: reportRow.label,
               fuel_filter: reportItem.fuel_filter,
               vehicle_category_filter: reportItem.vehicle_category_filter,
               norms_filter: reportItem.norms_filter,
@@ -1319,17 +1387,22 @@ async function scrape(args) {
               vehicle_count: vehicleCount,
               scraped_at: new Date().toISOString(),
               source_url: SOURCE_URL,
-            });
+            };
+            newRows.push(args.dimension === "maker"
+              ? { ...common, maker: reportRow.label }
+              : { ...common, fuel_segment: fuelSegment(reportRow.label), fuel_type: reportRow.label });
           }
         }
         scrapedRows.push(...newRows);
         rows.push(...newRows);
         succeeded += newRows.length;
         if (args.persist) {
-          const upsertResult = await replaceRegistrationRows(newRows);
+          const upsertResult = args.dimension === "maker"
+            ? await replaceMakerRegistrationRows(newRows)
+            : await replaceRegistrationRows(newRows);
           neonSkipped = neonSkipped || upsertResult.skipped;
           neonUpserted += upsertResult.count;
-          await writeFileWithRetry(outputFile, toCsv(rows));
+          await writeFileWithRetry(outputFile, toCsv(rows, args.dimension));
         }
       } catch (error) {
         failed += reportItem.items.length;
@@ -1356,6 +1429,7 @@ async function scrape(args) {
         JSON.stringify(
           {
             source_url: SOURCE_URL,
+            dimension: args.dimension,
             output_file: outputFile,
             error_file: errorFile,
             total_rows: rows.length,

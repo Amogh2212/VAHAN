@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Fuel-agnostic VAHAN monthly sales reports with fuel mix, category sales, trends, and OEM leaderboards." />
+    <title>Monthly Sales Report - VAHAN</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="monthly-report-page">
+    <div class="app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div>
+            <strong>VAHAN</strong>
+            <small>Features</small>
+          </div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg></span><span>Dashboard</span></a>
+          <a class="feature-link" href="/compare.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg></span><span>Compare data</span></a>
+          <a class="feature-link" href="/map.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" /><path d="M9 3v15M15 6v15" /></svg></span><span>Map view</span></a>
+          <a class="feature-link" href="/tracked.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z" /><path d="M8 12h3l2-4 3 8 2-4" /></svg></span><span>Tracked queries</span></a>
+          <a class="feature-link active" href="/reports/monthly-sales.html" aria-current="page"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span><span>Monthly reports</span></a>
+        </nav>
+      </aside>
+
+      <main class="shell report-shell">
+        <section class="report-control-panel">
+          <div class="hero-title-row">
+            <div class="sidebar-shell" id="sidebarShell">
+              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
+                <span class="sidebar-mark trigger-mark">V</span>
+              </button>
+            </div>
+            <div>
+              <p class="eyebrow">Fuel-agnostic reporting</p>
+              <h1>Monthly Vehicle Sales Report</h1>
+            </div>
+          </div>
+
+          <form id="monthlyReportForm" class="monthly-report-form" autocomplete="off">
+            <label>
+              <span>Month</span>
+              <input id="reportMonth" name="month" type="month" />
+            </label>
+            <label>
+              <span>Fuel scope</span>
+              <select id="fuelScope" name="fuelScope">
+                <option value="all">All fuels</option>
+                <option value="segment">Fuel segment/family</option>
+                <option value="exact">Exact VAHAN fuel label</option>
+              </select>
+            </label>
+            <label>
+              <span>Fuel</span>
+              <input id="reportFuel" name="fuel" placeholder="EV, PETROL, DIESEL, CNG, HYBRID, PURE EV" />
+            </label>
+            <button type="submit" id="loadReportBtn">Generate report</button>
+            <a class="secondary-action report-pdf-action" id="downloadReportPdf" href="#" aria-disabled="true">Download PDF</a>
+          </form>
+        </section>
+
+        <section id="reportWarnings" class="warnings" hidden></section>
+        <section id="monthlyReport" class="monthly-report-output">
+          <p class="result-empty">Choose a month and fuel scope to generate an EVReporter-style report for any fuel category.</p>
+        </section>
+      </main>
+    </div>
+    <script src="/reports/monthly-sales.js"></script>
+  </body>
+</html>

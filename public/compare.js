@@ -21,8 +21,8 @@ const modeConfig = {
   month: {
     help: "Use the same state or RTO in both queries and change only the month or date range.",
     hint: "Example: compare Maharashtra fork lift diesel registrations for Jan 2024 and Feb 2024.",
-    left: "diesel fork lift registrations in Maharashtra from Jan 2024 to Jan 2024",
-    right: "diesel fork lift registrations in Maharashtra from Feb 2024 to Feb 2024",
+    left: "Light Motor Vehicle registrations in Maharashtra in Jan 2026",
+    right: "light motor vehicle registrations in Maharashtra in Feb 2026",
   },
   location: {
     help: "Use two different states or RTOs for the same month, so the location difference is obvious.",
@@ -40,6 +40,35 @@ let activeCompareRun = 0;
 function setText(id, value) {
   const el = document.querySelector(`#${id}`);
   if (el) el.textContent = value;
+}
+
+function resetSide(prefix, query, status = "Waiting") {
+  const statusEl = document.querySelector(`#${prefix}Status`);
+  if (statusEl) {
+    statusEl.textContent = status;
+    statusEl.className = "status-pill";
+  }
+  setText(`${prefix}QueryLabel`, query || `${prefix === "left" ? "Left" : "Right"} query`);
+  setText(`${prefix}ResultMeta`, "");
+  setText(`${prefix}Total`, "-");
+  setText(`${prefix}Average`, "-");
+  setText(`${prefix}Peak`, "-");
+  setText(`${prefix}Rows`, "-");
+  const warningsEl = document.querySelector(`#${prefix}Warnings`);
+  if (warningsEl) {
+    warningsEl.hidden = true;
+    warningsEl.innerHTML = "";
+  }
+  renderBars(`#${prefix}Trend`, [], "Run this query to see its monthly trend.");
+  renderFuel(`#${prefix}Fuel`, [], "Run this query to see its fuel breakdown.");
+}
+
+function resetCompareState(message = "Run two queries to see the difference in totals, average, and peak month.") {
+  deltaSummary.textContent = message;
+  verticalBarChart.innerHTML = '<p class="compare-empty">Run two queries to compare monthly totals as vertical bars.</p>';
+  doubleBarChart.innerHTML = '<p class="compare-empty">Run two queries to compare monthly totals side by side.</p>';
+  resetSide("left", leftQuery.value.trim());
+  resetSide("right", rightQuery.value.trim());
 }
 
 function escapeHtml(value) {
@@ -68,6 +97,7 @@ function queryLabel(baseLabel, query) {
 }
 
 function setMode(nextMode) {
+  activeCompareRun += 1;
   currentMode = nextMode;
   monthModeBtn.classList.toggle("active", nextMode === "month");
   locationModeBtn.classList.toggle("active", nextMode === "location");
@@ -75,8 +105,11 @@ function setMode(nextMode) {
   locationModeBtn.setAttribute("aria-pressed", String(nextMode === "location"));
   modeHelp.textContent = modeConfig[nextMode].help;
   compareHint.textContent = modeConfig[nextMode].hint;
+  leftQuery.placeholder = modeConfig[nextMode].left;
+  rightQuery.placeholder = modeConfig[nextMode].right;
   if (!leftDirty) leftQuery.value = modeConfig[nextMode].left;
   if (!rightDirty) rightQuery.value = modeConfig[nextMode].right;
+  resetCompareState("Press Compare to run this view.");
 }
 
 function formatChange(value) {
@@ -105,8 +138,13 @@ function dataWarnings(data) {
   const scraperMessage = data.scraper?.failedRuns?.length
     ? `Live VAHAN fetch failed for ${data.scraper.failedRuns.length} run(s).`
     : null;
-  return [...new Set([statusMessages[data.dataStatus], scraperMessage, ...(data.warnings ?? [])].filter(Boolean))]
-    .map((message) => /decode failed.*fallback/i.test(message) ? "AI parser fallback used successfully." : message);
+  return [
+    ...new Set(
+      [statusMessages[data.dataStatus], scraperMessage, ...(data.warnings ?? [])]
+        .filter(Boolean)
+        .filter((message) => !/(decode.*failed.*fallback|gemini.*decode.*failed)/i.test(message)),
+    ),
+  ];
 }
 
 function statusLabel(data) {
@@ -329,13 +367,11 @@ function computeDelta(left, right) {
 
 function renderDelta(leftData, rightData) {
   const { diff, pct } = computeDelta(leftData, rightData);
-  const warningCount = dataWarnings(leftData).length + dataWarnings(rightData).length;
   deltaSummary.innerHTML = `
     <div><strong>Difference:</strong> ${formatChange(diff)} registrations</div>
     <div><strong>Change:</strong> ${formatPct(pct)}</div>
     <div><strong>Left:</strong> ${fmt.format(leftData.summary.total)} total (${escapeHtml(leftData.dataStatus ?? "complete")})</div>
     <div><strong>Right:</strong> ${fmt.format(rightData.summary.total)} total (${escapeHtml(rightData.dataStatus ?? "complete")})</div>
-    ${warningCount ? `<div><strong>Warnings:</strong> ${fmt.format(warningCount)} data note${warningCount === 1 ? "" : "s"} shown below.</div>` : ""}
   `;
 }
 
@@ -373,6 +409,8 @@ async function runCompare(event) {
   const right = rightQuery.value.trim();
   leftQuery.value = left;
   rightQuery.value = right;
+  resetSide("left", left || "Left query", "Loading");
+  resetSide("right", right || "Right query", "Loading");
 
   try {
     if (!left || !right) {

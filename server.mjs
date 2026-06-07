@@ -5,7 +5,17 @@ import process from "node:process";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
 import { hasDatabaseUrl } from "./lib/db.mjs";
+import {
+  queryMakerRegistrationRows,
+  readLegacyMakerFuelCsv,
+  readMakerRegistrationsCsv,
+} from "./lib/maker-registrations.mjs";
+import {
+  buildMonthlySalesReport,
+  renderMonthlySalesReportHtml,
+} from "./lib/monthly-sales-report.mjs";
 import {
   REGISTRATION_HEADERS,
   loadRegistrationRowsFromDb,
@@ -39,6 +49,8 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_fuel_monthly.csv");
+const MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_maker_monthly.csv");
+const LEGACY_MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_state_maker_fuel.csv");
 const RTO_CATALOG_FILE = path.join(__dirname, "data", "vahan", "rto_catalog.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
@@ -59,6 +71,7 @@ const FILTER_CONTEXT_FIELDS = [
   "vehicle_class_filter",
 ];
 let rtoCatalogCache = null;
+let makerDataCache = null;
 let telegramBot = null;
 let telegramAllowedChatIds = new Set();
 const telegramChatModes = new Map();
@@ -285,10 +298,19 @@ const RTO_ALIASES = CITY_DB;
 const FUEL_FILTER_ALIASES = [
   { aliases: ["diesel"], value: "DIESEL", fuelSegment: "NON_EV", fuelType: "DIESEL" },
   { aliases: ["petrol"], value: "PETROL", fuelSegment: "NON_EV", fuelType: "PETROL" },
+  { aliases: ["flex fuel biodiesel", "flex-fuel biodiesel", "flex-fuel bio-diesel"], value: "FLEX-FUEL(BIO-DIESEL)", fuelSegment: "NON_EV", fuelType: "FLEX-FUEL(BIO-DIESEL)" },
+  { aliases: ["flex fuel ethanol", "flex-fuel ethanol"], value: "FLEX-FUEL(ETHANOL)", fuelSegment: "NON_EV", fuelType: "FLEX-FUEL(ETHANOL)" },
   { aliases: ["cng", "cng only"], value: "CNG ONLY", fuelSegment: "NON_EV", fuelType: "CNG" },
+  { aliases: ["hcng"], value: "HCNG", fuelSegment: "NON_EV", fuelType: "HCNG" },
+  { aliases: ["hydrogen ice", "hydrogen internal combustion", "hydrogen(ice)"], value: "HYDROGEN(ICE)", fuelSegment: "NON_EV", fuelType: "HYDROGEN(ICE)" },
+  { aliases: ["petrol e20", "e20 petrol"], value: "PETROL(E20)", fuelSegment: "NON_EV", fuelType: "PETROL(E20)" },
+  { aliases: ["petrol e20 cng", "petrol e20/cng", "e20 cng"], value: "PETROL(E20)/CNG", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/CNG" },
+  { aliases: ["petrol e20 hybrid", "petrol e20/hybrid", "e20 hybrid"], value: "PETROL(E20)/HYBRID", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/HYBRID" },
+  { aliases: ["petrol e20 hybrid cng", "petrol e20/hybrid/cng", "e20 hybrid cng"], value: "PETROL(E20)/HYBRID/CNG", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/HYBRID/CNG" },
+  { aliases: ["petrol e20 lpg", "petrol e20/lpg", "e20 lpg"], value: "PETROL(E20)/LPG", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/LPG" },
   { aliases: ["electric bov", "electric(bov)", "battery operated vehicle"], value: "ELECTRIC(BOV)", fuelSegment: "EV", fuelType: "ELECTRIC" },
   { aliases: ["plug in hybrid", "plug-in hybrid", "phev"], value: "PLUG-IN HYBRID EV", fuelSegment: "EV", fuelType: "PLUG-IN HYBRID EV" },
-  { aliases: ["pure ev"], value: "PURE EV", fuelSegment: "EV", fuelType: "PURE EV" },
+  { aliases: ["pure ev", "battery ev"], value: "PURE EV", fuelSegment: "EV", fuelType: "PURE EV" },
   { aliases: ["strong hybrid"], value: "STRONG HYBRID EV", fuelSegment: "EV", fuelType: "STRONG HYBRID EV" },
 ];
 
@@ -306,11 +328,15 @@ const KNOWN_FUEL_TYPES = [
   "CNG ONLY",
   "DIESEL",
   "DIESEL/HYBRID",
+  "FLEX-FUEL(BIO-DIESEL)",
+  "FLEX-FUEL(ETHANOL)",
   "DUAL DIESEL/CNG",
   "DUAL DIESEL/LNG",
   "ELECTRIC(BOV)",
   "ETHANOL(E100)",
   "FUEL CELL HYDROGEN",
+  "HCNG",
+  "HYDROGEN(ICE)",
   "LNG",
   "LPG ONLY",
   "METHANOL",
@@ -331,50 +357,245 @@ const KNOWN_FUEL_TYPES = [
   "STRONG HYBRID EV",
 ];
 
+const KNOWN_VEHICLE_CLASSES = [
+  "ADAPTED VEHICLE",
+  "AGRICULTURAL TRACTOR",
+  "AMBULANCE",
+  "ANIMAL AMBULANCE",
+  "ARTICULATED VEHICLE",
+  "AUXILIARY TRAILER",
+  "BREAKDOWN VAN",
+  "BULLDOZER",
+  "BUS",
+  "CAMPER VAN / TRAILER",
+  "CAMPER VAN / TRAILER (PRIVATE USE)",
+  "CASH VAN",
+  "CONSTRUCTION EQUIPMENT VEHICLE",
+  "CONSTRUCTION EQUIPMENT VEHICLE (COMMERCIAL)",
+  "CRANE MOUNTED VEHICLE",
+  "DUMPER",
+  "EARTH MOVING EQUIPMENT",
+  "EDUCATIONAL INSTITUTION BUS",
+  "E-RICKSHAW WITH CART (G)",
+  "E-RICKSHAW(P)",
+  "EXCAVATOR (COMMERCIAL)",
+  "EXCAVATOR (NT)",
+  "FIRE FIGHTING VEHICLE",
+  "FIRE TENDERS",
+  "FORK LIFT",
+  "GOODS CARRIER",
+  "HARVESTER",
+  "HEARSES",
+  "LIBRARY VAN",
+  "LUXURY CAB",
+  "M-CYCLE/SCOOTER",
+  "M-CYCLE/SCOOTER-WITH SIDE CAR",
+  "MAXI CAB",
+  "MOBILE CANTEEN",
+  "MOBILE CLINIC",
+  "MOBILE WORKSHOP",
+  "MODULAR HYDRAULIC TRAILER",
+  "MOPED",
+  "MOTOR CAB",
+  "MOTOR CAR",
+  "MOTOR CARAVAN",
+  "MOTOR CYCLE/SCOOTER-SIDECAR(T)",
+  "MOTOR CYCLE/SCOOTER-USED FOR HIRE",
+  "MOTOR CYCLE/SCOOTER-WITH TRAILER",
+  "MOTORISED CYCLE (CC > 25CC)",
+  "OMNI BUS",
+  "OMNI BUS (PRIVATE USE)",
+  "POWER TILLER",
+  "POWER TILLER (COMMERCIAL)",
+  "PRIVATE SERVICE VEHICLE",
+  "PRIVATE SERVICE VEHICLE (INDIVIDUAL USE)",
+  "PULLER TRACTOR",
+  "QUADRICYCLE (COMMERCIAL)",
+  "QUADRICYCLE (PRIVATE)",
+  "RECOVERY VEHICLE",
+  "ROAD ROLLER",
+  "SCHOOL BUS",
+  "SEMI-TRAILER (COMMERCIAL)",
+  "SNORKED LADDERS",
+  "TOW TRUCK",
+  "TOWER WAGON",
+  "TRACTOR (COMMERCIAL)",
+  "TRACTOR-TROLLEY(COMMERCIAL)",
+  "TRAILER (AGRICULTURAL)",
+  "TRAILER (COMMERCIAL)",
+  "TRAILER FOR PERSONAL USE",
+  "TREE TRIMMING VEHICLE",
+  "THREE WHEELER (GOODS)",
+  "THREE WHEELER (PASSENGER)",
+  "THREE WHEELER (PERSONAL)",
+  "VEHICLE FITTED WITH COMPRESSOR",
+  "VEHICLE FITTED WITH GENERATOR",
+  "VEHICLE FITTED WITH RIG",
+  "VINTAGE MOTOR VEHICLE",
+  "X-RAY VAN",
+];
+
 const VEHICLE_CATEGORY_ALIASES = [
-  { aliases: ["lmv", "light motor vehicle"], value: "LIGHT MOTOR VEHICLE" },
+  { aliases: ["two wheeler invalid carriage", "2 wheeler invalid carriage"], value: "TWO WHEELER (Invalid Carriage)" },
+  { aliases: ["two wheeler nt", "two wheeler non transport", "2 wheeler nt", "2w nt", "two wheeler", "two wheelers"], value: "TWO WHEELER(NT)" },
+  { aliases: ["two wheeler t", "two wheeler transport", "2 wheeler t", "2w t", "two wheeler", "two wheelers"], value: "TWO WHEELER(T)" },
+  { aliases: ["three wheeler invalid carriage", "3 wheeler invalid carriage"], value: "THREE WHEELER (Invalid Carriage)" },
+  { aliases: ["three wheeler nt", "three wheeler non transport", "3 wheeler nt", "3w nt", "three wheeler", "three wheelers"], value: "THREE WHEELER(NT)" },
+  { aliases: ["three wheeler t", "three wheeler transport", "3 wheeler t", "3w t", "three wheeler", "three wheelers"], value: "THREE WHEELER(T)" },
+  { aliases: ["four wheeler invalid carriage", "4 wheeler invalid carriage"], value: "FOUR WHEELER (Invalid Carriage)" },
+  { aliases: ["heavy goods vehicle"], value: "HEAVY GOODS VEHICLE" },
   { aliases: ["hmv", "heavy motor vehicle"], value: "HEAVY MOTOR VEHICLE" },
+  { aliases: ["heavy passenger vehicle"], value: "HEAVY PASSENGER VEHICLE" },
+  { aliases: ["light goods vehicle"], value: "LIGHT GOODS VEHICLE" },
+  { aliases: ["lmv", "light motor vehicle"], value: "LIGHT MOTOR VEHICLE" },
+  { aliases: ["light passenger vehicle"], value: "LIGHT PASSENGER VEHICLE" },
+  { aliases: ["medium goods vehicle"], value: "MEDIUM GOODS VEHICLE" },
   { aliases: ["mmv", "medium motor vehicle"], value: "MEDIUM MOTOR VEHICLE" },
-  { aliases: ["four wheeler invalid carriage"], value: "FOUR WHEELER (Invalid Carriage)" },
+  { aliases: ["medium passenger vehicle"], value: "MEDIUM PASSENGER VEHICLE" },
+  { aliases: ["other than mentioned above"], value: "OTHER THAN MENTIONED ABOVE" },
 ];
 
 const VEHICLE_GROUP_ALIASES = [
   { aliases: ["two wheeler", "two wheelers", "2 wheeler", "2 wheelers", "2w"], value: "TWO WHEELER" },
   { aliases: ["three wheeler", "three wheelers", "3 wheeler", "3 wheelers", "3w"], value: "THREE WHEELER" },
-  { aliases: ["four wheeler", "four wheelers", "4 wheeler", "4 wheelers", "4w"], value: "FOUR WHEELER" },
+];
+
+const PRIVATE_FOUR_WHEELER_CLASSES = [
+  "MOTOR CAR",
+  "MOTOR CARAVAN",
+  "OMNI BUS (PRIVATE USE)",
+  "ADAPTED VEHICLE",
+  "VINTAGE MOTOR VEHICLE",
+];
+
+const PRIVATE_FOUR_WHEELER_ALIASES = [
+  "four wheeler",
+  "four wheelers",
+  "4 wheeler",
+  "4 wheelers",
+  "4w",
+  "private four wheeler",
+  "private four wheelers",
+  "private 4 wheeler",
+  "private 4 wheelers",
+  "private 4w",
+  "non transport four wheeler",
+  "non transport four wheelers",
+  "non transport 4 wheeler",
+  "non transport 4 wheelers",
+  "non transport 4w",
+  "non-transport four wheeler",
+  "non-transport four wheelers",
+  "non-transport 4 wheeler",
+  "non-transport 4 wheelers",
+  "non-transport 4w",
 ];
 
 const NORMS_ALIASES = [
   { aliases: ["bs i", "bharat stage i"], value: "BHARAT STAGE I" },
   { aliases: ["bs ii", "bharat stage ii"], value: "BHARAT STAGE II" },
   { aliases: ["bs iii", "bharat stage iii"], value: "BHARAT STAGE III" },
+  { aliases: ["bs iii cev", "bharat stage iii cev"], value: "BHARAT STAGE III (CEV)" },
+  { aliases: ["bs iii iv", "bharat stage iii iv", "bharat stage iii/iv"], value: "BHARAT STAGE III/IV" },
   { aliases: ["bs iv", "bharat stage iv"], value: "BHARAT STAGE IV" },
   { aliases: ["bs vi", "bs 6", "bharat stage vi", "bharat stage 6"], value: "BHARAT STAGE VI" },
+  { aliases: ["trem stage iii", "bharat trem stage iii"], value: "BHARAT (TREM) STAGE III" },
+  { aliases: ["trem stage iii a", "trem stage iiia", "bharat trem stage iii a"], value: "BHARAT (TREM) STAGE III A" },
+  { aliases: ["trem stage iii b", "trem stage iiib", "bharat trem stage iii b"], value: "BHARAT (TREM) STAGE III B" },
+  { aliases: ["cev stage iv"], value: "CEV STAGE IV" },
+  { aliases: ["cev stage v"], value: "CEV STAGE V" },
+  { aliases: ["euro 1"], value: "EURO 1" },
+  { aliases: ["euro 2"], value: "EURO 2" },
+  { aliases: ["euro 3"], value: "EURO 3" },
   { aliases: ["euro 4"], value: "EURO 4" },
   { aliases: ["euro 6"], value: "EURO 6" },
+  { aliases: ["euro 6a"], value: "EURO 6A" },
+  { aliases: ["euro 6ad"], value: "EURO 6AD" },
+  { aliases: ["euro 6b"], value: "EURO 6B" },
+  { aliases: ["euro 6c"], value: "EURO 6C" },
+  { aliases: ["euro 6d"], value: "EURO 6D" },
   { aliases: ["not applicable"], value: "NOT APPLICABLE" },
   { aliases: ["not available"], value: "NOT AVAILABLE" },
+  { aliases: ["trem stage iv"], value: "TREM STAGE IV" },
+  { aliases: ["trem stage v"], value: "TREM STAGE V" },
 ];
 
 const VEHICLE_CLASS_ALIASES = [
+  { aliases: ["adapted vehicle"], value: "ADAPTED VEHICLE" },
+  { aliases: ["agricultural tractor", "tractor agricultural"], value: "AGRICULTURAL TRACTOR" },
   { aliases: ["ambulance", "ambulances"], value: "AMBULANCE" },
+  { aliases: ["animal ambulance"], value: "ANIMAL AMBULANCE" },
+  { aliases: ["articulated vehicle"], value: "ARTICULATED VEHICLE" },
+  { aliases: ["auxiliary trailer"], value: "AUXILIARY TRAILER" },
+  { aliases: ["breakdown van"], value: "BREAKDOWN VAN" },
+  { aliases: ["bulldozer"], value: "BULLDOZER" },
   { aliases: ["motor car", "car", "cars"], value: "MOTOR CAR" },
   { aliases: ["motor cab", "cab", "taxi"], value: "MOTOR CAB" },
   { aliases: ["bus", "buses"], value: "BUS" },
   { aliases: ["school bus"], value: "SCHOOL BUS" },
+  { aliases: ["educational institution bus"], value: "EDUCATIONAL INSTITUTION BUS" },
   { aliases: ["omni bus"], value: "OMNI BUS" },
+  { aliases: ["omni bus private use", "private use omni bus"], value: "OMNI BUS (PRIVATE USE)" },
   { aliases: ["m-cycle/scooter", "motorcycle", "motor cycle", "scooter"], value: "M-CYCLE/SCOOTER" },
+  { aliases: ["m-cycle scooter with side car", "motorcycle with side car", "scooter with side car"], value: "M-CYCLE/SCOOTER-WITH SIDE CAR" },
+  { aliases: ["motor cycle scooter sidecar t", "motorcycle sidecar t", "scooter sidecar t"], value: "MOTOR CYCLE/SCOOTER-SIDECAR(T)" },
+  { aliases: ["motor cycle scooter used for hire", "motorcycle used for hire", "scooter used for hire"], value: "MOTOR CYCLE/SCOOTER-USED FOR HIRE" },
+  { aliases: ["motor cycle scooter with trailer", "motorcycle with trailer", "scooter with trailer"], value: "MOTOR CYCLE/SCOOTER-WITH TRAILER" },
+  { aliases: ["motorised cycle", "motorised cycle cc > 25cc", "motorized cycle"], value: "MOTORISED CYCLE (CC > 25CC)" },
   { aliases: ["moped"], value: "MOPED" },
   { aliases: ["goods carrier"], value: "GOODS CARRIER" },
-  { aliases: ["tractor"], value: "TRACTOR (COMMERCIAL)" },
+  { aliases: ["commercial tractor", "tractor commercial"], value: "TRACTOR (COMMERCIAL)" },
+  { aliases: ["puller tractor"], value: "PULLER TRACTOR" },
   { aliases: ["e-rickshaw passenger", "erickshaw passenger", "passenger e-rickshaw", "passenger erickshaw"], value: "E-RICKSHAW(P)" },
   { aliases: ["e-rickshaw cart", "erickshaw cart", "e-rickshaw goods", "erickshaw goods", "goods e-rickshaw", "goods erickshaw", "cargo e-rickshaw", "cargo erickshaw", "electric goods rickshaw"], value: "E-RICKSHAW WITH CART (G)" },
   { aliases: ["three wheeler passenger", "three wheelers passenger", "3 wheeler passenger", "3w passenger", "passenger three wheeler", "passenger 3 wheeler"], value: "THREE WHEELER (PASSENGER)" },
   { aliases: ["three wheeler goods", "three wheelers goods", "3 wheeler goods", "3w goods", "goods three wheeler", "goods 3 wheeler"], value: "THREE WHEELER (GOODS)" },
+  { aliases: ["three wheeler personal", "personal three wheeler"], value: "THREE WHEELER (PERSONAL)" },
   { aliases: ["fork lift", "forklift", "fork lifts", "forklifts"], value: "FORK LIFT" },
   { aliases: ["tow truck"], value: "TOW TRUCK" },
   { aliases: ["fire tenders", "fire tender"], value: "FIRE TENDERS" },
-  { aliases: ["trailer"], value: "TRAILER (AGRICULTURAL)" },
+  { aliases: ["fire fighting vehicle"], value: "FIRE FIGHTING VEHICLE" },
+  { aliases: ["agricultural trailer", "trailer agricultural"], value: "TRAILER (AGRICULTURAL)" },
+  { aliases: ["commercial trailer", "trailer commercial"], value: "TRAILER (COMMERCIAL)" },
+  { aliases: ["personal trailer", "trailer for personal use"], value: "TRAILER FOR PERSONAL USE" },
+  { aliases: ["semi trailer", "semi-trailer", "commercial semi trailer"], value: "SEMI-TRAILER (COMMERCIAL)" },
+  { aliases: ["tractor trolley", "tractor-trolley", "commercial tractor trolley"], value: "TRACTOR-TROLLEY(COMMERCIAL)" },
+  { aliases: ["camper van", "camper trailer"], value: "CAMPER VAN / TRAILER" },
+  { aliases: ["private camper van", "private camper trailer", "camper van private use"], value: "CAMPER VAN / TRAILER (PRIVATE USE)" },
+  { aliases: ["cash van"], value: "CASH VAN" },
+  { aliases: ["construction equipment vehicle"], value: "CONSTRUCTION EQUIPMENT VEHICLE" },
+  { aliases: ["commercial construction equipment vehicle"], value: "CONSTRUCTION EQUIPMENT VEHICLE (COMMERCIAL)" },
+  { aliases: ["crane mounted vehicle"], value: "CRANE MOUNTED VEHICLE" },
+  { aliases: ["dumper"], value: "DUMPER" },
+  { aliases: ["earth moving equipment"], value: "EARTH MOVING EQUIPMENT" },
+  { aliases: ["excavator commercial", "commercial excavator"], value: "EXCAVATOR (COMMERCIAL)" },
+  { aliases: ["excavator nt"], value: "EXCAVATOR (NT)" },
+  { aliases: ["harvester"], value: "HARVESTER" },
+  { aliases: ["hearse", "hearses"], value: "HEARSES" },
+  { aliases: ["library van"], value: "LIBRARY VAN" },
+  { aliases: ["luxury cab"], value: "LUXURY CAB" },
+  { aliases: ["maxi cab"], value: "MAXI CAB" },
+  { aliases: ["mobile canteen"], value: "MOBILE CANTEEN" },
+  { aliases: ["mobile clinic"], value: "MOBILE CLINIC" },
+  { aliases: ["mobile workshop"], value: "MOBILE WORKSHOP" },
+  { aliases: ["modular hydraulic trailer"], value: "MODULAR HYDRAULIC TRAILER" },
+  { aliases: ["motor caravan"], value: "MOTOR CARAVAN" },
+  { aliases: ["power tiller"], value: "POWER TILLER" },
+  { aliases: ["commercial power tiller", "power tiller commercial"], value: "POWER TILLER (COMMERCIAL)" },
+  { aliases: ["private service vehicle"], value: "PRIVATE SERVICE VEHICLE" },
+  { aliases: ["individual private service vehicle", "private service vehicle individual use"], value: "PRIVATE SERVICE VEHICLE (INDIVIDUAL USE)" },
+  { aliases: ["quadricycle commercial", "commercial quadricycle"], value: "QUADRICYCLE (COMMERCIAL)" },
+  { aliases: ["quadricycle private", "private quadricycle"], value: "QUADRICYCLE (PRIVATE)" },
+  { aliases: ["recovery vehicle"], value: "RECOVERY VEHICLE" },
+  { aliases: ["road roller"], value: "ROAD ROLLER" },
+  { aliases: ["snorked ladders", "snorkel ladder", "snorked ladder"], value: "SNORKED LADDERS" },
+  { aliases: ["tower wagon"], value: "TOWER WAGON" },
+  { aliases: ["tree trimming vehicle"], value: "TREE TRIMMING VEHICLE" },
+  { aliases: ["vehicle fitted with compressor"], value: "VEHICLE FITTED WITH COMPRESSOR" },
+  { aliases: ["vehicle fitted with generator"], value: "VEHICLE FITTED WITH GENERATOR" },
+  { aliases: ["vehicle fitted with rig"], value: "VEHICLE FITTED WITH RIG" },
+  { aliases: ["vintage motor vehicle", "vintage vehicle"], value: "VINTAGE MOTOR VEHICLE" },
+  { aliases: ["x-ray van", "xray van"], value: "X-RAY VAN" },
 ];
 
 let dataCache = null;
@@ -457,15 +678,34 @@ function hasActiveContext(filters = {}) {
 }
 
 function findFilterValues(text, definitions) {
-  const normalizedText = normalizeLookup(text);
   return uniqueSorted(
-    definitions
-      .filter((definition) => definition.aliases.some((alias) => {
-        const normalizedAlias = normalizeLookup(alias);
-        return new RegExp(`\\b${normalizedAlias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalizedText);
-      }))
-      .map((definition) => definition.value),
+    findMatchingFilterDefinitions(text, definitions).map((definition) => definition.value),
   );
+}
+
+function findMatchingFilterDefinitions(text, definitions) {
+  const normalizedText = normalizeLookup(text);
+  const matches = [];
+
+  for (const definition of definitions) {
+    for (const alias of definition.aliases) {
+      const normalizedAlias = normalizeLookup(alias);
+      const pattern = new RegExp(`\\b${normalizedAlias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (pattern.test(normalizedText)) matches.push({ definition, alias: normalizedAlias });
+    }
+  }
+
+  const selected = [];
+  for (const match of matches.sort((a, b) => b.alias.length - a.alias.length)) {
+    const shadowedBySpecificAlias = selected.some((item) =>
+      item.definition.value !== match.definition.value &&
+      item.alias.length > match.alias.length &&
+      item.alias.includes(match.alias),
+    );
+    if (!shadowedBySpecificAlias) selected.push(match);
+  }
+
+  return selected.map((match) => match.definition);
 }
 
 function queryListParam(searchParams, key) {
@@ -607,6 +847,51 @@ async function loadRows() {
 
   dataCache = await readRegistrationsCsv(DATA_FILE);
   return dataCache;
+}
+
+async function loadMakerRows() {
+  if (makerDataCache) return makerDataCache;
+
+  if (hasDatabaseUrl() && !databaseUnavailable) {
+    try {
+      makerDataCache = await queryMakerRegistrationRows();
+      return makerDataCache;
+    } catch (error) {
+      console.warn(`[data] Neon maker read failed, falling back to CSV: ${error.message}`);
+    }
+  }
+
+  const rows = [
+    ...(await readMakerRegistrationsCsv(MAKER_DATA_FILE)),
+    ...(await readLegacyMakerFuelCsv(LEGACY_MAKER_DATA_FILE)),
+  ];
+  const merged = new Map();
+  for (const row of rows) {
+    if (!row.maker) continue;
+    merged.set(makerRowIdentity(row), row);
+  }
+  makerDataCache = [...merged.values()].sort((a, b) =>
+    a.year - b.year ||
+    a.month - b.month ||
+    a.state.localeCompare(b.state) ||
+    a.rto.localeCompare(b.rto) ||
+    a.maker.localeCompare(b.maker),
+  );
+  return makerDataCache;
+}
+
+function makerRowIdentity(row) {
+  return [
+    row.year,
+    row.month,
+    row.state,
+    row.rto,
+    row.maker,
+    row.fuel_filter ?? ALL_FILTER,
+    row.vehicle_category_filter ?? ALL_FILTER,
+    row.norms_filter ?? ALL_FILTER,
+    row.vehicle_class_filter ?? ALL_FILTER,
+  ].join("||");
 }
 
 async function loadCatalog(rows = []) {
@@ -859,12 +1144,10 @@ function decodeWithRules(query) {
   if (/\bpetrol\b/i.test(text)) fuelType = "PETROL";
   if (/\bdiesel\b/i.test(text)) fuelType = "DIESEL";
   if (/\bcng\b/i.test(text)) fuelType = "CNG";
-  const fuelMatches = FUEL_FILTER_ALIASES.filter((definition) =>
-    definition.aliases.some((alias) => new RegExp(`\\b${normalizeLookup(alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text)),
-  );
+  const fuelMatches = findMatchingFilterDefinitions(text, FUEL_FILTER_ALIASES);
   if (fuelMatches.length) {
     fuelSegment = fuelSegment ?? fuelMatches[0].fuelSegment ?? null;
-    fuelType = fuelType ?? fuelMatches[0].fuelType ?? null;
+    fuelType = fuelMatches[0].fuelType ?? fuelType;
   }
   const fuelFilters = fuelFiltersForQuery(text, fuelMatches, fuelType);
   const vehicleCategories = findFilterValues(text, VEHICLE_CATEGORY_ALIASES);
@@ -921,6 +1204,7 @@ function buildSemanticVocabulary(rows = []) {
       ...rows.map((row) => row.fuel_type),
     ]),
     vehicleClasses: uniqueLabelValues([
+      ...KNOWN_VEHICLE_CLASSES,
       ...VEHICLE_CLASS_ALIASES.map((item) => item.value),
       ...rows.map((row) => row.vehicle_class_filter).filter((value) => value && value !== ALL_FILTER),
     ]),
@@ -956,9 +1240,8 @@ function findVehicleGroups(text, vocabulary) {
 
 function semanticFuelSelection(text, vocabulary) {
   const normalized = normalizeLookup(text);
-  const exactFuelMatches = FUEL_FILTER_ALIASES.filter((definition) =>
-    definition.aliases.some((alias) => new RegExp(`\\b${normalizeLookup(alias).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalized)),
-  ).map((definition) => definition.value);
+  const exactFuelMatches = findMatchingFilterDefinitions(normalized, FUEL_FILTER_ALIASES)
+    .map((definition) => definition.value);
 
   if (/\b(non[-\s]?ev)\b/i.test(normalized)) return [];
   if (/\b(?:plug[-\s]?in\s+hybrid|phev)\b/i.test(normalized)) return exactVocabularyLabels(["PLUG-IN HYBRID EV"], vocabulary.fuelTypes);
@@ -975,6 +1258,14 @@ function semanticVehicleClassSelection(text, ruleFilters, vocabulary) {
   const mentionsErickshaw = /\b(?:e[-\s]?rickshaw|erickshaw)\b/i.test(normalized);
   const mentionsGoods = /\b(?:goods|cargo|cart)\b/i.test(normalized);
   const mentionsPassenger = /\b(?:passenger|passengers|public|people)\b/i.test(normalized);
+  const mentionsPrivateFourWheeler = PRIVATE_FOUR_WHEELER_ALIASES.some((alias) => {
+    const normalizedAlias = normalizeLookup(alias);
+    return new RegExp(`\\b${normalizedAlias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(normalized);
+  });
+
+  if (mentionsPrivateFourWheeler) {
+    selected.push(...PRIVATE_FOUR_WHEELER_CLASSES);
+  }
 
   if (mentionsErickshaw && mentionsGoods && !mentionsPassenger) {
     selected.push("E-RICKSHAW WITH CART (G)");
@@ -992,7 +1283,9 @@ function semanticPlanFromRules(query, ruleFilters, vocabulary) {
   const selectedVehicleClasses = semanticVehicleClassSelection(query, ruleFilters, vocabulary);
   const selectedVehicleCategories = exactVocabularyLabels(ruleFilters.vehicleCategories, vocabulary.vehicleCategories);
   const selectedNorms = exactVocabularyLabels(ruleFilters.norms, vocabulary.norms);
-  const selectedVehicleGroups = selectedVehicleClasses.length ? [] : findVehicleGroups(query, vocabulary);
+  const selectedVehicleGroups = selectedVehicleClasses.length || selectedVehicleCategories.length
+    ? []
+    : findVehicleGroups(query, vocabulary);
   const selectedParts = [
     selectedFuelTypes.length ? `${selectedFuelTypes.join(", ")} fuel` : null,
     selectedVehicleGroups.length ? `${selectedVehicleGroups.join(", ")} group` : null,
@@ -1059,13 +1352,13 @@ function combineSemanticPlan(query, ruleFilters, llmFilters, vocabulary) {
     ...(useLlm ? llmPlan.selectedVehicleClasses : []),
     ...rulePlan.selectedVehicleClasses,
   ]);
-  const selectedVehicleGroups = selectedVehicleClasses.length
+  const selectedVehicleCategories = rulePlan.selectedVehicleCategories;
+  const selectedVehicleGroups = selectedVehicleClasses.length || selectedVehicleCategories.length
     ? []
     : uniqueLabelValues([
       ...(useLlm ? llmPlan.selectedVehicleGroups : []),
       ...rulePlan.selectedVehicleGroups,
     ]);
-  const selectedVehicleCategories = rulePlan.selectedVehicleCategories;
   const selectedNorms = uniqueLabelValues([
     ...(useLlm ? llmPlan.selectedNorms : []),
     ...rulePlan.selectedNorms,
@@ -1102,6 +1395,7 @@ function semanticPlannerPrompt(query, vocabulary = buildSemanticVocabulary()) {
     "Choose only exact labels from the allowed VAHAN label lists below. Do not invent labels.",
     "Plain EV means battery-electric unless the user explicitly says hybrid or plug-in hybrid.",
     "Hybrid means hybrid labels only. Car means MOTOR CAR when a vehicle class is needed.",
+    `Broad/private/non-transport four wheeler or 4W means these private vehicle classes unless another exact class is named: ${PRIVATE_FOUR_WHEELER_CLASSES.join(", ")}.`,
     "Only select vehicle category labels when the user directly asks for that category, such as LMV, HMV, transport, non-transport, or light/heavy motor vehicle. Do not infer a vehicle category from a vehicle class.",
     "Return only compact JSON with keys: semanticIntent, selectedFuelTypes, selectedVehicleGroups, selectedVehicleClasses, selectedVehicleCategories, selectedNorms, state, rtoText, locationText, locationType, from, to, metric, semanticConfidence, semanticExplanation.",
     "Use selectedFuelTypes for exact row fuel labels. Use selectedVehicleClasses for exact VAHAN vehicle class labels.",
@@ -1587,6 +1881,84 @@ async function runScraperForFilters(filters, missingMonths) {
   }
 
   return runs;
+}
+
+function hasRequestedSideFilterContext(filters = {}) {
+  return Boolean(
+    filters.fuelFilters?.length ||
+    filters.vehicleCategories?.length ||
+    filters.norms?.length ||
+    filters.vehicleClasses?.length,
+  );
+}
+
+function aggregateComparisonKey(row) {
+  return [
+    row.year,
+    row.month,
+    row.state,
+    row.rto,
+    row.fuel_segment,
+    row.fuel_type,
+  ].join("||");
+}
+
+function monthTotalComparisonKey(row) {
+  return [
+    row.year,
+    row.month,
+    row.state,
+    row.rto,
+  ].join("||");
+}
+
+function totalsByComparisonKey(rows, keyFn) {
+  const totals = new Map();
+  for (const row of rows) {
+    const key = keyFn(row);
+    totals.set(key, (totals.get(key) ?? 0) + row.vehicle_count);
+  }
+  return totals;
+}
+
+async function loadUnfilteredRowsForComparison(filters) {
+  const aggregateFilters = {
+    ...filters,
+    fuelFilters: [],
+    vehicleCategories: [],
+    norms: [],
+    vehicleClasses: [],
+    selectedVehicleGroups: [],
+    selectedVehicleClasses: [],
+    selectedVehicleCategories: [],
+    selectedNorms: [],
+  };
+
+  if (hasDatabaseUrl()) {
+    try {
+      return await queryRegistrationRows(aggregateFilters);
+    } catch (error) {
+      console.warn(`[refresh] Neon aggregate comparison failed, falling back to CSV: ${error.message}`);
+    }
+  }
+
+  return filterRows(await loadRows(), aggregateFilters);
+}
+
+async function sideFilterScrapeLooksUnapplied(filters, freshRows) {
+  if (!hasRequestedSideFilterContext(filters) || !freshRows.length) return false;
+  const aggregateRows = await loadUnfilteredRowsForComparison(filters);
+  if (!aggregateRows.length) return false;
+
+  const aggregateCounts = new Map(aggregateRows.map((row) => [aggregateComparisonKey(row), row.vehicle_count]));
+  const rowsMatchAggregate = freshRows.every((row) => aggregateCounts.get(aggregateComparisonKey(row)) === row.vehicle_count);
+  if (rowsMatchAggregate) return true;
+
+  const freshMonthTotals = totalsByComparisonKey(freshRows, monthTotalComparisonKey);
+  const aggregateMonthTotals = totalsByComparisonKey(aggregateRows, monthTotalComparisonKey);
+  return freshMonthTotals.size > 0 && [...freshMonthTotals.entries()].every(([key, total]) =>
+    aggregateMonthTotals.get(key) === total,
+  );
 }
 
 async function runScraperForMapFilters(filters, groups) {
@@ -2328,6 +2700,10 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
       job.scraperRuns = runs;
       job.freshRows = freshRows;
 
+      if (await sideFilterScrapeLooksUnapplied(filters, freshRows)) {
+        throw new Error("VAHAN returned the same rows as the unfiltered report; side filters were not applied, so the scrape was rejected.");
+      }
+
       if (freshRows.length > 0) {
         if (hasDatabaseUrl()) {
           dataCache = null;
@@ -2969,6 +3345,44 @@ function sendJson(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function monthlySalesReportInput(url) {
+  return {
+    month: url.searchParams.get("month") || null,
+    fuelScope: url.searchParams.get("fuelScope") || url.searchParams.get("fuel-scope") || "all",
+    fuel: url.searchParams.get("fuel") || null,
+  };
+}
+
+async function buildMonthlySalesReportForUrl(url) {
+  return buildMonthlySalesReport({
+    rows: await loadRows(),
+    makerRows: await loadMakerRows(),
+    ...monthlySalesReportInput(url),
+    sourceLabel: SOURCE_LABEL,
+  });
+}
+
+async function renderMonthlySalesReportPdf(report) {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 1600 } });
+    await page.setContent(renderMonthlySalesReportHtml(report), { waitUntil: "networkidle" });
+    await page.emulateMedia({ media: "print" });
+    return await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "12mm",
+        right: "10mm",
+        bottom: "12mm",
+        left: "10mm",
+      },
+    });
+  } finally {
+    await browser.close();
+  }
+}
+
 async function serveStatic(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   let requestedPath;
@@ -3001,6 +3415,21 @@ async function serveStatic(request, response) {
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
+    if (request.method === "GET" && url.pathname === "/api/reports/monthly-sales") {
+      sendJson(response, 200, await buildMonthlySalesReportForUrl(url));
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/reports/monthly-sales/pdf") {
+      const report = await buildMonthlySalesReportForUrl(url);
+      const pdf = await renderMonthlySalesReportPdf(report);
+      const filename = `monthly-sales-${report.period.month}-${report.fuelSelection.scope}${report.fuelSelection.fuel ? `-${report.fuelSelection.fuel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}` : ""}.pdf`;
+      response.writeHead(200, {
+        "content-type": "application/pdf",
+        "content-disposition": `attachment; filename="${filename}"`,
+      });
+      response.end(pdf);
+      return;
+    }
     if (request.method === "POST" && url.pathname === "/api/query") {
       const body = await readBody(request);
       sendJson(response, 200, await queryData(body));
