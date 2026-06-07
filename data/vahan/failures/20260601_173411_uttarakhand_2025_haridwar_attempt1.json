@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-06-01T12:04:11.980Z",
+  "attempt": 1,
+  "error": "page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "report": {
+    "year": 2025,
+    "months": [
+      6
+    ],
+    "state": "Uttarakhand",
+    "rto": "haridwar",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260601_173411_uttarakhand_2025_haridwar_attempt1.png",
+    "html": "data\\vahan\\failures\\20260601_173411_uttarakhand_2025_haridwar_attempt1.html"
+  }
+}

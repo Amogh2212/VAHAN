@@ -80,6 +80,28 @@ function dataStatusLabel(status) {
   return labels[status] ?? "Complete";
 }
 
+function isUntrustedStatus(status) {
+  return ["stale", "partial", "fetch_failed"].includes(status);
+}
+
+function selectedFuelLabelText(filters = {}) {
+  return filters.selectedFuelTypes?.length ? filters.selectedFuelTypes.join(", ") : "All fuel labels";
+}
+
+function reliabilityMessage(data) {
+  const status = data.dataStatus ?? "complete";
+  if (status === "stale") {
+    return `Saved rows are being shown because the VAHAN refresh failed. Treat ${fmt.format(data.summary?.total ?? 0)} as a stale snapshot, not the current VAHAN total.`;
+  }
+  if (status === "partial") {
+    return "This answer is missing one or more requested months from the local dataset.";
+  }
+  if (status === "fetch_failed") {
+    return "Fresh VAHAN data could not be fetched and no complete saved answer is available.";
+  }
+  return null;
+}
+
 function csvCell(value) {
   const text = String(value ?? "");
   return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -181,22 +203,11 @@ function renderFilters(filters) {
 
 function renderTrend(trend) {
   const el = document.querySelector("#trend");
-  const max = Math.max(1, ...trend.map((item) => item.count));
   if (!trend.length) {
     el.innerHTML = `<p style="color:var(--text-muted)">No trend data for these filters.</p>`;
     return;
   }
-  el.innerHTML = trend
-    .map(
-      (item, i) => `
-      <div class="bar" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.04}s both">
-        <span>${escapeHtml(displayMonth(item.month))}</span>
-        <span class="bar-track"><span class="bar-fill" style="width:${(item.count / max) * 100}%"></span></span>
-        <strong>${fmt.format(item.count)}</strong>
-      </div>
-    `,
-    )
-    .join("");
+  el.innerHTML = buildTrendLineChart(trend, { compact: true });
 }
 
 function renderFuelBreakdown(items) {
@@ -234,6 +245,7 @@ function renderInsightRail(data) {
     sourceStatusPill.textContent = dataStatusLabel(status);
     sourceStatusPill.classList.toggle("success", ["complete", "live"].includes(status));
     sourceStatusPill.classList.toggle("error", status === "fetch_failed");
+    sourceStatusPill.classList.toggle("warning", ["stale", "partial"].includes(status));
   }
   if (sourceMetric) sourceMetric.textContent = fmt.format(data.rows?.length ?? 0);
   if (railLatestMonth) {
@@ -281,6 +293,13 @@ function renderInsightRail(data) {
   if (data.fuelBreakdown?.length) {
     const leader = data.fuelBreakdown[0];
     notes.push(`<p><strong>${escapeHtml(leader.fuelType)}</strong> leads the fuel mix for this slice.</p>`);
+  }
+  if (data.filters?.selectedFuelTypes?.length) {
+    notes.push(`<p>Fuel labels used: <strong>${escapeHtml(selectedFuelLabelText(data.filters))}</strong></p>`);
+  }
+  const reliability = reliabilityMessage(data);
+  if (reliability) {
+    notes.unshift(`<p><strong>${escapeHtml(dataStatusLabel(status))} answer.</strong> ${escapeHtml(reliability)}</p>`);
   }
   if (data.filters?.semanticIntent) {
     notes.push(`<p>Interpreted as: <strong>${escapeHtml(data.filters.semanticIntent)}</strong></p>`);
@@ -372,6 +391,38 @@ function renderResultCards(rows, dataStatus) {
   });
 }
 
+function renderReliabilityBanner(data) {
+  const existing = document.querySelector("#reliabilityBanner");
+  existing?.remove();
+
+  const message = reliabilityMessage(data);
+  if (!message) return;
+
+  const filtersPanel = document.querySelector("#filtersPanel");
+  if (!filtersPanel) return;
+
+  const banner = document.createElement("section");
+  banner.id = "reliabilityBanner";
+  banner.className = `reliability-banner ${data.dataStatus === "fetch_failed" ? "error" : "warning"}`;
+  banner.innerHTML = `
+    <div>
+      <strong>${escapeHtml(dataStatusLabel(data.dataStatus))} saved-data answer</strong>
+      <p>${escapeHtml(message)}</p>
+    </div>
+    <dl>
+      <div>
+        <dt>Fuel labels</dt>
+        <dd>${escapeHtml(selectedFuelLabelText(data.filters))}</dd>
+      </div>
+      <div>
+        <dt>Latest loaded</dt>
+        <dd>${escapeHtml(data.freshness?.latestMonth ? displayMonth(data.freshness.latestMonth) : "not available")}</dd>
+      </div>
+    </dl>
+  `;
+  filtersPanel.parentElement?.insertBefore(banner, filtersPanel);
+}
+
 function renderWarnings(items) {
   const uniqueItems = [...new Set((items ?? []).filter(Boolean))]
     .filter((item) => !/^Showing saved data now\. Missing or latest months/i.test(item))
@@ -415,6 +466,8 @@ function compactRefreshMessage(data) {
 function render(data) {
   latestData = data;
   setExportButtonsEnabled(Boolean(latestData));
+  const status = data.dataStatus ?? "complete";
+  document.querySelector("#summaryCards")?.classList.toggle("is-untrusted", isUntrustedStatus(status));
   // Animate counters
   animateCounter(document.querySelector("#total"), data.summary.total);
   animateCounter(document.querySelector("#average"), data.summary.monthlyAverage);
@@ -449,6 +502,7 @@ function render(data) {
           : [];
   renderWarnings([...scraperMessage, ...statusMessage, ...(data.warnings ?? [])]);
 
+  renderReliabilityBanner(data);
   renderFilters(data.filters);
   renderTrend(data.trend);
   renderFuelBreakdown(data.fuelBreakdown);
@@ -542,6 +596,60 @@ function tableRows(items, columns) {
     .join("");
 }
 
+function buildTrendLineChart(trend = [], options = {}) {
+  if (!trend.length) {
+    return `<p class="empty-chart">No trend data is available for a line chart.</p>`;
+  }
+
+  const compact = Boolean(options.compact);
+  const width = compact ? 760 : 820;
+  const height = compact ? 300 : 260;
+  const padding = compact
+    ? { top: 34, right: 36, bottom: 54, left: 56 }
+    : { top: 24, right: 28, bottom: 46, left: 64 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const max = Math.max(1, ...trend.map((item) => item.count));
+  const average = trend.reduce((sum, item) => sum + item.count, 0) / trend.length;
+  const xFor = (index) => padding.left + (trend.length === 1 ? plotWidth / 2 : (index / (trend.length - 1)) * plotWidth);
+  const yFor = (count) => padding.top + plotHeight - (count / max) * plotHeight;
+  const points = trend.map((item, index) => `${xFor(index)},${yFor(item.count)}`).join(" ");
+  const areaPoints = `${padding.left},${padding.top + plotHeight} ${points} ${padding.left + plotWidth},${padding.top + plotHeight}`;
+  const averageY = yFor(average);
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+    const y = padding.top + plotHeight - ratio * plotHeight;
+    const value = Math.round(max * ratio);
+    return `
+      <line x1="${padding.left}" y1="${y}" x2="${padding.left + plotWidth}" y2="${y}" class="chart-grid" />
+      <text x="${padding.left - 10}" y="${y + 4}" class="axis-label" text-anchor="end">${fmt.format(value)}</text>
+    `;
+  }).join("");
+  const labels = trend.map((item, index) => {
+    const x = xFor(index);
+    const y = yFor(item.count);
+    return `
+      <circle cx="${x}" cy="${y}" r="4.5" class="line-point" />
+      <text x="${x}" y="${y - 10}" class="point-label" text-anchor="middle">${fmt.format(item.count)}</text>
+      <text x="${x}" y="${height - 16}" class="axis-label" text-anchor="middle">${escapeHtml(displayMonth(item.month))}</text>
+    `;
+  }).join("");
+
+  return `
+    <div class="${compact ? "dashboard-line-chart-wrap" : "line-chart-wrap"}">
+      <svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly registrations line chart">
+        <rect x="0" y="0" width="${width}" height="${height}" rx="10" class="chart-bg" />
+        ${gridLines}
+        <line x1="${padding.left}" y1="${padding.top + plotHeight}" x2="${padding.left + plotWidth}" y2="${padding.top + plotHeight}" class="chart-axis" />
+        <line x1="${padding.left}" y1="${averageY}" x2="${padding.left + plotWidth}" y2="${averageY}" class="average-line" />
+        <text x="${padding.left + plotWidth - 4}" y="${averageY - 8}" class="average-label" text-anchor="end">Average ${fmt.format(Math.round(average))}</text>
+        <polygon points="${areaPoints}" class="line-area" />
+        <polyline points="${points}" class="line-path" />
+        ${labels}
+      </svg>
+    </div>
+  `;
+}
+
 function openPrintableReport() {
   if (!latestData) return;
   const data = latestData;
@@ -558,6 +666,7 @@ function openPrintableReport() {
     { key: "month", render: (item) => displayMonth(item.month) },
     { key: "count", render: (item) => fmt.format(item.count) },
   ]);
+  const trendLineChart = buildTrendLineChart(data.trend);
   const fuelRows = tableRows(data.fuelBreakdown, [
     { key: "fuelType" },
     { key: "count", render: (item) => fmt.format(item.count) },
@@ -592,6 +701,19 @@ function openPrintableReport() {
           th { background: #f3f6fa; color: #344054; }
           .source { border-top: 2px solid #12b886; padding-top: 12px; margin-top: 16px; }
           .warnings { color: #9a6700; }
+          .line-chart-wrap { margin: 8px 0 16px; overflow: hidden; }
+          .line-chart { display: block; width: 100%; max-width: 820px; height: auto; }
+          .chart-bg { fill: #f8fafc; stroke: #d7dee8; }
+          .chart-grid { stroke: #e1e7ef; stroke-width: 1; }
+          .chart-axis { stroke: #98a2b3; stroke-width: 1.2; }
+          .line-area { fill: rgba(18, 184, 134, 0.12); }
+          .line-path { fill: none; stroke: #12b886; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+          .line-point { fill: #0ca678; stroke: #ffffff; stroke-width: 2; }
+          .average-line { stroke: #f08c00; stroke-width: 2; stroke-dasharray: 7 7; }
+          .axis-label { fill: #667085; font-size: 11px; }
+          .point-label { fill: #344054; font-size: 11px; font-weight: 700; }
+          .average-label { fill: #b35c00; font-size: 11px; font-weight: 700; }
+          .empty-chart { border: 1px dashed #d7dee8; border-radius: 8px; padding: 14px; color: #667085; }
           @media print {
             body { margin: 18mm; }
             button { display: none; }
@@ -620,6 +742,7 @@ function openPrintableReport() {
         <h2>Parsed Filters</h2>
         <table><tbody>${filterTable}</tbody></table>
         <h2>Monthly Trend</h2>
+        ${trendLineChart}
         <table><thead><tr><th>Month</th><th>Registrations</th></tr></thead><tbody>${trendRows}</tbody></table>
         <h2>Fuel Breakdown</h2>
         <table><thead><tr><th>Fuel type</th><th>Registrations</th></tr></thead><tbody>${fuelRows}</tbody></table>

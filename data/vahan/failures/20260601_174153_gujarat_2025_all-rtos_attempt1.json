@@ -1,0 +1,22 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-06-01T12:11:54.127Z",
+  "attempt": 1,
+  "error": "page.goto: net::ERR_NETWORK_ACCESS_DENIED at https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\nCall log:\n\u001b[2m  - navigating to \"https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml\", waiting until \"domcontentloaded\"\u001b[22m\n",
+  "report": {
+    "year": 2025,
+    "months": [
+      4
+    ],
+    "state": "Gujarat",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260601_174153_gujarat_2025_all-rtos_attempt1.png",
+    "html": "data\\vahan\\failures\\20260601_174153_gujarat_2025_all-rtos_attempt1.html"
+  }
+}

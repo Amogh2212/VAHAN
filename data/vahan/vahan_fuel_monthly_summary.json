@@ -2,11 +2,11 @@
   "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
   "output_file": "data\\vahan\\vahan_fuel_monthly.csv",
   "error_file": "data\\vahan\\vahan_fuel_monthly_errors.jsonl",
-  "total_rows": 24,
-  "attempted_this_run": 12,
-  "succeeded_this_run": 24,
+  "total_rows": 11031,
+  "attempted_this_run": 1,
+  "succeeded_this_run": 13,
   "failed_this_run": 0,
-  "neon_upserted_this_run": 24,
+  "neon_upserted_this_run": 13,
   "neon_skipped_this_run": false,
-  "completed_at": "2026-05-19T07:25:17.726Z"
+  "completed_at": "2026-06-04T10:58:13.301Z"
 }

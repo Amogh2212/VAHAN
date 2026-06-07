@@ -27,6 +27,27 @@ import {
   parseAllowedChatIds,
 } from "./lib/telegram-bot.mjs";
 import {
+  authCookieName,
+  clearCookieHeader,
+  createSession,
+  createTelegramLinkCode,
+  currentUser,
+  destroySession,
+  googleLoginUrl,
+  googleUserFromCode,
+  hasGoogleAuthConfig,
+  linkTelegramChat,
+  oauthStateCookieName,
+  oauthStateCookieValue,
+  parseCookies,
+  readOauthStateCookie,
+  requireUser,
+  sessionCookie,
+  telegramDeepLink,
+  upsertGoogleUser,
+  userForTelegramChat,
+} from "./lib/auth.mjs";
+import {
   createTrackedQuery,
   deleteTrackedQuery,
   disableTrackedQuery,
@@ -46,12 +67,29 @@ const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 const ALL_FILTER = "ALL";
-const LIVE_REFRESH_DISABLED = /^(1|true|yes)$/i.test(process.env.VAHAN_DISABLE_LIVE_REFRESH ?? "");
-const TELEGRAM_ENABLE_POLLING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_ENABLE_POLLING ?? "true");
-const TELEGRAM_ALERT_THRESHOLD_POINTS = Number(process.env.TELEGRAM_ALERT_THRESHOLD_POINTS ?? 2);
-const TELEGRAM_SUMMARY_FETCH_MISSING = !/^(0|false|no)$/i.test(process.env.TELEGRAM_SUMMARY_FETCH_MISSING ?? "true");
-const TELEGRAM_PUBLIC_DAILY_LIMIT = Math.max(0, Number(process.env.TELEGRAM_PUBLIC_DAILY_LIMIT ?? 0) || 0);
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const LIVE_REFRESH_DISABLED = envFlag("VAHAN_DISABLE_LIVE_REFRESH", IS_PRODUCTION);
+const TELEGRAM_ENABLE_POLLING = envFlag("TELEGRAM_ENABLE_POLLING", !IS_PRODUCTION);
+const TELEGRAM_ALERT_THRESHOLD_POINTS = envNumber("TELEGRAM_ALERT_THRESHOLD_POINTS", 2);
+const TELEGRAM_SUMMARY_FETCH_MISSING = envFlag("TELEGRAM_SUMMARY_FETCH_MISSING", !IS_PRODUCTION);
+const TELEGRAM_PUBLIC_DAILY_LIMIT = Math.max(0, envNumber("TELEGRAM_PUBLIC_DAILY_LIMIT", 0));
 const TELEGRAM_PUBLIC_ACCESS = TELEGRAM_PUBLIC_DAILY_LIMIT > 0;
+const REQUIRE_DATABASE_FOR_READINESS = envFlag("REQUIRE_DATABASE_FOR_READINESS", IS_PRODUCTION);
+const TRUST_PROXY = envFlag("TRUST_PROXY", IS_PRODUCTION);
+const MAX_JSON_BODY_BYTES = envNumber("MAX_JSON_BODY_BYTES", 65_536);
+const PUBLIC_RATE_LIMIT_WINDOW_MS = envNumber("PUBLIC_RATE_LIMIT_WINDOW_MS", 60_000);
+const PUBLIC_RATE_LIMIT_MAX = envNumber("PUBLIC_RATE_LIMIT_MAX", 120);
+const EXPENSIVE_RATE_LIMIT_WINDOW_MS = envNumber("EXPENSIVE_RATE_LIMIT_WINDOW_MS", 60_000);
+const EXPENSIVE_RATE_LIMIT_MAX = envNumber("EXPENSIVE_RATE_LIMIT_MAX", 20);
+const REFRESH_JOB_TTL_MS = envNumber("REFRESH_JOB_TTL_MS", 30 * 60_000);
+const MAP_REFRESH_JOB_TTL_MS = envNumber("MAP_REFRESH_JOB_TTL_MS", 60 * 60_000);
+const SECURITY_HEADERS = Object.freeze({
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy": "camera=(), microphone=(), geolocation=()",
+  "cross-origin-opener-policy": "same-origin",
+});
 const FILTER_CONTEXT_FIELDS = [
   "fuel_filter",
   "vehicle_category_filter",
@@ -65,6 +103,8 @@ const telegramChatModes = new Map();
 const telegramPublicUsage = new Map();
 const sentTelegramAlertKeys = new Set();
 const sentTelegramSummaryKeys = new Set();
+const publicRateLimitBuckets = new Map();
+const expensiveRateLimitBuckets = new Map();
 
 const INDIA_STATES = [
   "Andaman and Nicobar Islands",
@@ -122,6 +162,17 @@ const MAP_TO_VAHAN_STATE = new Map([
 ]);
 const MAP_SCRAPER_GROUP_TIMEOUT_MS = 90_000;
 const DEFERRED_MAP_FETCH_STATES = new Set(["Jammu & Kashmir"]);
+
+function envFlag(name, defaultValue = false) {
+  const value = process.env[name];
+  if (value === undefined || value === "") return Boolean(defaultValue);
+  return /^(1|true|yes|on)$/i.test(value);
+}
+
+function envNumber(name, defaultValue) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) ? value : defaultValue;
+}
 
 const MONTHS = new Map([
   ["jan", 1],
@@ -384,6 +435,76 @@ let nextRefreshJobId = 1;
 const refreshJobs = new Map();
 const mapRefreshJobs = new Map();
 const MAX_MAP_FETCH_MONTHS = 12;
+
+function securityHeaders(headers = {}) {
+  return { ...SECURITY_HEADERS, ...headers };
+}
+
+function clientIp(request) {
+  const forwardedFor = TRUST_PROXY ? request.headers["x-forwarded-for"] : null;
+  if (forwardedFor) return String(forwardedFor).split(",")[0].trim() || "unknown";
+  return request.socket?.remoteAddress ?? "unknown";
+}
+
+function enforceRateLimit(request, group) {
+  const config = group === "expensive"
+    ? {
+        buckets: expensiveRateLimitBuckets,
+        max: EXPENSIVE_RATE_LIMIT_MAX,
+        windowMs: EXPENSIVE_RATE_LIMIT_WINDOW_MS,
+      }
+    : {
+        buckets: publicRateLimitBuckets,
+        max: PUBLIC_RATE_LIMIT_MAX,
+        windowMs: PUBLIC_RATE_LIMIT_WINDOW_MS,
+      };
+
+  if (config.max <= 0 || config.windowMs <= 0) return;
+
+  cleanupRateLimitBuckets();
+
+  const now = Date.now();
+  const key = `${group}:${clientIp(request)}`;
+  let bucket = config.buckets.get(key);
+  if (!bucket || bucket.resetAt <= now) {
+    bucket = { count: 0, resetAt: now + config.windowMs };
+    config.buckets.set(key, bucket);
+  }
+
+  if (bucket.count >= config.max) {
+    const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+    const error = new Error("Too many requests. Please wait before trying again.");
+    error.statusCode = 429;
+    error.headers = { "retry-after": String(retryAfter) };
+    throw error;
+  }
+
+  bucket.count += 1;
+}
+
+function cleanupRateLimitBuckets() {
+  const now = Date.now();
+  for (const buckets of [publicRateLimitBuckets, expensiveRateLimitBuckets]) {
+    for (const [key, bucket] of buckets.entries()) {
+      if (bucket.resetAt <= now) buckets.delete(key);
+    }
+  }
+}
+
+function cleanupJobMap(map, ttlMs) {
+  if (ttlMs <= 0) return;
+  const now = Date.now();
+  for (const [id, job] of map.entries()) {
+    if (job.status !== "pending" && now - job.createdAt > ttlMs) {
+      map.delete(id);
+    }
+  }
+}
+
+function cleanupRefreshJobs() {
+  cleanupJobMap(refreshJobs, REFRESH_JOB_TTL_MS);
+  cleanupJobMap(mapRefreshJobs, MAP_REFRESH_JOB_TTL_MS);
+}
 
 function compact(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -1041,6 +1162,26 @@ function selectedFuelSegment(selectedFuelTypes) {
   return [...fuelSet].every((value) => batterySet.has(value)) ? "EV" : null;
 }
 
+function allowLlmVehicleClass(query, label) {
+  const normalizedQuery = normalizeLookup(query);
+  const normalizedLabel = normalizeLookup(label);
+  if (normalizedLabel === "motor car") {
+    return /\b(?:car|cars|motor car|motor cars)\b/i.test(normalizedQuery);
+  }
+  return true;
+}
+
+function allowLlmVehicleGroup(query, label) {
+  const normalizedQuery = normalizeLookup(query);
+  const normalizedLabel = normalizeLookup(label);
+  const patterns = {
+    "two wheeler": /\b(?:two wheeler|two wheelers|2w|2 wheeler|bike|bikes|scooter|scooters|motorcycle|motorcycles)\b/i,
+    "three wheeler": /\b(?:three wheeler|three wheelers|3w|3 wheeler|rickshaw|rickshaws|auto rickshaw|auto rickshaws)\b/i,
+    "four wheeler": /\b(?:four wheeler|four wheelers|4w|4 wheeler|car|cars|motor car|motor cars)\b/i,
+  };
+  return patterns[normalizedLabel]?.test(normalizedQuery) ?? true;
+}
+
 function combineSemanticPlan(query, ruleFilters, llmFilters, vocabulary) {
   const rulePlan = semanticPlanFromRules(query, ruleFilters, vocabulary);
   const llmPlan = normalizeSemanticPlan(llmFilters, vocabulary);
@@ -1055,14 +1196,17 @@ function combineSemanticPlan(query, ruleFilters, llmFilters, vocabulary) {
     ...(useLlm ? llmPlan.selectedFuelTypes : []),
     ...rulePlan.selectedFuelTypes,
   ]);
+  const llmVehicleClasses = useLlm
+    ? llmPlan.selectedVehicleClasses.filter((label) => allowLlmVehicleClass(query, label))
+    : [];
   const selectedVehicleClasses = uniqueLabelValues([
-    ...(useLlm ? llmPlan.selectedVehicleClasses : []),
+    ...llmVehicleClasses,
     ...rulePlan.selectedVehicleClasses,
   ]);
   const selectedVehicleGroups = selectedVehicleClasses.length
     ? []
     : uniqueLabelValues([
-      ...(useLlm ? llmPlan.selectedVehicleGroups : []),
+      ...(useLlm ? llmPlan.selectedVehicleGroups.filter((label) => allowLlmVehicleGroup(query, label)) : []),
       ...rulePlan.selectedVehicleGroups,
     ]);
   const selectedVehicleCategories = rulePlan.selectedVehicleCategories;
@@ -1101,7 +1245,8 @@ function semanticPlannerPrompt(query, vocabulary = buildSemanticVocabulary()) {
     "Examples: bengluru means Bengaluru/Bangalore, gurgao means Gurugram/Gurgaon, mumabi means Mumbai.",
     "Choose only exact labels from the allowed VAHAN label lists below. Do not invent labels.",
     "Plain EV means battery-electric unless the user explicitly says hybrid or plug-in hybrid.",
-    "Hybrid means hybrid labels only. Car means MOTOR CAR when a vehicle class is needed.",
+    "Hybrid means hybrid labels only. Car means MOTOR CAR only when the user directly says car, cars, or motor car.",
+    "Do not add MOTOR CAR or any vehicle class for fuel-only queries such as petrol registrations in Delhi.",
     "Only select vehicle category labels when the user directly asks for that category, such as LMV, HMV, transport, non-transport, or light/heavy motor vehicle. Do not infer a vehicle category from a vehicle class.",
     "Return only compact JSON with keys: semanticIntent, selectedFuelTypes, selectedVehicleGroups, selectedVehicleClasses, selectedVehicleCategories, selectedNorms, state, rtoText, locationText, locationType, from, to, metric, semanticConfidence, semanticExplanation.",
     "Use selectedFuelTypes for exact row fuel labels. Use selectedVehicleClasses for exact VAHAN vehicle class labels.",
@@ -1877,6 +2022,16 @@ function resolveImmediateDataStatus({ rows, missingMonths, liveRefresh }) {
   return resolveDataStatus({ rows, missingMonths, scraper: summarizeScraperRuns([]) });
 }
 
+function dataReliabilityWarning(status, summary) {
+  if (status === "stale") {
+    return `Saved rows are being shown because the VAHAN refresh failed. Treat ${summary.total} as a stale snapshot, not the current VAHAN total.`;
+  }
+  if (status === "partial") {
+    return "This answer is missing one or more requested months from the local dataset.";
+  }
+  return null;
+}
+
 function summarize(rows) {
   const total = rows.reduce((sum, row) => sum + row.vehicle_count, 0);
   const byMonth = new Map();
@@ -2039,6 +2194,7 @@ function mapFiltersFromQuery(query, fallback = {}) {
 }
 
 function startMapRefreshJob({ filters, baseRows, groups, savedStateCount = null }) {
+  cleanupRefreshJobs();
   const id = String(nextRefreshJobId++);
   const job = {
     id,
@@ -2274,6 +2430,7 @@ function dashboardPayload({
         : null,
       persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
+      dataReliabilityWarning(status, summary),
       status === "partial" ? "Some requested months are missing from local data." : null,
       filters.semanticConfidence !== null && filters.semanticConfidence !== undefined && filters.semanticConfidence < 0.75
         ? "Semantic filter confidence is medium/low. Review the interpreted filters before using the result."
@@ -2303,6 +2460,7 @@ function liveRefreshInfo(job) {
 }
 
 function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
+  cleanupRefreshJobs();
   const id = String(nextRefreshJobId++);
   const job = {
     id,
@@ -2356,7 +2514,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         llmFilters,
         persistenceStatus: job.persistenceStatus,
         liveRefresh: liveRefreshInfo(job),
-        preFiltered: hasDatabaseUrl(),
+        preFiltered: false,
         freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
       });
     } catch (error) {
@@ -2374,7 +2532,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         missingMonths: findMissingMonths(filters, baseRows),
         llmFilters,
         liveRefresh: liveRefreshInfo(job),
-        preFiltered: hasDatabaseUrl(),
+        preFiltered: false,
         freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
       });
       console.error(`[refresh:${id}] ${error.message}`);
@@ -2839,10 +2997,22 @@ function withTelegramQuota(text, quota) {
 async function handleTelegramMessage({ chatId, text, bot }) {
   try {
     const normalized = text.trim().toLowerCase();
+    const startLinkCode = normalized.startsWith("/start ") ? text.trim().split(/\s+/, 2)[1] : null;
+    const linkCode = normalized.startsWith("/link ") ? text.trim().split(/\s+/, 2)[1] : startLinkCode;
+
+    if (linkCode) {
+      const user = await linkTelegramChat(linkCode, chatId);
+      await bot.sendKeyboard(chatId, user
+        ? `Telegram linked to ${user.email}. You can now use Query, Map, and Summary.`
+        : "That link code is invalid or expired. Sign in on the website and generate a fresh Telegram link.");
+      return;
+    }
+
     if (normalized === "/start" || normalized === "/help") {
       telegramChatModes.set(String(chatId), "neutral");
       await bot.sendKeyboard(chatId, [
         "VAHAN Telegram Command Center",
+        "Link your Google account from the website before using the bot.",
         "Use the keyboard buttons:",
         "Query - ask dashboard questions",
         "Map - ask state/map questions",
@@ -2852,7 +3022,19 @@ async function handleTelegramMessage({ chatId, text, bot }) {
       return;
     }
 
-    const quota = consumeTelegramPublicQuota(chatId);
+    const linkedUser = await userForTelegramChat(chatId);
+    if (!linkedUser && !isTrustedTelegramChat(chatId)) {
+      await bot.sendKeyboard(chatId, [
+        "Login required.",
+        "Open Tracked queries on the website, sign in with Google, then use the Telegram link button.",
+        `Your chat ID: ${chatId}`,
+      ].join("\n"));
+      return;
+    }
+
+    const quota = linkedUser
+      ? { allowed: true, trusted: true, remaining: Infinity, limit: Infinity }
+      : consumeTelegramPublicQuota(chatId);
     if (!quota.allowed) {
       await bot.sendKeyboard(chatId, TELEGRAM_PUBLIC_ACCESS
         ? [
@@ -2923,14 +3105,14 @@ function startTelegramCommandCenter() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const allowedChatIds = parseAllowedChatIds(process.env.TELEGRAM_ALLOWED_CHAT_IDS);
   telegramAllowedChatIds = allowedChatIds;
-  if (!token || (!TELEGRAM_PUBLIC_ACCESS && allowedChatIds.size === 0)) {
-    console.log("[telegram] disabled; configure TELEGRAM_BOT_TOKEN and TELEGRAM_ALLOWED_CHAT_IDS or TELEGRAM_PUBLIC_DAILY_LIMIT to enable.");
+  if (!token) {
+    console.log("[telegram] disabled; configure TELEGRAM_BOT_TOKEN to enable.");
     return null;
   }
   const bot = createTelegramBot({
     token,
     allowedChatIds,
-    allowPublicAccess: TELEGRAM_PUBLIC_ACCESS,
+    allowPublicAccess: true,
     polling: TELEGRAM_ENABLE_POLLING,
     onMessage: handleTelegramMessage,
     logger: console,
@@ -2952,7 +3134,16 @@ function startTelegramCommandCenter() {
 
 async function readBody(request) {
   const chunks = [];
-  for await (const chunk of request) chunks.push(chunk);
+  let totalBytes = 0;
+  for await (const chunk of request) {
+    totalBytes += chunk.length;
+    if (totalBytes > MAX_JSON_BODY_BYTES) {
+      const error = new Error(`Request body must be ${MAX_JSON_BODY_BYTES} bytes or smaller.`);
+      error.statusCode = 413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
   const text = Buffer.concat(chunks).toString("utf8");
   if (!text) return {};
   try {
@@ -2965,8 +3156,25 @@ async function readBody(request) {
 }
 
 function sendJson(response, status, payload) {
-  response.writeHead(status, { "content-type": "application/json" });
+  response.writeHead(status, securityHeaders({
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  }));
   response.end(JSON.stringify(payload));
+}
+
+function sendJsonWithHeaders(response, status, payload, headers = {}) {
+  response.writeHead(status, securityHeaders({
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+    ...headers,
+  }));
+  response.end(JSON.stringify(payload));
+}
+
+function redirect(response, location, headers = {}) {
+  response.writeHead(302, securityHeaders({ location, ...headers }));
+  response.end();
 }
 
 async function serveStatic(request, response) {
@@ -2975,38 +3183,157 @@ async function serveStatic(request, response) {
   try {
     requestedPath = url.pathname === "/" ? "index.html" : decodeURIComponent(url.pathname).replace(/^[/\\]+/, "");
   } catch {
-    response.writeHead(400);
+    response.writeHead(400, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
     response.end("Bad request");
     return;
   }
   const publicRoot = path.resolve(PUBLIC_DIR);
   const resolved = path.resolve(publicRoot, requestedPath);
   if (resolved !== publicRoot && !resolved.startsWith(`${publicRoot}${path.sep}`)) {
-    response.writeHead(403);
+    response.writeHead(403, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
     response.end("Forbidden");
     return;
   }
   const content = await fs.readFile(resolved).catch(() => null);
   if (!content) {
-    response.writeHead(404);
+    response.writeHead(404, securityHeaders({ "content-type": "text/plain; charset=utf-8" }));
     response.end("Not found");
     return;
   }
   const ext = path.extname(resolved);
   const contentType = ext === ".js" ? "text/javascript" : ext === ".css" ? "text/css" : "text/html";
-  response.writeHead(200, { "content-type": contentType });
+  response.writeHead(200, securityHeaders({
+    "content-type": contentType,
+    "cache-control": ext === ".html" ? "no-cache" : "public, max-age=3600",
+  }));
   response.end(content);
+}
+
+async function postgresHealthPayload() {
+  const dbFreshness = await freshnessFromDb();
+  databaseUnavailable = false;
+  return {
+    status: "ok",
+    storage: "postgres",
+    rowCount: dbFreshness.rowCount,
+    latestMonth: dbFreshness.latestMonth,
+    source: dbFreshness.source,
+    database: { status: "ok" },
+    liveRefreshDisabled: LIVE_REFRESH_DISABLED,
+  };
+}
+
+async function csvHealthPayload(databaseStatus = null) {
+  const rows = await loadRows();
+  return {
+    status: "ok",
+    storage: "csv",
+    rowCount: rows.length,
+    ...freshness(rows),
+    database: databaseStatus ?? {
+      status: hasDatabaseUrl() ? "unavailable" : "not_configured",
+    },
+    liveRefreshDisabled: LIVE_REFRESH_DISABLED,
+  };
+}
+
+async function livenessHealthPayload() {
+  if (useDatabaseStorage()) {
+    try {
+      return await postgresHealthPayload();
+    } catch (error) {
+      databaseUnavailable = true;
+      console.warn(`[data] Neon health read failed, using CSV health: ${error.message}`);
+      return csvHealthPayload({ status: "unavailable", error: error.message });
+    }
+  }
+  return csvHealthPayload();
+}
+
+async function readinessHealthPayload() {
+  if (!hasDatabaseUrl()) {
+    if (REQUIRE_DATABASE_FOR_READINESS) {
+      const error = new Error("DATABASE_URL is required for production readiness.");
+      error.statusCode = 503;
+      throw error;
+    }
+    return csvHealthPayload({ status: "not_configured" });
+  }
+
+  try {
+    return await postgresHealthPayload();
+  } catch (error) {
+    databaseUnavailable = true;
+    if (REQUIRE_DATABASE_FOR_READINESS) {
+      const readinessError = new Error(`Database readiness check failed: ${error.message}`);
+      readinessError.statusCode = 503;
+      throw readinessError;
+    }
+    return csvHealthPayload({ status: "unavailable", error: error.message });
+  }
 }
 
 const server = http.createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
+    if (request.method === "GET" && url.pathname === "/api/me") {
+      const user = await currentUser(request);
+      sendJson(response, 200, {
+        authenticated: Boolean(user),
+        googleConfigured: hasGoogleAuthConfig(),
+        user,
+      });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/auth/google") {
+      const login = googleLoginUrl({ returnTo: url.searchParams.get("returnTo") || "/tracked.html" });
+      const stateCookie = oauthStateCookieValue(login.state, login.returnTo);
+      redirect(response, login.url, {
+        "set-cookie": `${oauthStateCookieName()}=${stateCookie}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`,
+      });
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/auth/google/callback") {
+      const stored = readOauthStateCookie(request);
+      if (!stored?.state || stored.state !== url.searchParams.get("state")) {
+        sendJson(response, 400, { error: "Google login state did not match." });
+        return;
+      }
+      const profile = await googleUserFromCode(url.searchParams.get("code"));
+      const user = await upsertGoogleUser(profile);
+      const session = await createSession(user.id);
+      redirect(response, stored.returnTo || "/tracked.html", {
+        "set-cookie": [
+          sessionCookie(session),
+          clearCookieHeader(oauthStateCookieName()),
+        ],
+      });
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/auth/logout") {
+      await destroySession(parseCookies(request)[authCookieName()]);
+      sendJsonWithHeaders(response, 200, { ok: true }, {
+        "set-cookie": clearCookieHeader(authCookieName()),
+      });
+      return;
+    }
+    if (request.method === "POST" && url.pathname === "/api/telegram/link-code") {
+      const user = await requireUser(request);
+      const link = await createTelegramLinkCode(user.id);
+      sendJson(response, 201, {
+        ...link,
+        deepLink: telegramDeepLink(link.code),
+      });
+      return;
+    }
     if (request.method === "POST" && url.pathname === "/api/query") {
+      enforceRateLimit(request, "expensive");
       const body = await readBody(request);
       sendJson(response, 200, await queryData(body));
       return;
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/query-refresh/")) {
+      cleanupRefreshJobs();
       const jobId = decodeURIComponent(url.pathname.slice("/api/query-refresh/".length));
       const job = refreshJobs.get(jobId);
       if (!job) {
@@ -3021,18 +3348,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/tracked-queries") {
-      sendJson(response, 200, { trackedQueries: await listTrackedQueries() });
+      const user = await requireUser(request);
+      sendJson(response, 200, { trackedQueries: await listTrackedQueries({ userId: user.id }) });
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/tracked-queries") {
+      const user = await requireUser(request);
       const body = await readBody(request);
-      sendJson(response, 201, { trackedQuery: await createTrackedQuery(body) });
+      sendJson(response, 201, { trackedQuery: await createTrackedQuery(body, { userId: user.id }) });
       return;
     }
     const trackedObservationMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/observations$/);
     if (request.method === "GET" && trackedObservationMatch) {
+      const user = await requireUser(request);
       const trackedQueryId = Number(trackedObservationMatch[1]);
-      const trackedQuery = await getTrackedQuery(trackedQueryId);
+      const trackedQuery = await getTrackedQuery(trackedQueryId, { userId: user.id });
       if (!trackedQuery) {
         sendJson(response, 404, { error: "Tracked query not found" });
         return;
@@ -3049,8 +3379,9 @@ const server = http.createServer(async (request, response) => {
     }
     const trackedQueryMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)$/);
     if (trackedQueryMatch && request.method === "PATCH") {
+      const user = await requireUser(request);
       const body = await readBody(request);
-      const trackedQuery = await updateTrackedQuery(Number(trackedQueryMatch[1]), body);
+      const trackedQuery = await updateTrackedQuery(Number(trackedQueryMatch[1]), body, { userId: user.id });
       if (!trackedQuery) {
         sendJson(response, 404, { error: "Tracked query not found" });
         return;
@@ -3059,10 +3390,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (trackedQueryMatch && request.method === "DELETE") {
+      const user = await requireUser(request);
       const hardDelete = /^(1|true|yes)$/i.test(url.searchParams.get("hard") ?? "");
       const trackedQuery = hardDelete
-        ? await deleteTrackedQuery(Number(trackedQueryMatch[1]))
-        : await disableTrackedQuery(Number(trackedQueryMatch[1]));
+        ? await deleteTrackedQuery(Number(trackedQueryMatch[1]), { userId: user.id })
+        : await disableTrackedQuery(Number(trackedQueryMatch[1]), { userId: user.id });
       if (!trackedQuery) {
         sendJson(response, 404, { error: "Tracked query not found" });
         return;
@@ -3096,6 +3428,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/map/query") {
+      enforceRateLimit(request, "expensive");
       const body = await readBody(request);
       const fallbackFilters = {
         ...mapBaseFilters(url),
@@ -3117,7 +3450,7 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       const rows = await loadMapRows(filters);
-      const refreshGroups = mapRefreshGroupsForFilters(filters, rows);
+      const refreshGroups = LIVE_REFRESH_DISABLED ? [] : mapRefreshGroupsForFilters(filters, rows);
       const savedStateCount = mapSavedStateCount(filters, rows);
       if (!refreshGroups.length) {
         sendJson(response, 200, mapSummaryPayload(rows, filters, mapSavedRefreshInfo(groups)));
@@ -3128,6 +3461,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/map-refresh/")) {
+      cleanupRefreshJobs();
       const jobId = decodeURIComponent(url.pathname.slice("/api/map-refresh/".length));
       const job = mapRefreshJobs.get(jobId);
       if (!job) {
@@ -3197,31 +3531,21 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/health") {
-      if (useDatabaseStorage()) {
-        try {
-          const dbFreshness = await freshnessFromDb();
-          sendJson(response, 200, {
-            status: "ok",
-            storage: "postgres",
-            rowCount: dbFreshness.rowCount,
-            latestMonth: dbFreshness.latestMonth,
-            source: dbFreshness.source,
-          });
-          return;
-        } catch (error) {
-          databaseUnavailable = true;
-          console.warn(`[data] Neon health read failed, using CSV health: ${error.message}`);
-        }
-      }
-      const rows = await loadRows();
-      sendJson(response, 200, { status: "ok", storage: "csv", rowCount: rows.length, ...freshness(rows) });
+      sendJson(response, 200, await livenessHealthPayload());
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/ready") {
+      sendJson(response, 200, await readinessHealthPayload());
       return;
     }
     await serveStatic(request, response);
   } catch (error) {
     const status = Number.isInteger(error.statusCode) ? error.statusCode : 500;
-    const message = error.message || (status === 500 ? "Internal server error" : "Request failed");
-    sendJson(response, status, { error: message });
+    if (status >= 500) console.error(`[request] ${request.method} ${request.url}: ${error.stack ?? error.message}`);
+    const message = status >= 500 && IS_PRODUCTION
+      ? "Internal server error"
+      : error.message || (status === 500 ? "Internal server error" : "Request failed");
+    sendJsonWithHeaders(response, status, { error: message }, error.headers ?? {});
   }
 });
 

@@ -1,0 +1,25 @@
+{
+  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "failed_at": "2026-06-01T13:01:30.618Z",
+  "attempt": 2,
+  "error": "page.waitForSelector: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('select')\u001b[22m\n",
+  "report": {
+    "year": 2025,
+    "months": [
+      8,
+      9,
+      10,
+      11
+    ],
+    "state": "Bihar",
+    "rto": "All RTOs",
+    "fuels": []
+  },
+  "title": "",
+  "bodyTextSample": "HTTP Server Error 503\n\nNo available server to handle this request",
+  "controls": [],
+  "artifacts": {
+    "screenshot": "data\\vahan\\failures\\20260601_183130_bihar_2025_all-rtos_attempt2.png",
+    "html": "data\\vahan\\failures\\20260601_183130_bihar_2025_all-rtos_attempt2.html"
+  }
+}
