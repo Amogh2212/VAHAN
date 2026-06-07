@@ -43,6 +43,7 @@ import {
   getTrackedQuery,
   listTrackedQueries,
   listTrackedQueryObservations,
+  listTrackedQueryRuns,
   updateTrackedQuery,
 } from "./lib/tracked-queries.mjs";
 
@@ -3469,6 +3470,24 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, {
         trackedQuery,
         observations: await listTrackedQueryObservations(trackedQueryId, {
+          from: url.searchParams.get("from"),
+          to: url.searchParams.get("to"),
+          limit: url.searchParams.get("limit"),
+        }),
+      });
+      return;
+    }
+    const trackedRunsMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/runs$/);
+    if (request.method === "GET" && trackedRunsMatch) {
+      const trackedQueryId = Number(trackedRunsMatch[1]);
+      const trackedQuery = await getTrackedQuery(trackedQueryId);
+      if (!trackedQuery) {
+        sendJson(response, 404, { error: "Tracked query not found" });
+        return;
+      }
+      sendJson(response, 200, {
+        trackedQuery,
+        runs: await listTrackedQueryRuns(trackedQueryId, {
           from: url.searchParams.get("from"),
           to: url.searchParams.get("to"),
           limit: url.searchParams.get("limit"),

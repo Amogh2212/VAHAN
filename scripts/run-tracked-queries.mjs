@@ -10,6 +10,7 @@ import {
 } from "../lib/tracked-queries.mjs";
 
 const DEFAULT_TIMEOUT_MS = Number(process.env.TRACKED_QUERY_RUN_TIMEOUT_MS ?? 300_000);
+const RELIABLE_DATA_STATUSES = new Set(["complete", "live"]);
 
 function parseArgs(argv) {
   const args = {
@@ -58,11 +59,19 @@ function observationPayload(payload) {
   if (!Number.isFinite(Number(total))) {
     throw new Error("Query did not return a numeric summary.total.");
   }
+  const dataStatus = payload.dataStatus ?? null;
+  if (!RELIABLE_DATA_STATUSES.has(dataStatus)) {
+    const warnings = (payload.warnings ?? []).filter(Boolean).join(" ");
+    throw new Error([
+      `Tracked query returned unreliable data_status "${dataStatus ?? "unknown"}"; observation was not stored.`,
+      warnings,
+    ].filter(Boolean).join(" "));
+  }
   return {
     total: Number(total),
     filters: payload.filters ?? {},
     summary: payload.summary ?? {},
-    dataStatus: payload.dataStatus ?? null,
+    dataStatus,
     warnings: payload.warnings ?? [],
     freshness: payload.freshness ?? {},
   };
@@ -88,8 +97,9 @@ async function runTrackedQuery(item) {
     defaultDateRange,
   });
 
+  let payload = null;
   try {
-    const payload = await finalPayload(await queryData({
+    payload = await finalPayload(await queryData({
       query: item.query,
       defaultDateRange,
     }));
@@ -118,6 +128,10 @@ async function runTrackedQuery(item) {
     await failTrackedQueryRun(run.id, error, {
       query: item.query,
       label: item.label,
+      defaultDateRange,
+      dataStatus: payload?.dataStatus ?? null,
+      liveRefresh: payload?.liveRefresh ?? null,
+      scraper: payload?.scraper ?? null,
     });
     return {
       trackedQueryId: item.id,

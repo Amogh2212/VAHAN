@@ -87,6 +87,16 @@ async function latestObservation(id) {
   return body.observations?.[0] ?? null;
 }
 
+async function latestRun(id) {
+  const body = await apiJson(`/api/tracked-queries/${id}/runs?limit=1`);
+  return body.runs?.[0] ?? null;
+}
+
+function latestListLabel(latest, run) {
+  if (run?.status === "failed" && (!latest || run.observationDate >= latest.observationDate)) return "Failed";
+  return latest ? fmt.format(latest.total) : "No observations";
+}
+
 async function loadTrackedQueries() {
   showNotice("");
   trackedList.innerHTML = `<p class="result-empty">Loading tracked queries.</p>`;
@@ -97,11 +107,17 @@ async function loadTrackedQueries() {
   trackedCount.textContent = `${trackedQueries.length} saved`;
 
   const latestById = new Map();
+  const latestRunById = new Map();
   await Promise.all(trackedQueries.map(async (item) => {
     try {
       latestById.set(item.id, await latestObservation(item.id));
     } catch {
       latestById.set(item.id, null);
+    }
+    try {
+      latestRunById.set(item.id, await latestRun(item.id));
+    } catch {
+      latestRunById.set(item.id, null);
     }
   }));
 
@@ -117,6 +133,7 @@ async function loadTrackedQueries() {
 
   trackedList.innerHTML = trackedQueries.map((item) => {
     const latest = latestById.get(item.id);
+    const run = latestRunById.get(item.id);
     return `
       <button type="button" class="tracked-item ${item.id === selectedId ? "active" : ""}" data-id="${item.id}">
         <span class="tracked-item-main">
@@ -126,7 +143,7 @@ async function loadTrackedQueries() {
         <span class="tracked-item-meta">
           ${statusPill(item)}
           <span>${escapeHtml(item.runTimeLocal)} ${escapeHtml(item.timezone)}</span>
-          <span>${latest ? fmt.format(latest.total) : "No observations"}</span>
+          <span>${escapeHtml(latestListLabel(latest, run))}</span>
         </span>
       </button>
     `;
@@ -210,14 +227,42 @@ async function loadObservations(id) {
   observationSummary.innerHTML = `<p class="result-empty">Loading observations.</p>`;
   observationsBody.innerHTML = `<tr><td colspan="6">Loading.</td></tr>`;
 
-  const body = await apiJson(`/api/tracked-queries/${id}/observations?limit=30`);
-  const observations = body.observations ?? [];
+  const [observationBody, runBody] = await Promise.all([
+    apiJson(`/api/tracked-queries/${id}/observations?limit=30`),
+    apiJson(`/api/tracked-queries/${id}/runs?limit=30`),
+  ]);
+  const observations = observationBody.observations ?? [];
+  const runs = runBody.runs ?? [];
   const latest = observations[0] ?? null;
-  const hasObservations = observations.length > 0;
-  observationSummary.classList.toggle("empty-observation-state", !hasObservations);
-  if (observationTableWrap) observationTableWrap.hidden = !hasObservations;
+  const latestAttempt = runs[0] ?? null;
+  const latestAttemptFailed = latestAttempt?.status === "failed" && (!latest || latestAttempt.observationDate >= latest.observationDate);
+  const historyRows = trackedHistoryRows(observations, runs);
+  const hasHistory = historyRows.length > 0;
+  observationSummary.classList.toggle("empty-observation-state", !hasHistory);
+  if (observationTableWrap) observationTableWrap.hidden = !hasHistory;
 
-  observationSummary.innerHTML = latest
+  observationSummary.innerHTML = latestAttemptFailed
+    ? `
+      <div class="tracked-metric">
+        <span>Latest run</span>
+        <strong>Failed</strong>
+      </div>
+      <div class="tracked-metric">
+        <span>Observation date</span>
+        <strong>${escapeHtml(latestAttempt.observationDate)}</strong>
+      </div>
+      <div class="tracked-metric">
+        <span>Last good total</span>
+        <strong>${latest ? fmt.format(latest.total) : "-"}</strong>
+      </div>
+      <div class="tracked-actions">
+        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
+        <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
+        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
+        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
+      </div>
+    `
+    : latest
     ? `
       <div class="tracked-metric">
         <span>Latest total</span>
@@ -239,7 +284,7 @@ async function loadObservations(id) {
       </div>
     `
     : `
-      <p class="result-empty">The daily runner has not stored observations for this query yet.</p>
+      <p class="result-empty">${runs.some((run) => run.status === "failed") ? "The latest daily runner attempt failed before a trustworthy observation could be stored." : "The daily runner has not stored observations for this query yet."}</p>
       <div class="tracked-actions">
         <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
         <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
@@ -253,18 +298,49 @@ async function loadObservations(id) {
   observationSummary.querySelector("[data-action='disable']")?.addEventListener("click", () => disableTrackedQuery(item));
   observationSummary.querySelector("[data-action='delete']")?.addEventListener("click", () => deleteTrackedQuery(item));
 
-  observationsBody.innerHTML = hasObservations
-    ? observations.map((row) => `
+  observationsBody.innerHTML = hasHistory
+    ? historyRows.map((row) => `
       <tr>
         <td>${escapeHtml(row.observationDate)}</td>
-        <td>${fmt.format(row.total)}</td>
+        <td>${row.total === null || row.total === undefined ? "-" : fmt.format(row.total)}</td>
         <td>${deltaText(row.dailyDelta)}</td>
         <td>${deltaText(row.weeklyDelta)}</td>
-        <td>${escapeHtml(row.dataStatus || "-")}</td>
-        <td>${fmt.format(row.warnings?.length ?? 0)}</td>
+        <td>${escapeHtml(row.statusLabel)}</td>
+        <td>${fmt.format(row.warningCount ?? 0)}</td>
       </tr>
     `).join("")
     : "";
+}
+
+function trackedHistoryRows(observations, runs) {
+  const rowsByDate = new Map(observations.map((row) => [row.observationDate, {
+    observationDate: row.observationDate,
+    total: row.total,
+    dailyDelta: row.dailyDelta,
+    weeklyDelta: row.weeklyDelta,
+    statusLabel: row.dataStatus || "-",
+    warningCount: row.warnings?.length ?? 0,
+    sortKey: row.updatedAt ?? row.observationDate,
+  }]));
+
+  for (const run of runs) {
+    if (run.status !== "failed") continue;
+    const existing = rowsByDate.get(run.observationDate);
+    if (existing && existing.statusLabel !== "stale") continue;
+    rowsByDate.set(run.observationDate, {
+      observationDate: run.observationDate,
+      total: null,
+      dailyDelta: null,
+      weeklyDelta: null,
+      statusLabel: "failed",
+      warningCount: run.error ? 1 : 0,
+      sortKey: run.completedAt ?? run.startedAt ?? run.observationDate,
+    });
+  }
+
+  return [...rowsByDate.values()]
+    .sort((a, b) => b.observationDate.localeCompare(a.observationDate) || String(b.sortKey).localeCompare(String(a.sortKey)))
+    .slice(0, 30);
 }
 
 async function toggleTrackedQuery(item) {

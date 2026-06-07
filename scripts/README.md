@@ -113,7 +113,7 @@ npm run tracked:run
 ```
 
 This repo includes `.github/workflows/daily-tracked-queries.yml`, which runs the
-daily batch every day at `00:30 UTC` (`06:00 IST`). It can also be triggered
+daily batch every day at `02:30 UTC` (`08:00 IST`). It can also be triggered
 manually from the GitHub Actions tab with `workflow_dispatch`.
 
 Add these GitHub Actions repository secrets before running it:
