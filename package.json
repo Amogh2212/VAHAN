@@ -4,8 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "npm run check:syntax",
     "dev": "node --env-file=.env server.mjs",
     "start": "node server.mjs",
+    "test": "npm run check:syntax && npm run check:local",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check:audit": "npm audit --omit=dev",
+    "check:production": "node scripts/production-smoke-check.mjs",
     "data:tdc": "node scripts/download-tdc-history.mjs",
     "db:schema": "node --env-file=.env scripts/apply-neon-schema.mjs",
     "import:neon": "node --env-file=.env scripts/import-to-neon.mjs",
@@ -23,5 +28,8 @@
   "dependencies": {
     "pg": "^8.20.0",
     "playwright": "^1.52.0"
+  },
+  "engines": {
+    "node": ">=22 <23"
   }
 }

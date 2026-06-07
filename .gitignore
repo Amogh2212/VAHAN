@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+example.env
 node_modules/
 data/tdc-history/vahan-vehicle-registrations-by-maker.csv
 data/tdc-history/vahan-vehicle-registrations-by-vehicle-category.csv

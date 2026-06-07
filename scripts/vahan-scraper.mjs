@@ -468,8 +468,12 @@ function scoreSelectControl(control, config) {
   let score = 0;
   const text = normalizeLookup(`${control.id} ${control.name} ${control.nearbyText}`);
   const options = control.options.map((option) => normalizeLookup(option.label));
+  const hasKnownOption = (config.knownOptions ?? []).some((value) => {
+    const wanted = normalizeLookup(value);
+    return options.some((option) => option === wanted || option.includes(wanted));
+  });
 
-  if (config.fastIds?.includes(control.id)) score += 100;
+  if (config.fastIds?.includes(control.id) && (!config.knownOptions?.length || hasKnownOption)) score += 100;
   for (const pattern of config.labelPatterns ?? []) {
     if (pattern.test(text)) score += 20;
   }
@@ -1394,6 +1398,10 @@ async function scrape(args) {
           }
         }
         scrapedRows.push(...newRows);
+        const replacementKeys = new Set(newRows.map((row) => keyForItem(row)));
+        for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
+          if (replacementKeys.has(keyForItem(rows[rowIndex]))) rows.splice(rowIndex, 1);
+        }
         rows.push(...newRows);
         succeeded += newRows.length;
         if (args.persist) {

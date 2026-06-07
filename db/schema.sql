@@ -97,8 +97,47 @@ create index if not exists maker_registrations_maker_idx
 create index if not exists maker_registrations_context_filter_idx
   on maker_registrations (fuel_filter, vehicle_category_filter, norms_filter, vehicle_class_filter);
 
+create table if not exists users (
+  id bigserial primary key,
+  google_sub text not null unique,
+  email text not null,
+  name text,
+  picture_url text,
+  telegram_chat_id text unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists users_email_idx
+  on users (email);
+
+create table if not exists sessions (
+  id text primary key,
+  user_id bigint not null references users(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists sessions_user_idx
+  on sessions (user_id);
+
+create index if not exists sessions_expires_idx
+  on sessions (expires_at);
+
+create table if not exists telegram_link_codes (
+  code text primary key,
+  user_id bigint not null references users(id) on delete cascade,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists telegram_link_codes_user_idx
+  on telegram_link_codes (user_id);
+
 create table if not exists tracked_queries (
   id bigserial primary key,
+  user_id bigint references users(id) on delete cascade,
   label text,
   query text not null check (length(trim(query)) > 0),
   active boolean not null default true,
@@ -108,8 +147,14 @@ create table if not exists tracked_queries (
   updated_at timestamptz not null default now()
 );
 
+alter table tracked_queries
+  add column if not exists user_id bigint references users(id) on delete cascade;
+
 create index if not exists tracked_queries_active_idx
   on tracked_queries (active, run_time_local);
+
+create index if not exists tracked_queries_user_idx
+  on tracked_queries (user_id, active, id);
 
 create table if not exists tracked_query_runs (
   id bigserial primary key,

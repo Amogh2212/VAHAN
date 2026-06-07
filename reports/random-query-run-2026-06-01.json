@@ -1,0 +1,5672 @@
+{
+  "generatedAt": "2026-06-01T11:23:43.168Z",
+  "seed": 20260601,
+  "count": 100,
+  "health": {
+    "status": "ok",
+    "storage": "csv",
+    "rowCount": 10144,
+    "latestMonth": "2026-06",
+    "source": "VAHAN public dashboard aggregate data"
+  },
+  "summary": {
+    "passed": 100,
+    "failed": 0,
+    "okResponses": 100,
+    "nonZeroRows": 4,
+    "averageDurationMs": 21
+  },
+  "results": [
+    {
+      "index": 1,
+      "query": "bus EV registrations at Goa November 2025 to December 2025",
+      "generated": {
+        "state": "Goa",
+        "location": "Goa",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 82,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Goa",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-11",
+        "to": "2025-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 2,
+      "query": "electric bus registrations in Uttar Pradesh August 2025 to September 2025",
+      "generated": {
+        "state": "Uttar Pradesh",
+        "location": "Uttar Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 39,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Uttar Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-08",
+        "to": "2025-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 3,
+      "query": "show EV tractor in Bhubaneswar from in June 2026",
+      "generated": {
+        "state": "Odisha",
+        "location": "Bhubaneswar",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "tractor"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 33,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "state": "Odisha",
+        "rto": null,
+        "locationText": "bhubaneswar",
+        "locationSource": "exact_city",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TRACTOR (COMMERCIAL) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bhubaneswar",
+        "unresolvedLocation": "bhubaneswar",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bhubaneswar",
+          "state": "Odisha"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"bhubaneswar\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 4,
+      "query": "passenger e-rickshaw EV registrations at Himachal Pradesh June 2024 to September 2024",
+      "generated": {
+        "state": "Himachal Pradesh",
+        "location": "Himachal Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "passenger e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 32,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Himachal Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 5,
+      "query": "Kolkata electric registrations for bus in May 2024",
+      "generated": {
+        "state": "West Bengal",
+        "location": "Kolkata",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 30,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": "kolkata",
+        "locationSource": "exact_city",
+        "from": "2024-05",
+        "to": "2024-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "kolkata",
+        "unresolvedLocation": "kolkata",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "kolkata",
+          "state": "West Bengal"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"kolkata\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 6,
+      "query": "bus registrations in Gurugram in June 2026",
+      "generated": {
+        "state": "Haryana",
+        "location": "Gurugram",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 27,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Haryana",
+        "rto": null,
+        "locationText": "gurugram",
+        "locationSource": "exact_city",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched BUS class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "gurugram",
+        "unresolvedLocation": "gurugram",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "gurugram",
+          "state": "Haryana"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"gurugram\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 7,
+      "query": "show CNG goods e-rickshaw in Vijayawada from June 2024 to September 2024",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Vijayawada",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "goods e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 24,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": "vijayawada",
+        "locationSource": "exact_city",
+        "from": "2024-06",
+        "to": "2024-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; E-RICKSHAW WITH CART (G) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "vijayawada",
+        "unresolvedLocation": "vijayawada",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "vijayawada",
+          "state": "Andhra Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"vijayawada\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 8,
+      "query": "CNG bus registrations in Jaipur in August 2024",
+      "generated": {
+        "state": "Rajasthan",
+        "location": "Jaipur",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Rajasthan",
+        "rto": null,
+        "locationText": "jaipur",
+        "locationSource": "exact_city",
+        "from": "2024-08",
+        "to": "2024-08",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "jaipur",
+        "unresolvedLocation": "jaipur",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "jaipur",
+          "state": "Rajasthan"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"jaipur\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 9,
+      "query": "motor car electric registrations at Patna August 2024 to September 2024",
+      "generated": {
+        "state": "Bihar",
+        "location": "Patna",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Bihar",
+        "rto": null,
+        "locationText": "patna",
+        "locationSource": "exact_city",
+        "from": "2024-08",
+        "to": "2024-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "patna",
+        "unresolvedLocation": "patna",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "patna",
+          "state": "Bihar"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"patna\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 10,
+      "query": "show electric three wheeler passenger in West Bengal from September 2025 to November 2025",
+      "generated": {
+        "state": "West Bengal",
+        "location": "West Bengal",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "three wheeler passenger"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 28,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-09",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER (PASSENGER) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 11,
+      "query": "show petrol e-rickshaw in Patna from May 2024 to September 2024",
+      "generated": {
+        "state": "Bihar",
+        "location": "Patna",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Bihar",
+        "rto": null,
+        "locationText": "patna",
+        "locationSource": "exact_city",
+        "from": "2024-05",
+        "to": "2024-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; E-RICKSHAW WITH CART (G), E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "patna",
+        "unresolvedLocation": "patna",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "patna",
+          "state": "Bihar"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"patna\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 12,
+      "query": "show hybrid cars in Pune from January 2025 to April 2025",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Pune",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "cars"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": "pune",
+        "locationSource": "exact_city",
+        "from": "2025-01",
+        "to": "2025-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "pune",
+        "unresolvedLocation": "pune",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "pune",
+          "state": "Maharashtra"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"pune\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 13,
+      "query": "motor car electric registrations at Kochi April 2026 to May 2026",
+      "generated": {
+        "state": "Kerala",
+        "location": "Kochi",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Kerala",
+        "rto": null,
+        "locationText": "kochi",
+        "locationSource": "exact_city",
+        "from": "2026-04",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "kochi",
+        "unresolvedLocation": "kochi",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "kochi",
+          "state": "Kerala"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"kochi\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 14,
+      "query": "electric bus registrations in Madhya Pradesh in December 2024",
+      "generated": {
+        "state": "Madhya Pradesh",
+        "location": "Madhya Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Madhya Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-12",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 15,
+      "query": "Maharashtra registrations for bus in May 2026",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Maharashtra",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-05",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched BUS class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 16,
+      "query": "goods carrier diesel registrations at Vijayawada April 2025 to May 2025",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Vijayawada",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "goods carrier"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": "vijayawada",
+        "locationSource": "exact_city",
+        "from": "2025-04",
+        "to": "2025-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; GOODS CARRIER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "vijayawada",
+        "unresolvedLocation": "vijayawada",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "vijayawada",
+          "state": "Andhra Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"vijayawada\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 17,
+      "query": "goods carrier electric registrations at Ahmedabad January 2026 to May 2026",
+      "generated": {
+        "state": "Gujarat",
+        "location": "Ahmedabad",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "goods carrier"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 16,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "state": "Gujarat",
+        "rto": null,
+        "locationText": "ahmedabad",
+        "locationSource": "exact_city",
+        "from": "2026-01",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; GOODS CARRIER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ahmedabad",
+        "unresolvedLocation": "ahmedabad",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ahmedabad",
+          "state": "Gujarat"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ahmedabad\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 18,
+      "query": "show EV three wheeler in Andhra Pradesh from February 2025 to March 2025",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Andhra Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "three wheeler"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 25,
+      "dataStatus": "complete",
+      "rowCount": 4,
+      "total": 9299,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-02",
+        "to": "2025-03",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [
+          "THREE WHEELER"
+        ],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER group",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [
+        "Interpreted broad vehicle group: THREE WHEELER. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added."
+      ],
+      "error": null
+    },
+    {
+      "index": 19,
+      "query": "show EV fork lift in Dehradun from in March 2026",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Dehradun",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": "dehradun",
+        "locationSource": "exact_city",
+        "from": "2026-03",
+        "to": "2026-03",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; FORK LIFT class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "dehradun",
+        "unresolvedLocation": "dehradun",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "dehradun",
+          "state": "Uttarakhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"dehradun\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 20,
+      "query": "hybrid motor car registrations in Chhattisgarh April 2024 to September 2024",
+      "generated": {
+        "state": "Chhattisgarh",
+        "location": "Chhattisgarh",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 23,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Chhattisgarh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-04",
+        "to": "2024-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 21,
+      "query": "Mumbai registrations for medium motor vehicle October 2024 to December 2024",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Mumbai",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "medium motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": "mumbai",
+        "locationSource": "exact_city",
+        "from": "2024-10",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "mumbai",
+        "unresolvedLocation": "mumbai",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "mumbai",
+          "state": "Maharashtra"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"mumbai\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 22,
+      "query": "light motor vehicle hybrid registrations at Punjab April 2026 to June 2026",
+      "generated": {
+        "state": "Punjab",
+        "location": "Punjab",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-04",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 23,
+      "query": "motorcycle EV registrations at Bihar August 2025 to November 2025",
+      "generated": {
+        "state": "Bihar",
+        "location": "Bihar",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Bihar",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-08",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 24,
+      "query": "EV passenger e-rickshaw registrations in Jharkhand in June 2024",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "passenger e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 25,
+      "query": "Bhubaneswar diesel registrations for fork lift in January 2024",
+      "generated": {
+        "state": "Odisha",
+        "location": "Bhubaneswar",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 16,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "Odisha",
+        "rto": null,
+        "locationText": "bhubaneswar",
+        "locationSource": "exact_city",
+        "from": "2024-01",
+        "to": "2024-01",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; FORK LIFT class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bhubaneswar",
+        "unresolvedLocation": "bhubaneswar",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bhubaneswar",
+          "state": "Odisha"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"bhubaneswar\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 26,
+      "query": "EV three wheeler passenger registrations in Noida in June 2024",
+      "generated": {
+        "state": "Uttar Pradesh",
+        "location": "Noida",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "three wheeler passenger"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 16,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "state": "Uttar Pradesh",
+        "rto": null,
+        "locationText": "noida",
+        "locationSource": "exact_city",
+        "from": "2024-06",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER (PASSENGER) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "noida",
+        "unresolvedLocation": "noida",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "noida",
+          "state": "Uttar Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"noida\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 27,
+      "query": "Ahmedabad diesel registrations for bus in May 2024",
+      "generated": {
+        "state": "Gujarat",
+        "location": "Ahmedabad",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Gujarat",
+        "rto": null,
+        "locationText": "ahmedabad",
+        "locationSource": "exact_city",
+        "from": "2024-05",
+        "to": "2024-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ahmedabad",
+        "unresolvedLocation": "ahmedabad",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ahmedabad",
+          "state": "Gujarat"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ahmedabad\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 28,
+      "query": "electric three wheeler goods registrations in Chennai in October 2024",
+      "generated": {
+        "state": "Tamil Nadu",
+        "location": "Chennai",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "three wheeler goods"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "state": "Tamil Nadu",
+        "rto": null,
+        "locationText": "chennai",
+        "locationSource": "exact_city",
+        "from": "2024-10",
+        "to": "2024-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER (GOODS) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "chennai",
+        "unresolvedLocation": "chennai",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "chennai",
+          "state": "Tamil Nadu"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"chennai\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 29,
+      "query": "show EV passenger e-rickshaw in Rajasthan from March 2026 to June 2026",
+      "generated": {
+        "state": "Rajasthan",
+        "location": "Rajasthan",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "passenger e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Rajasthan",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-03",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 30,
+      "query": "Haryana registrations for bus January 2026 to June 2026",
+      "generated": {
+        "state": "Haryana",
+        "location": "Haryana",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Haryana",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-01",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched BUS class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 31,
+      "query": "show hybrid HMV in Ludhiana from February 2026 to May 2026",
+      "generated": {
+        "state": "Punjab",
+        "location": "Ludhiana",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "HMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": "ludhiana",
+        "locationSource": "exact_city",
+        "from": "2026-02",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; HEAVY MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ludhiana",
+        "unresolvedLocation": "ludhiana",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ludhiana",
+          "state": "Punjab"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ludhiana\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 32,
+      "query": "school bus petrol registrations at Mumbai June 2025 to August 2025",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Mumbai",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "school bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": "mumbai",
+        "locationSource": "exact_city",
+        "from": "2025-06",
+        "to": "2025-08",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; BUS, SCHOOL BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "mumbai",
+        "unresolvedLocation": "mumbai",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "mumbai",
+          "state": "Maharashtra"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"mumbai\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 33,
+      "query": "EV three wheeler registrations in Andhra Pradesh August 2025 to September 2025",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Andhra Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "three wheeler"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 4,
+      "total": 8933,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-08",
+        "to": "2025-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [
+          "THREE WHEELER"
+        ],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER group",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [
+        "Interpreted broad vehicle group: THREE WHEELER. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added."
+      ],
+      "error": null
+    },
+    {
+      "index": 34,
+      "query": "show petrol heavy motor vehicle in Chhattisgarh from in June 2026",
+      "generated": {
+        "state": "Chhattisgarh",
+        "location": "Chhattisgarh",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "heavy motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Chhattisgarh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; HEAVY MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 35,
+      "query": "show EV scooter in Dehradun from in April 2026",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Dehradun",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "scooter"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": "dehradun",
+        "locationSource": "exact_city",
+        "from": "2026-04",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "dehradun",
+        "unresolvedLocation": "dehradun",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "dehradun",
+          "state": "Uttarakhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"dehradun\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 36,
+      "query": "show diesel school bus in Punjab from July 2025 to November 2025",
+      "generated": {
+        "state": "Punjab",
+        "location": "Punjab",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "school bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-07",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; BUS, SCHOOL BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 37,
+      "query": "Goa CNG registrations for heavy motor vehicle in July 2024",
+      "generated": {
+        "state": "Goa",
+        "location": "Goa",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "heavy motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 24,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Goa",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-07",
+        "to": "2024-07",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; HEAVY MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 38,
+      "query": "scooter CNG registrations at Jaipur February 2026 to April 2026",
+      "generated": {
+        "state": "Rajasthan",
+        "location": "Jaipur",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "scooter"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Rajasthan",
+        "rto": null,
+        "locationText": "jaipur",
+        "locationSource": "exact_city",
+        "from": "2026-02",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "jaipur",
+        "unresolvedLocation": "jaipur",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "jaipur",
+          "state": "Rajasthan"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"jaipur\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 39,
+      "query": "show hybrid e-rickshaw in Delhi from in April 2026",
+      "generated": {
+        "state": "Delhi",
+        "location": "Delhi",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Delhi",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-04",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; E-RICKSHAW WITH CART (G), E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 40,
+      "query": "Kerala diesel registrations for e-rickshaw April 2026 to May 2026",
+      "generated": {
+        "state": "Kerala",
+        "location": "Kerala",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Kerala",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-04",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; E-RICKSHAW WITH CART (G), E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 41,
+      "query": "LMV petrol registrations at Tamil Nadu March 2026 to June 2026",
+      "generated": {
+        "state": "Tamil Nadu",
+        "location": "Tamil Nadu",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "LMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Tamil Nadu",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-03",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 42,
+      "query": "LMV petrol registrations at Bihar in January 2026",
+      "generated": {
+        "state": "Bihar",
+        "location": "Bihar",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "LMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Bihar",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-01",
+        "to": "2026-01",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 43,
+      "query": "light motor vehicle diesel registrations at Uttar Pradesh January 2024 to February 2024",
+      "generated": {
+        "state": "Uttar Pradesh",
+        "location": "Uttar Pradesh",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Uttar Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-01",
+        "to": "2024-02",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 44,
+      "query": "electric tractor registrations in Gurugram February 2026 to March 2026",
+      "generated": {
+        "state": "Haryana",
+        "location": "Gurugram",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "tractor"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 15,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "state": "Haryana",
+        "rto": null,
+        "locationText": "gurugram",
+        "locationSource": "exact_city",
+        "from": "2026-02",
+        "to": "2026-03",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TRACTOR (COMMERCIAL) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "gurugram",
+        "unresolvedLocation": "gurugram",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "gurugram",
+          "state": "Haryana"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"gurugram\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 45,
+      "query": "CNG bus registrations in Haridwar in June 2025",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Haridwar",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 23,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "state": "Uttarakhand",
+        "rto": "haridwar",
+        "locationText": "haridwar",
+        "locationSource": "exact_city",
+        "from": "2025-06",
+        "to": "2025-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": null,
+        "unresolvedLocation": null,
+        "ambiguousRtos": null,
+        "rtoResolution": {
+          "status": "resolved",
+          "query": "haridwar",
+          "state": "Uttarakhand",
+          "rto": "haridwar",
+          "method": "exact",
+          "score": 100
+        }
+      },
+      "warnings": [
+        "Resolved haridwar to haridwar using the VAHAN RTO catalog."
+      ],
+      "error": null
+    },
+    {
+      "index": 46,
+      "query": "show motorcycle in Kerala from in June 2024",
+      "generated": {
+        "state": "Kerala",
+        "location": "Kerala",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Kerala",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 47,
+      "query": "e-rickshaw registrations in Uttarakhand April 2024 to June 2024",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Uttarakhand",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-04",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched E-RICKSHAW WITH CART (G), E-RICKSHAW(P) class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 48,
+      "query": "three wheeler goods electric registrations at Delhi RTO March 2024 to July 2024",
+      "generated": {
+        "state": "Delhi",
+        "location": "Delhi RTO",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "three wheeler goods"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "state": "Delhi",
+        "rto": "delhi",
+        "locationText": null,
+        "locationSource": "exact_city",
+        "from": "2024-03",
+        "to": "2024-07",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER (GOODS) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": null,
+        "unresolvedLocation": null,
+        "ambiguousRtos": null,
+        "rtoResolution": {
+          "status": "resolved",
+          "query": "delhi",
+          "state": "Delhi",
+          "rto": "delhi",
+          "method": "exact",
+          "score": 100
+        }
+      },
+      "warnings": [
+        "Resolved delhi to delhi using the VAHAN RTO catalog."
+      ],
+      "error": null
+    },
+    {
+      "index": 49,
+      "query": "Haryana diesel registrations for light motor vehicle April 2024 to May 2024",
+      "generated": {
+        "state": "Haryana",
+        "location": "Haryana",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Haryana",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-04",
+        "to": "2024-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 50,
+      "query": "show petrol fork lift in West Bengal from June 2024 to October 2024",
+      "generated": {
+        "state": "West Bengal",
+        "location": "West Bengal",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; FORK LIFT class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 51,
+      "query": "show hybrid HMV in Assam from January 2026 to February 2026",
+      "generated": {
+        "state": "Assam",
+        "location": "Assam",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "HMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Assam",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-01",
+        "to": "2026-02",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "HEAVY MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; HEAVY MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 52,
+      "query": "Andhra Pradesh electric registrations for cars in December 2025",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Andhra Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "cars"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-12",
+        "to": "2025-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 53,
+      "query": "medium motor vehicle registrations at Dehradun August 2024 to October 2024",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Dehradun",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "medium motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": "dehradun",
+        "locationSource": "exact_city",
+        "from": "2024-08",
+        "to": "2024-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "dehradun",
+        "unresolvedLocation": "dehradun",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "dehradun",
+          "state": "Uttarakhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"dehradun\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 54,
+      "query": "Kerala EV registrations for LMV March 2026 to May 2026",
+      "generated": {
+        "state": "Kerala",
+        "location": "Kerala",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "LMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Kerala",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-03",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 55,
+      "query": "show electric light motor vehicle in Guwahati from May 2025 to September 2025",
+      "generated": {
+        "state": "Assam",
+        "location": "Guwahati",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 16,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Assam",
+        "rto": null,
+        "locationText": "guwahati",
+        "locationSource": "exact_city",
+        "from": "2025-05",
+        "to": "2025-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "guwahati",
+        "unresolvedLocation": "guwahati",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "guwahati",
+          "state": "Assam"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"guwahati\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 56,
+      "query": "petrol medium motor vehicle registrations in Bhopal January 2025 to February 2025",
+      "generated": {
+        "state": "Madhya Pradesh",
+        "location": "Bhopal",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "medium motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Madhya Pradesh",
+        "rto": null,
+        "locationText": "bhopal",
+        "locationSource": "exact_city",
+        "from": "2025-01",
+        "to": "2025-02",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bhopal",
+        "unresolvedLocation": "bhopal",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bhopal",
+          "state": "Madhya Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"bhopal\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 57,
+      "query": "show CNG three wheeler in Punjab from March 2026 to May 2026",
+      "generated": {
+        "state": "Punjab",
+        "location": "Punjab",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "three wheeler"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "partial",
+      "rowCount": 1,
+      "total": 213,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-03",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [
+          "THREE WHEELER"
+        ],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; THREE WHEELER group",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [
+        "Some requested months are missing from local data.",
+        "Interpreted broad vehicle group: THREE WHEELER. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added."
+      ],
+      "error": null
+    },
+    {
+      "index": 58,
+      "query": "Dehradun EV registrations for tractor in November 2024",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Dehradun",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "tractor"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": "dehradun",
+        "locationSource": "exact_city",
+        "from": "2024-11",
+        "to": "2024-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TRACTOR (COMMERCIAL) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "dehradun",
+        "unresolvedLocation": "dehradun",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "dehradun",
+          "state": "Uttarakhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"dehradun\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 59,
+      "query": "hybrid motor car registrations in Assam April 2025 to August 2025",
+      "generated": {
+        "state": "Assam",
+        "location": "Assam",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Assam",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-04",
+        "to": "2025-08",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 60,
+      "query": "hybrid motor car registrations in Jaipur January 2026 to June 2026",
+      "generated": {
+        "state": "Rajasthan",
+        "location": "Jaipur",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Rajasthan",
+        "rto": null,
+        "locationText": "jaipur",
+        "locationSource": "exact_city",
+        "from": "2026-01",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "jaipur",
+        "unresolvedLocation": "jaipur",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "jaipur",
+          "state": "Rajasthan"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"jaipur\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 61,
+      "query": "show hybrid scooter in Ahmedabad from in April 2025",
+      "generated": {
+        "state": "Gujarat",
+        "location": "Ahmedabad",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "scooter"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Gujarat",
+        "rto": null,
+        "locationText": "ahmedabad",
+        "locationSource": "exact_city",
+        "from": "2025-04",
+        "to": "2025-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ahmedabad",
+        "unresolvedLocation": "ahmedabad",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ahmedabad",
+          "state": "Gujarat"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ahmedabad\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 62,
+      "query": "hybrid motorcycle registrations in Madhya Pradesh in June 2026",
+      "generated": {
+        "state": "Madhya Pradesh",
+        "location": "Madhya Pradesh",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Madhya Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 63,
+      "query": "show petrol motorcycle in Uttarakhand from August 2025 to November 2025",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Uttarakhand",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-08",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 64,
+      "query": "diesel tractor registrations in Odisha February 2024 to June 2024",
+      "generated": {
+        "state": "Odisha",
+        "location": "Odisha",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "tractor"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "state": "Odisha",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-02",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; TRACTOR (COMMERCIAL) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 65,
+      "query": "hybrid LMV registrations in Mysore August 2025 to November 2025",
+      "generated": {
+        "state": "Karnataka",
+        "location": "Mysore",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "LMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": "mysore",
+        "locationSource": "exact_city",
+        "from": "2025-08",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "mysore",
+        "unresolvedLocation": "mysore",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "mysore",
+          "state": "Karnataka"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"mysore\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 66,
+      "query": "show electric motor car in Jharkhand from May 2025 to September 2025",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-05",
+        "to": "2025-09",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 67,
+      "query": "Kolkata hybrid registrations for goods e-rickshaw in December 2024",
+      "generated": {
+        "state": "West Bengal",
+        "location": "Kolkata",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "goods e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": "kolkata",
+        "locationSource": "exact_city",
+        "from": "2024-12",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; E-RICKSHAW WITH CART (G) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "kolkata",
+        "unresolvedLocation": "kolkata",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "kolkata",
+          "state": "West Bengal"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"kolkata\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 68,
+      "query": "goods e-rickshaw hybrid registrations at Punjab May 2026 to June 2026",
+      "generated": {
+        "state": "Punjab",
+        "location": "Punjab",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "goods e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 24,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-05",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; E-RICKSHAW WITH CART (G) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 69,
+      "query": "electric MMV registrations in Chhattisgarh February 2025 to April 2025",
+      "generated": {
+        "state": "Chhattisgarh",
+        "location": "Chhattisgarh",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "MMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Chhattisgarh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-02",
+        "to": "2025-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 70,
+      "query": "MMV electric registrations at Gujarat in April 2025",
+      "generated": {
+        "state": "Gujarat",
+        "location": "Gujarat",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "MMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Gujarat",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-04",
+        "to": "2025-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 71,
+      "query": "show three wheeler goods in West Bengal from November 2024 to December 2024",
+      "generated": {
+        "state": "West Bengal",
+        "location": "West Bengal",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "three wheeler goods"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-11",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched THREE WHEELER (GOODS) class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 72,
+      "query": "motor car electric registrations at Chandigarh June 2025 to October 2025",
+      "generated": {
+        "state": "Chandigarh",
+        "location": "Chandigarh",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Chandigarh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-06",
+        "to": "2025-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 73,
+      "query": "hybrid cars registrations in Odisha May 2026 to June 2026",
+      "generated": {
+        "state": "Odisha",
+        "location": "Odisha",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "cars"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Odisha",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-05",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 74,
+      "query": "petrol fork lift registrations in Assam June 2024 to October 2024",
+      "generated": {
+        "state": "Assam",
+        "location": "Assam",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "Assam",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; FORK LIFT class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 75,
+      "query": "CNG e-rickshaw registrations in Haridwar in June 2026",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Haridwar",
+        "ruleType": "fuel type",
+        "ruleText": "CNG",
+        "vehicle": "e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "state": "Uttarakhand",
+        "rto": "haridwar",
+        "locationText": "haridwar",
+        "locationSource": "exact_city",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)",
+          "E-RICKSHAW(P)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; E-RICKSHAW WITH CART (G), E-RICKSHAW(P) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": null,
+        "unresolvedLocation": null,
+        "ambiguousRtos": null,
+        "rtoResolution": {
+          "status": "resolved",
+          "query": "haridwar",
+          "state": "Uttarakhand",
+          "rto": "haridwar",
+          "method": "exact",
+          "score": 100
+        }
+      },
+      "warnings": [
+        "Resolved haridwar to haridwar using the VAHAN RTO catalog."
+      ],
+      "error": null
+    },
+    {
+      "index": 76,
+      "query": "three wheeler passenger electric registrations at Guwahati in June 2026",
+      "generated": {
+        "state": "Assam",
+        "location": "Guwahati",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "three wheeler passenger"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "state": "Assam",
+        "rto": null,
+        "locationText": "guwahati",
+        "locationSource": "exact_city",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; THREE WHEELER (PASSENGER) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "guwahati",
+        "unresolvedLocation": "guwahati",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "guwahati",
+          "state": "Assam"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"guwahati\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 77,
+      "query": "petrol goods e-rickshaw registrations in Karnataka in June 2024",
+      "generated": {
+        "state": "Karnataka",
+        "location": "Karnataka",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "goods e-rickshaw"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 23,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-06",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "E-RICKSHAW WITH CART (G)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; E-RICKSHAW WITH CART (G) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 78,
+      "query": "motorcycle EV registrations at Himachal Pradesh September 2025 to November 2025",
+      "generated": {
+        "state": "Himachal Pradesh",
+        "location": "Himachal Pradesh",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Himachal Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-09",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 79,
+      "query": "Chennai electric registrations for motorcycle October 2025 to November 2025",
+      "generated": {
+        "state": "Tamil Nadu",
+        "location": "Chennai",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "motorcycle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Tamil Nadu",
+        "rto": null,
+        "locationText": "chennai",
+        "locationSource": "exact_city",
+        "from": "2025-10",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "chennai",
+        "unresolvedLocation": "chennai",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "chennai",
+          "state": "Tamil Nadu"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"chennai\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 80,
+      "query": "medium motor vehicle electric registrations at Jharkhand January 2026 to April 2026",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "medium motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 23,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-01",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 81,
+      "query": "Kolkata registrations for motor car June 2025 to October 2025",
+      "generated": {
+        "state": "West Bengal",
+        "location": "Kolkata",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 17,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": "kolkata",
+        "locationSource": "exact_city",
+        "from": "2025-06",
+        "to": "2025-10",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched MOTOR CAR class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "kolkata",
+        "unresolvedLocation": "kolkata",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "kolkata",
+          "state": "West Bengal"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"kolkata\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 82,
+      "query": "Chandigarh registrations for scooter March 2026 to May 2026",
+      "generated": {
+        "state": "Chandigarh",
+        "location": "Chandigarh",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "scooter"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "state": "Chandigarh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-03",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "M-CYCLE/SCOOTER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched M-CYCLE/SCOOTER class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 83,
+      "query": "diesel light motor vehicle registrations in Ranchi April 2026 to May 2026",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Ranchi",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": "ranchi",
+        "locationSource": "exact_city",
+        "from": "2026-04",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ranchi",
+        "unresolvedLocation": "ranchi",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ranchi",
+          "state": "Jharkhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ranchi\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 84,
+      "query": "medium motor vehicle EV registrations at Assam in December 2024",
+      "generated": {
+        "state": "Assam",
+        "location": "Assam",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "medium motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Assam",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-12",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 85,
+      "query": "tractor EV registrations at Guwahati in June 2026",
+      "generated": {
+        "state": "Assam",
+        "location": "Guwahati",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "tractor"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "state": "Assam",
+        "rto": null,
+        "locationText": "guwahati",
+        "locationSource": "exact_city",
+        "from": "2026-06",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "TRACTOR (COMMERCIAL)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TRACTOR (COMMERCIAL) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "guwahati",
+        "unresolvedLocation": "guwahati",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "guwahati",
+          "state": "Assam"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"guwahati\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 86,
+      "query": "Bengaluru diesel registrations for three wheeler in May 2026",
+      "generated": {
+        "state": "Karnataka",
+        "location": "Bengaluru",
+        "ruleType": "fuel type",
+        "ruleText": "diesel",
+        "vehicle": "three wheeler"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 1,
+      "total": 12622,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": "bengaluru",
+        "locationSource": "exact_city",
+        "from": "2026-05",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [
+          "THREE WHEELER"
+        ],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; THREE WHEELER group",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bengaluru",
+        "unresolvedLocation": "bengaluru",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bengaluru",
+          "state": "Karnataka"
+        }
+      },
+      "warnings": [
+        "Interpreted broad vehicle group: THREE WHEELER. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added.",
+        "Could not resolve location \"bengaluru\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 87,
+      "query": "Jharkhand registrations for LMV June 2025 to November 2025",
+      "generated": {
+        "state": "Jharkhand",
+        "location": "Jharkhand",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "LMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Jharkhand",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-06",
+        "to": "2025-11",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 88,
+      "query": "hybrid three wheeler passenger registrations in Mysore in July 2024",
+      "generated": {
+        "state": "Karnataka",
+        "location": "Mysore",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "three wheeler passenger"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": "mysore",
+        "locationSource": "exact_city",
+        "from": "2024-07",
+        "to": "2024-07",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (PASSENGER)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; THREE WHEELER (PASSENGER) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "mysore",
+        "unresolvedLocation": "mysore",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "mysore",
+          "state": "Karnataka"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"mysore\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 89,
+      "query": "hybrid motor car registrations in Pune February 2024 to July 2024",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Pune",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "motor car"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 18,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": "pune",
+        "locationSource": "exact_city",
+        "from": "2024-02",
+        "to": "2024-07",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "pune",
+        "unresolvedLocation": "pune",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "pune",
+          "state": "Maharashtra"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"pune\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 90,
+      "query": "three wheeler goods hybrid registrations at Gurugram February 2026 to April 2026",
+      "generated": {
+        "state": "Haryana",
+        "location": "Gurugram",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "three wheeler goods"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 19,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "state": "Haryana",
+        "rto": null,
+        "locationText": "gurugram",
+        "locationSource": "exact_city",
+        "from": "2026-02",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; THREE WHEELER (GOODS) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "gurugram",
+        "unresolvedLocation": "gurugram",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "gurugram",
+          "state": "Haryana"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"gurugram\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 91,
+      "query": "West Bengal petrol registrations for MMV March 2024 to June 2024",
+      "generated": {
+        "state": "West Bengal",
+        "location": "West Bengal",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "MMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2024-03",
+        "to": "2024-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 92,
+      "query": "Bhopal EV registrations for goods carrier November 2025 to December 2025",
+      "generated": {
+        "state": "Madhya Pradesh",
+        "location": "Bhopal",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "goods carrier"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "state": "Madhya Pradesh",
+        "rto": null,
+        "locationText": "bhopal",
+        "locationSource": "exact_city",
+        "from": "2025-11",
+        "to": "2025-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "GOODS CARRIER"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; GOODS CARRIER class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bhopal",
+        "unresolvedLocation": "bhopal",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bhopal",
+          "state": "Madhya Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"bhopal\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 93,
+      "query": "EV light motor vehicle registrations in Tamil Nadu in April 2026",
+      "generated": {
+        "state": "Tamil Nadu",
+        "location": "Tamil Nadu",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 24,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Tamil Nadu",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2026-04",
+        "to": "2026-04",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 94,
+      "query": "Bhubaneswar EV registrations for MMV May 2026 to June 2026",
+      "generated": {
+        "state": "Odisha",
+        "location": "Bhubaneswar",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "MMV"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Odisha",
+        "rto": null,
+        "locationText": "bhubaneswar",
+        "locationSource": "exact_city",
+        "from": "2026-05",
+        "to": "2026-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "MEDIUM MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; MEDIUM MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "bhubaneswar",
+        "unresolvedLocation": "bhubaneswar",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "bhubaneswar",
+          "state": "Odisha"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"bhubaneswar\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 95,
+      "query": "electric fork lift registrations in Vijayawada July 2025 to August 2025",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Vijayawada",
+        "ruleType": "fuel segment",
+        "ruleText": "electric",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 22,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": "vijayawada",
+        "locationSource": "exact_city",
+        "from": "2025-07",
+        "to": "2025-08",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; FORK LIFT class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "vijayawada",
+        "unresolvedLocation": "vijayawada",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "vijayawada",
+          "state": "Andhra Pradesh"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"vijayawada\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 96,
+      "query": "show petrol three wheeler goods in Dehradun from in May 2024",
+      "generated": {
+        "state": "Uttarakhand",
+        "location": "Dehradun",
+        "ruleType": "fuel type",
+        "ruleText": "petrol",
+        "vehicle": "three wheeler goods"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "PETROL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "state": "Uttarakhand",
+        "rto": null,
+        "locationText": "dehradun",
+        "locationSource": "exact_city",
+        "from": "2024-05",
+        "to": "2024-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PETROL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "THREE WHEELER (GOODS)"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched PETROL fuel; THREE WHEELER (GOODS) class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "dehradun",
+        "unresolvedLocation": "dehradun",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "dehradun",
+          "state": "Uttarakhand"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"dehradun\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 97,
+      "query": "school bus hybrid registrations at Ludhiana in May 2026",
+      "generated": {
+        "state": "Punjab",
+        "location": "Ludhiana",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "school bus"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "state": "Punjab",
+        "rto": null,
+        "locationText": "ludhiana",
+        "locationSource": "exact_city",
+        "from": "2026-05",
+        "to": "2026-05",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS",
+          "SCHOOL BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; BUS, SCHOOL BUS class",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ludhiana",
+        "unresolvedLocation": "ludhiana",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ludhiana",
+          "state": "Punjab"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ludhiana\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 98,
+      "query": "fork lift registrations at Maharashtra May 2025 to June 2025",
+      "generated": {
+        "state": "Maharashtra",
+        "location": "Maharashtra",
+        "ruleType": "all fuels",
+        "ruleText": "all",
+        "vehicle": "fork lift"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 26,
+      "dataStatus": "missing",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [
+          "FORK LIFT"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "from": "2025-05",
+        "to": "2025-06",
+        "metric": "registrations",
+        "selectedFuelTypes": [],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "FORK LIFT"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched FORK LIFT class",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "warnings": [],
+      "error": null
+    },
+    {
+      "index": 99,
+      "query": "hybrid three wheeler registrations in Vijayawada February 2024 to March 2024",
+      "generated": {
+        "state": "Andhra Pradesh",
+        "location": "Vijayawada",
+        "ruleType": "fuel family",
+        "ruleText": "hybrid",
+        "vehicle": "three wheeler"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 20,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Andhra Pradesh",
+        "rto": null,
+        "locationText": "vijayawada",
+        "locationSource": "exact_city",
+        "from": "2024-02",
+        "to": "2024-03",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [
+          "THREE WHEELER"
+        ],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; THREE WHEELER group",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "vijayawada",
+        "unresolvedLocation": "vijayawada",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "vijayawada",
+          "state": "Andhra Pradesh"
+        }
+      },
+      "warnings": [
+        "Interpreted broad vehicle group: THREE WHEELER. Current saved/filter path does not yet apply VAHAN category-group selectors, so use this as interpretation metadata until group fetching is added.",
+        "Could not resolve location \"vijayawada\" from loaded data."
+      ],
+      "error": null
+    },
+    {
+      "index": 100,
+      "query": "EV light motor vehicle registrations in Ahmedabad August 2024 to December 2024",
+      "generated": {
+        "state": "Gujarat",
+        "location": "Ahmedabad",
+        "ruleType": "fuel segment",
+        "ruleText": "EV",
+        "vehicle": "light motor vehicle"
+      },
+      "ok": true,
+      "passed": true,
+      "status": 200,
+      "durationMs": 21,
+      "dataStatus": "complete",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "norms": [],
+        "vehicleClasses": [],
+        "state": "Gujarat",
+        "rto": null,
+        "locationText": "ahmedabad",
+        "locationSource": "exact_city",
+        "from": "2024-08",
+        "to": "2024-12",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "LIGHT MOTOR VEHICLE"
+        ],
+        "selectedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; LIGHT MOTOR VEHICLE category",
+        "semanticConfidence": 0.86,
+        "semanticExplanation": "Selected exact VAHAN labels from deterministic query rules.",
+        "rtoSearch": "ahmedabad",
+        "unresolvedLocation": "ahmedabad",
+        "rtoResolution": {
+          "status": "unresolved",
+          "query": "ahmedabad",
+          "state": "Gujarat"
+        }
+      },
+      "warnings": [
+        "Could not resolve location \"ahmedabad\" from loaded data."
+      ],
+      "error": null
+    }
+  ]
+}
