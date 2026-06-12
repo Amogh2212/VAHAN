@@ -10,19 +10,25 @@ import {
 } from "../lib/tracked-queries.mjs";
 
 const DEFAULT_TIMEOUT_MS = Number(process.env.TRACKED_QUERY_RUN_TIMEOUT_MS ?? 300_000);
-const RELIABLE_DATA_STATUSES = new Set(["complete", "live"]);
+const STORABLE_DATA_STATUSES = new Set(["complete", "live", "stale"]);
+const DEFAULT_FAIL_ON_PARTIAL = !["0", "false", "no"].includes(
+  String(process.env.TRACKED_QUERY_FAIL_ON_PARTIAL ?? "1").toLowerCase(),
+);
 
 function parseArgs(argv) {
   const args = {
     dryRun: false,
     date: null,
     all: false,
+    failOnPartial: DEFAULT_FAIL_ON_PARTIAL,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--dry-run") args.dryRun = true;
     else if (arg === "--all") args.all = true;
+    else if (arg === "--fail-on-partial") args.failOnPartial = true;
+    else if (arg === "--no-fail-on-partial") args.failOnPartial = false;
     else if (arg === "--date") args.date = argv[++index] ?? null;
     else if (arg.startsWith("--date=")) args.date = arg.slice("--date=".length);
     else if (arg === "--help" || arg === "-h") args.help = true;
@@ -44,6 +50,8 @@ function usage() {
     "  --dry-run          Print due tracked queries without writing runs or observations.",
     "  --date YYYY-MM-DD  Store observations for a specific local date.",
     "  --all              Include queries that already have an observation for the date.",
+    "  --no-fail-on-partial  Exit 0 when at least one query succeeds but others fail.",
+    "  --fail-on-partial     Exit 1 when any query fails. Default unless TRACKED_QUERY_FAIL_ON_PARTIAL=0.",
   ].join("\n");
 }
 
@@ -60,10 +68,10 @@ function observationPayload(payload) {
     throw new Error("Query did not return a numeric summary.total.");
   }
   const dataStatus = payload.dataStatus ?? null;
-  if (!RELIABLE_DATA_STATUSES.has(dataStatus)) {
+  if (!STORABLE_DATA_STATUSES.has(dataStatus)) {
     const warnings = (payload.warnings ?? []).filter(Boolean).join(" ");
     throw new Error([
-      `Tracked query returned unreliable data_status "${dataStatus ?? "unknown"}"; observation was not stored.`,
+      `Tracked query returned non-storable data_status "${dataStatus ?? "unknown"}"; observation was not stored.`,
       warnings,
     ].filter(Boolean).join(" "));
   }
@@ -186,7 +194,7 @@ async function main() {
     results,
   }, null, 2));
 
-  if (failed) process.exitCode = 1;
+  if (failed && (args.failOnPartial || failed === results.length)) process.exitCode = 1;
 }
 
 main()

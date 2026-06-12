@@ -9,7 +9,7 @@ on:
 jobs:
   run-tracked-queries:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -25,7 +25,16 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium chromium-headless-shell
+
+      - name: Verify Playwright browser
+        run: |
+          node --input-type=module -e "
+            import { chromium } from 'playwright';
+            const browser = await chromium.launch();
+            await browser.close();
+            console.log('Playwright Chromium launch verified.');
+          "
 
       - name: Create environment file
         env:
@@ -37,6 +46,7 @@ jobs:
           TELEGRAM_ALLOWED_CHAT_IDS: ${{ secrets.TELEGRAM_ALLOWED_CHAT_IDS }}
           TELEGRAM_ALERT_THRESHOLD_POINTS: ${{ vars.TELEGRAM_ALERT_THRESHOLD_POINTS }}
           TELEGRAM_PUBLIC_DAILY_LIMIT: ${{ vars.TELEGRAM_PUBLIC_DAILY_LIMIT }}
+          TRACKED_QUERY_FAIL_ON_PARTIAL: ${{ vars.TRACKED_QUERY_FAIL_ON_PARTIAL || '0' }}
         run: |
           {
             printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
@@ -51,6 +61,7 @@ jobs:
             printf 'TRACKED_QUERY_DEFAULT_TIMEZONE=Asia/Calcutta\n'
             printf 'TRACKED_QUERY_DEFAULT_RUN_TIME=08:00\n'
             printf 'TRACKED_QUERY_RUN_TIMEOUT_MS=300000\n'
+            printf 'TRACKED_QUERY_FAIL_ON_PARTIAL=%s\n' "$TRACKED_QUERY_FAIL_ON_PARTIAL"
           } > .env
 
       - name: Run daily tracked queries

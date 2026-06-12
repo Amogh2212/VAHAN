@@ -1,11 +1,15 @@
 {
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\check-vehicle-class.mjs": {
+    "mtime": 1781102132.558805,
+    "hash": "467c945b9a466af0a615d1f4870eac1e"
+  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\fetchTest.js": {
     "mtime": 1778500101.2692287,
     "hash": "580c27aba6b96dfdf9d7af667d7675b2"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\server.mjs": {
-    "mtime": 1780829794.74964,
-    "hash": "ac223b2e6b63c8bef732e8bffffc5607"
+    "mtime": 1781204725.7318232,
+    "hash": "e820773d08d506d920993029ebd06990"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\db\\schema.sql": {
     "mtime": 1780829688.4955995,
@@ -24,15 +28,15 @@
     "hash": "acbffa8fec613d9c59ffe20592b3986a"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\monthly-sales-report.mjs": {
-    "mtime": 1780812369.269317,
-    "hash": "bbb2616f2ae41f4f570c9c50ed11c68b"
+    "mtime": 1781205039.4003246,
+    "hash": "9388de72a7d39447191d54537873e764"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\query-engine.mjs": {
     "mtime": 1780327091.8881574,
     "hash": "f1a805de3898acd3eb2bc46514a2ac84"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\registrations.mjs": {
-    "mtime": 1780311563.4077277,
+    "mtime": 1781107354.8814218,
     "hash": "83911345a41c5b5e97166999f5351d60"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\rto-resolver.mjs": {
@@ -48,12 +52,12 @@
     "hash": "c787c21fb58ae1641ac7a27ca7c32282"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\app.js": {
-    "mtime": 1780829566.3715878,
-    "hash": "23ac8d58227bb6fad38bef4425bb8d45"
+    "mtime": 1781191285.2032115,
+    "hash": "adb7f968f7d383e5a74809dc0faf0f40"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\compare.js": {
-    "mtime": 1780812975.5122638,
-    "hash": "00a931b4e0ef839dc0bace2eff2a2068"
+    "mtime": 1781181169.171826,
+    "hash": "1b5291346a52eea445a738cc0fd27d44"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\india-states.js": {
     "mtime": 1779431454.5198903,
@@ -64,12 +68,12 @@
     "hash": "74d8116d6b81c8f4a5ebc1cd4fdc730f"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\tracked.js": {
-    "mtime": 1780829566.3735843,
-    "hash": "e5ec16ee8d3fed03a89f0d5ca64090d6"
+    "mtime": 1780843126.0423973,
+    "hash": "3942a3a4a4be516c2c84cf935715fd7c"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\reports\\monthly-sales.js": {
-    "mtime": 1780812568.4611144,
-    "hash": "ae431bb3aa398b85e729bbbe9bf25c19"
+    "mtime": 1781204699.4982412,
+    "hash": "faeb15e83061c85dee96bbc4adf7755d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\apply-neon-schema.mjs": {
     "mtime": 1778958618.5231848,
@@ -92,8 +96,8 @@
     "hash": "06e326054a6be034f12bd73a205c5dd2"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\local-regression-check.mjs": {
-    "mtime": 1780812926.7200541,
-    "hash": "07511e741a870fbec4512715f1b07a27"
+    "mtime": 1781205101.3438025,
+    "hash": "ce99ce06224402414edc8b0588ffdb13"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\production-smoke-check.mjs": {
     "mtime": 1780829566.4019735,
@@ -108,12 +112,12 @@
     "hash": "ec2c8f4bf68e2013d37979180e221fd7"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\run-tracked-queries.mjs": {
-    "mtime": 1780829137.969402,
-    "hash": "b0dc51e3e24e700804ea49033d6e6588"
+    "mtime": 1781247533.4597566,
+    "hash": "f606c92ed2ee7df3510738a0cc01a88d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\vahan-scraper.mjs": {
-    "mtime": 1780829566.4049761,
-    "hash": "1a4d8e66a70517505ee0bfed85a7a0fb"
+    "mtime": 1781200717.4571562,
+    "hash": "a5594d8d6b812fbe05b2aa202c926019"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\AGENTS.md": {
     "mtime": 1780827697.9281883,
@@ -3919,29 +3923,177 @@
     "mtime": 1780763797.0671191,
     "hash": "54c53247b1739a4b2284bed832956f89"
   },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_114351_all-vahan4-running-states_2026_all-rtos_attempt1.html": {
+    "mtime": 1780899232.6105042,
+    "hash": "cbcd35001930dae3f32f2860696c3d0d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_120150_all-vahan4-running-states_2026_all-rtos_attempt1.html": {
+    "mtime": 1780900311.2188566,
+    "hash": "9981c5bb74f5ac50ac4ce350500a8f03"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135351_all-vahan4-running-states_2026_all-rtos_attempt1.html": {
+    "mtime": 1780907032.0242147,
+    "hash": "bac70d5c9abc35e6a0335f35262e8853"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135759_all-vahan4-running-states_2026_all-rtos_attempt1.html": {
+    "mtime": 1780907279.5759606,
+    "hash": "e64da3f32096828c426d910313a48b9c"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135821_all-vahan4-running-states_2026_all-rtos_attempt2.html": {
+    "mtime": 1780907301.5632806,
+    "hash": "eca7ab38f712f83b4095ef69ede9d39f"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135839_all-vahan4-running-states_2026_all-rtos_attempt3.html": {
+    "mtime": 1780907319.784875,
+    "hash": "cad9f8fe6623fca2a6fcbeac040837b7"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142121_all-vahan4-running-states_2025_all-rtos_attempt1.html": {
+    "mtime": 1780908682.2848134,
+    "hash": "30977f172cf6a81cfc2541401d3c0a7a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142205_all-vahan4-running-states_2024_all-rtos_attempt1.html": {
+    "mtime": 1780908725.9956777,
+    "hash": "ce8c307c569ac6f8eccf2b0c61c178c0"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142243_all-vahan4-running-states_2025_all-rtos_attempt1.html": {
+    "mtime": 1780908763.8405945,
+    "hash": "0d889e55f21e6523ff3aa643b29ed59d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144434_all-vahan4-running-states_2024_all-rtos_attempt1.html": {
+    "mtime": 1780910074.727114,
+    "hash": "2e7694364a426dc19c4d38e9b476d14f"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144454_all-vahan4-running-states_2024_all-rtos_attempt2.html": {
+    "mtime": 1780910094.8703122,
+    "hash": "4716d6de7fcdb47e9f2650f14c721488"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144527_all-vahan4-running-states_2023_all-rtos_attempt1.html": {
+    "mtime": 1780910127.7376156,
+    "hash": "ed4a620c7a6df3919cf4c48e6050355d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144602_all-vahan4-running-states_2024_all-rtos_attempt1.html": {
+    "mtime": 1780910162.9936266,
+    "hash": "24aadd38cf0f23f87582dc09ae26155a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144621_all-vahan4-running-states_2024_all-rtos_attempt2.html": {
+    "mtime": 1780910181.5250635,
+    "hash": "a5769bb7e75053eadab74724e3bedf40"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144637_all-vahan4-running-states_2024_all-rtos_attempt3.html": {
+    "mtime": 1780910197.6576283,
+    "hash": "87d47989c48286559edc94c60a81d94d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145741_all-vahan4-running-states_2024_all-rtos_attempt1.html": {
+    "mtime": 1780910861.2450893,
+    "hash": "1939f7ccafe9f2547cb9ac7ec7850aca"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145759_all-vahan4-running-states_2024_all-rtos_attempt2.html": {
+    "mtime": 1780910879.7171202,
+    "hash": "5af2d6d636cffda9f5f000a140b239bb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145815_all-vahan4-running-states_2024_all-rtos_attempt3.html": {
+    "mtime": 1780910895.4352288,
+    "hash": "11702bdbdf988ff2212f0df81a9782d0"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145832_all-vahan4-running-states_2024_all-rtos_attempt1.html": {
+    "mtime": 1780910913.0716157,
+    "hash": "695045b7dc5c44f3deed8886afe09a8e"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145850_all-vahan4-running-states_2024_all-rtos_attempt2.html": {
+    "mtime": 1780910930.8852143,
+    "hash": "aab4b1c89ef3762549180d37e7e8e27d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_184954_uttarakhand_2026_haridwar_attempt1.html": {
+    "mtime": 1780924794.884997,
+    "hash": "5dab333133903713656c5ae683451bab"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_182013_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781182213.4717357,
+    "hash": "03d489bdedb766785643c8fc25e30b02"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_183205_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781182925.305818,
+    "hash": "ab9e632cdad2ec562580d76d0d0a1672"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205853_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781191734.226202,
+    "hash": "c8fb7fd44b9b7690dc8787dc17540238"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205934_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781191774.9556894,
+    "hash": "f1191b6ce5000b078b3a37d60d38eb8b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205949_maharashtra_2026_all-rtos_attempt2.html": {
+    "mtime": 1781191790.0550022,
+    "hash": "3e1bae64456f5a0cf9e0b0171078808b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210030_maharashtra_2026_all-rtos_attempt2.html": {
+    "mtime": 1781191831.237438,
+    "hash": "77096a5e03af869dbd15b99b94d8cf88"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210038_maharashtra_2026_all-rtos_attempt3.html": {
+    "mtime": 1781191838.549962,
+    "hash": "cfc8bd2f10b284bc27cd0641d23c79ce"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210113_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781191873.9705546,
+    "hash": "6e639710fe5a91780736db6c0475fa59"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210119_maharashtra_2026_all-rtos_attempt3.html": {
+    "mtime": 1781191880.0902393,
+    "hash": "2d9202db4ec501adf713bfa3dd358364"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210209_maharashtra_2026_all-rtos_attempt2.html": {
+    "mtime": 1781191929.5047283,
+    "hash": "94684c09e85cc0b9a382b3e9b6b3b05f"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210257_maharashtra_2026_all-rtos_attempt3.html": {
+    "mtime": 1781191977.398232,
+    "hash": "0a3d95b97999ebe821d26bb4ac02dccd"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210317_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781191998.367009,
+    "hash": "d80bb5eeb40fd8ada8d6b803fddeb6da"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210423_maharashtra_2026_all-rtos_attempt2.html": {
+    "mtime": 1781192063.818759,
+    "hash": "0545afe44e3a04a2e9046ceb3849cf88"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210511_maharashtra_2026_all-rtos_attempt3.html": {
+    "mtime": 1781192111.7190146,
+    "hash": "ae5b030592833afec7ebd30d0c9bd87f"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260612_001525_delhi_2026_all-rtos_attempt1.html": {
+    "mtime": 1781203525.7057228,
+    "hash": "8c79d30cd6b1326160257dd93829b7c9"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260612_002607_maharashtra_2026_all-rtos_attempt1.html": {
+    "mtime": 1781204167.6813197,
+    "hash": "0f362b51a96e09960cd90997058e60d2"
+  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\compare.html": {
-    "mtime": 1780812495.4293346,
-    "hash": "d6fcc8b28c7a391ed2c7c8e20598429d"
+    "mtime": 1780841951.7057028,
+    "hash": "0a39409f9c1dec17478bd261b17f4117"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\index.html": {
-    "mtime": 1780812583.0179515,
-    "hash": "942ae349c0d11a6ef74edcb38fb2e11a"
+    "mtime": 1781181603.1457577,
+    "hash": "9d460207ff66527c1276fc780a60b912"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\map.html": {
-    "mtime": 1780696956.8668818,
-    "hash": "10beecdd402afc4ddc93f7b57556928b"
+    "mtime": 1780841952.0870712,
+    "hash": "c812d1ece0fa53615aa1231bfd98d2ef"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\tracked.html": {
-    "mtime": 1780696956.8636737,
-    "hash": "97f0c63281215e427364ed58a90ea44e"
+    "mtime": 1780853149.899468,
+    "hash": "875fd080df9f39962ebb056c8ee521c2"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\reports\\monthly-sales.html": {
-    "mtime": 1780812509.6534877,
-    "hash": "764d69748f6c8ffd101ff232e1fea314"
+    "mtime": 1781204684.681081,
+    "hash": "1caeeeb055acb3413b382da673d58d10"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\README.md": {
-    "mtime": 1780828701.2290366,
-    "hash": "3fdf90f561b4cbf9b2b42f721f4ca920"
+    "mtime": 1781247575.4561982,
+    "hash": "bfa4d1cf129d308cd9606e0d22cbb53d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\image.png": {
     "mtime": 1778912987.8570077,
@@ -6078,6 +6230,154 @@
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260606_220636_maharashtra_2024_all-rtos_attempt1.png": {
     "mtime": 1780763797.0651104,
     "hash": "5d50b60b2d408853cc9671859ae12807"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_114351_all-vahan4-running-states_2026_all-rtos_attempt1.png": {
+    "mtime": 1780899232.6024756,
+    "hash": "a4d5f59318b2049d1d8026640eaf2302"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_120150_all-vahan4-running-states_2026_all-rtos_attempt1.png": {
+    "mtime": 1780900311.2132578,
+    "hash": "bc6d44915e8de1aede3ed211ac88e27b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135351_all-vahan4-running-states_2026_all-rtos_attempt1.png": {
+    "mtime": 1780907032.023069,
+    "hash": "19cb9deccd8e335337cae0cb4e138b05"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135759_all-vahan4-running-states_2026_all-rtos_attempt1.png": {
+    "mtime": 1780907279.5724373,
+    "hash": "19cb9deccd8e335337cae0cb4e138b05"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135821_all-vahan4-running-states_2026_all-rtos_attempt2.png": {
+    "mtime": 1780907301.5612948,
+    "hash": "19cb9deccd8e335337cae0cb4e138b05"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_135839_all-vahan4-running-states_2026_all-rtos_attempt3.png": {
+    "mtime": 1780907319.7720027,
+    "hash": "ca6b37d2eef2eb01ca9f6834f40d7b05"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142121_all-vahan4-running-states_2025_all-rtos_attempt1.png": {
+    "mtime": 1780908682.2837806,
+    "hash": "7dcf67b812e37f8e51fe409637681482"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142205_all-vahan4-running-states_2024_all-rtos_attempt1.png": {
+    "mtime": 1780908725.9936721,
+    "hash": "ea916ff14839e3f312ce6ca34f70b7ff"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_142243_all-vahan4-running-states_2025_all-rtos_attempt1.png": {
+    "mtime": 1780908763.8366935,
+    "hash": "88fb26c4e78f51989b29b71eb588e9e1"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144434_all-vahan4-running-states_2024_all-rtos_attempt1.png": {
+    "mtime": 1780910074.7261128,
+    "hash": "ea916ff14839e3f312ce6ca34f70b7ff"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144454_all-vahan4-running-states_2024_all-rtos_attempt2.png": {
+    "mtime": 1780910094.869311,
+    "hash": "943735046eb0a40341937f39f1494d9b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144527_all-vahan4-running-states_2023_all-rtos_attempt1.png": {
+    "mtime": 1780910127.736616,
+    "hash": "51e96ae3a8acc0af0634d3c2f9037487"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144602_all-vahan4-running-states_2024_all-rtos_attempt1.png": {
+    "mtime": 1780910162.9917257,
+    "hash": "f7d184574089fb5e3575b11dad4b3d42"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144621_all-vahan4-running-states_2024_all-rtos_attempt2.png": {
+    "mtime": 1780910181.52306,
+    "hash": "f7d184574089fb5e3575b11dad4b3d42"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_144637_all-vahan4-running-states_2024_all-rtos_attempt3.png": {
+    "mtime": 1780910197.6566284,
+    "hash": "f7d184574089fb5e3575b11dad4b3d42"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145741_all-vahan4-running-states_2024_all-rtos_attempt1.png": {
+    "mtime": 1780910861.2430868,
+    "hash": "f7d184574089fb5e3575b11dad4b3d42"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145759_all-vahan4-running-states_2024_all-rtos_attempt2.png": {
+    "mtime": 1780910879.7161193,
+    "hash": "41bbfb3fbb91c78d82503e9d42b2e8e9"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145815_all-vahan4-running-states_2024_all-rtos_attempt3.png": {
+    "mtime": 1780910895.4332514,
+    "hash": "ea916ff14839e3f312ce6ca34f70b7ff"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145832_all-vahan4-running-states_2024_all-rtos_attempt1.png": {
+    "mtime": 1780910913.0706136,
+    "hash": "41bbfb3fbb91c78d82503e9d42b2e8e9"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_145850_all-vahan4-running-states_2024_all-rtos_attempt2.png": {
+    "mtime": 1780910930.8832126,
+    "hash": "943735046eb0a40341937f39f1494d9b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260608_184954_uttarakhand_2026_haridwar_attempt1.png": {
+    "mtime": 1780924794.883094,
+    "hash": "8b62c3e74dae5f23834503fa0cf41c2d"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_182013_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781182213.4659386,
+    "hash": "3fb486d5a4957ebe94859dd88f0ba047"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_183205_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781182925.304814,
+    "hash": "17813fda2bf05287f19771fdbf57eaf9"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205853_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781191734.222677,
+    "hash": "c355c50bdcfc442ffd9f052abb01b5eb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205934_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781191774.9516764,
+    "hash": "c355c50bdcfc442ffd9f052abb01b5eb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_205949_maharashtra_2026_all-rtos_attempt2.png": {
+    "mtime": 1781191790.048267,
+    "hash": "13551ad82e74b4ea8077d87a0c64d79a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210030_maharashtra_2026_all-rtos_attempt2.png": {
+    "mtime": 1781191831.2278016,
+    "hash": "725c558da6a7403c8b1c734490fac87b"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210038_maharashtra_2026_all-rtos_attempt3.png": {
+    "mtime": 1781191838.544542,
+    "hash": "13551ad82e74b4ea8077d87a0c64d79a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210113_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781191873.9630468,
+    "hash": "ecbd65f738708836341a015ed0f68e69"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210119_maharashtra_2026_all-rtos_attempt3.png": {
+    "mtime": 1781191880.083477,
+    "hash": "c355c50bdcfc442ffd9f052abb01b5eb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210209_maharashtra_2026_all-rtos_attempt2.png": {
+    "mtime": 1781191929.5027163,
+    "hash": "13551ad82e74b4ea8077d87a0c64d79a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210257_maharashtra_2026_all-rtos_attempt3.png": {
+    "mtime": 1781191977.395057,
+    "hash": "c355c50bdcfc442ffd9f052abb01b5eb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210317_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781191998.3610039,
+    "hash": "13551ad82e74b4ea8077d87a0c64d79a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210423_maharashtra_2026_all-rtos_attempt2.png": {
+    "mtime": 1781192063.8148913,
+    "hash": "13551ad82e74b4ea8077d87a0c64d79a"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260611_210511_maharashtra_2026_all-rtos_attempt3.png": {
+    "mtime": 1781192111.7162418,
+    "hash": "c355c50bdcfc442ffd9f052abb01b5eb"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260612_001525_delhi_2026_all-rtos_attempt1.png": {
+    "mtime": 1781203525.7037127,
+    "hash": "dd8d575b82dce97934cef992881fddb0"
+  },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\vahan\\failures\\20260612_002607_maharashtra_2026_all-rtos_attempt1.png": {
+    "mtime": 1781204167.679407,
+    "hash": "d2049d23e5a99e0bd5632fdeda68d18d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\ui-preview-screenshots\\compare-clean-results.png": {
     "mtime": 1780812684.9303982,

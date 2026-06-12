@@ -125,8 +125,13 @@ Add these GitHub Actions repository secrets before running it:
 - `TELEGRAM_ALLOWED_CHAT_IDS`, if Telegram alerts are needed
 
 Optional non-secret GitHub Actions variables can be added for `GROQ_MODEL`,
-`TELEGRAM_ALERT_THRESHOLD_POINTS`, and `TELEGRAM_PUBLIC_DAILY_LIMIT`. Keep
-secrets in GitHub Actions secrets; do not commit them to the repo.
+`TELEGRAM_ALERT_THRESHOLD_POINTS`, `TELEGRAM_PUBLIC_DAILY_LIMIT`, and
+`TRACKED_QUERY_FAIL_ON_PARTIAL`. The scheduled workflow defaults
+`TRACKED_QUERY_FAIL_ON_PARTIAL` to `0`, so one flaky VAHAN fetch stores a failed
+run row without failing the whole GitHub Action when other tracked queries
+succeed. Set it to `1`, or pass `--fail-on-partial`, when every query must
+succeed for the command to exit cleanly. Keep secrets in GitHub Actions secrets;
+do not commit them to the repo.
 
 Tracked queries do not need to include a month. If a saved query has no date
 range, the daily runner defaults it to the observation month, so a query such as
