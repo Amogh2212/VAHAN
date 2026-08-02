@@ -1,0 +1,177 @@
+<!doctype html>
+<!--
+THESIS: Market-signal exploration should expose hypotheses and caveats like a research matrix, not imply causation through dashboard polish.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut controls, fine rules, tabular figures and a persistent atlas index.
+STORY: Check source health, bound the comparison, scan ranked patterns, then inspect the selected RTO's evidence and limitations.
+FIRST VIEWPORT: The atlas index frames a navy research masthead; source health and filters precede the ranking, plot and evidence detail.
+FORM: Public-data atlas research desk in Operate and Read modes; user-pinned direction, seed key user-pinned.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Explore RTO registration patterns against cached OpenStreetMap market signals." />
+    <title>VAHAN RTO Market Signals</title>
+    <link rel="stylesheet" href="/styles.css?v=20260703-rto-insights-plot2" />
+    <link rel="stylesheet" href="/atlas.css" />
+  </head>
+  <body class="atlas-page tracked-page rto-insights-page" data-atlas-route="rto-insights">
+    <a class="skip-link" href="#mainContent">Skip to RTO insights</a>
+    <div class="app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div><strong>VAHAN Analyst</strong><small>India mobility intelligence</small></div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+          <a class="feature-link" href="/compare.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>
+            </span>
+            <span>Compare data</span>
+          </a>
+          <a class="feature-link" href="/map.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" /><path d="M9 3v15M15 6v15" /></svg>
+            </span>
+            <span>Map view</span>
+          </a>
+          <a class="feature-link" href="/rto-trends.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 15 3-4 3 2 4-7" /></svg>
+            </span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link" href="/rto-reports.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link active" href="/rto-insights.html" aria-current="page">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19h16M4 19V5" /><circle cx="8" cy="14" r="2" /><circle cx="13" cy="10" r="2" /><circle cx="18" cy="7" r="2" /></svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>Monthly reports</span>
+          </a>
+          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" /><path d="m10.3 12.9 4.8-4.8" /></svg>
+            </span>
+            <span>Telegram bot</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="shell tracked-shell" id="mainContent" tabindex="-1">
+        <section class="tracked-topbar">
+          <div class="hero-title-row">
+            <div class="sidebar-shell" id="sidebarShell">
+              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
+                <span class="sidebar-mark trigger-mark">V</span>
+              </button>
+            </div>
+            <div>
+              <p class="eyebrow">RTO market signals</p>
+              <h1>Registration movement, local signals, clear caveats.</h1>
+              <p class="compare-empty">Daily VAHAN RTO totals compared with cached OpenStreetMap infrastructure and consumption proxies.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="rtoInsightsNotice" class="warnings tracked-notice" role="status" aria-live="polite" hidden></section>
+
+        <section class="panel rto-insight-health">
+          <div class="panel-head">
+            <div>
+              <h2>Source health</h2>
+              <span class="panel-kicker" id="insightHealthMeta">Loading source coverage</span>
+            </div>
+            <span class="status-pill" id="insightHealthStatus">Loading</span>
+          </div>
+          <div class="rto-insight-metrics" id="insightHealthMetrics">
+            <p class="result-empty">Loading source health.</p>
+          </div>
+        </section>
+
+        <section class="panel rto-insight-controls">
+          <form id="rtoInsightForm" class="tracked-form rto-insight-form" autocomplete="off">
+            <label>
+              <span class="eyebrow">Search</span>
+              <input id="insightState" name="q" placeholder="State or RTO" />
+            </label>
+            <label>
+              <span class="eyebrow">Radius</span>
+              <select id="insightRadius" name="radiusKm">
+                <option value="5">5 km</option>
+                <option value="10" selected>10 km</option>
+                <option value="25">25 km</option>
+              </select>
+            </label>
+            <label>
+              <span class="eyebrow">Rows</span>
+              <select id="insightLimit" name="limit">
+                <option value="15">15</option>
+                <option value="30" selected>30</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+            <button type="submit">Refresh</button>
+          </form>
+        </section>
+
+        <section class="rto-insight-grid">
+          <article class="panel rto-insight-rank-panel">
+            <div class="panel-head">
+              <div>
+                <h2>Pattern ranking</h2>
+                <span class="panel-kicker" id="insightRankMeta">No rows loaded</span>
+              </div>
+            </div>
+            <div id="insightRankList" class="rto-insight-rank-list">
+              <p class="result-empty">Loading RTO patterns.</p>
+            </div>
+          </article>
+
+          <article class="panel rto-insight-map-panel">
+            <div class="panel-head">
+              <div>
+                <h2>EV vs chargers</h2>
+                <span class="panel-kicker">Higher EV share to the right, more chargers upward</span>
+              </div>
+            </div>
+            <div id="insightQuadrant" class="rto-insight-quadrant">
+              <p class="result-empty">Load insight rows to render the plot.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel rto-insight-detail-panel">
+          <div class="panel-head">
+            <div>
+              <h2 id="insightDetailTitle">Selected RTO</h2>
+              <span class="panel-kicker" id="insightDetailMeta">Choose a row to inspect evidence</span>
+            </div>
+            <span class="status-pill" id="insightDetailStatus">Idle</span>
+          </div>
+          <div id="insightDetailBody" class="rto-insight-detail">
+            <p class="result-empty">No RTO selected.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="/rto-insights.js?v=20260725-atlas-source-states" defer></script>
+  </body>
+</html>

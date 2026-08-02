@@ -1,32 +1,52 @@
 <!doctype html>
+<!--
+THESIS: Monthly registration reporting should read like a statistical bulletin, not a form bolted to a dashboard.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut controls, fine rules, tabular figures and a persistent atlas index.
+STORY: Sign in, define the month and scope, generate the bulletin, then read its metrics, movement, leaders, notes and coverage together.
+FIRST VIEWPORT: The atlas index frames a navy publication masthead; account state and report controls compose a compact editorial desk.
+FORM: Public-data atlas bulletin in Operate and Read modes; user-pinned direction, seed key user-pinned.
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Fuel-agnostic VAHAN monthly sales reports with fuel mix, category sales, trends, and OEM leaderboards." />
     <title>Monthly Sales Report - VAHAN</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=monthly-form-wrap-20260612" />
+    <link rel="stylesheet" href="/atlas.css" />
   </head>
-  <body class="monthly-report-page">
+  <body class="atlas-page monthly-report-page" data-atlas-route="monthly-report">
+    <a class="skip-link" href="#mainContent">Skip to monthly report workspace</a>
     <div class="app-frame">
       <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
         <div class="sidebar-brand">
           <span class="sidebar-mark brand-mark">V</span>
           <div>
-            <strong>VAHAN</strong>
-            <small>Features</small>
+            <strong>VAHAN Analyst</strong>
+            <small>India mobility intelligence</small>
           </div>
         </div>
         <nav class="feature-nav" aria-label="Feature navigation">
           <a class="feature-link" href="/"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg></span><span>Dashboard</span></a>
           <a class="feature-link" href="/compare.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg></span><span>Compare data</span></a>
           <a class="feature-link" href="/map.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" /><path d="M9 3v15M15 6v15" /></svg></span><span>Map view</span></a>
-          <a class="feature-link" href="/tracked.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5z" /><path d="M8 12h3l2-4 3 8 2-4" /></svg></span><span>Tracked queries</span></a>
+          <a class="feature-link" href="/rto-trends.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 15 3-4 3 2 4-7" /></svg></span><span>RTO daily trends</span></a>
+          <a class="feature-link" href="/rto-reports.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span><span>RTO reports</span></a>
+          <a class="feature-link" href="/rto-insights.html"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16M4 19V5" /><circle cx="8" cy="14" r="2" /><circle cx="13" cy="10" r="2" /><circle cx="18" cy="7" r="2" /></svg></span><span>RTO insights</span></a>
           <a class="feature-link active" href="/reports/monthly-sales.html" aria-current="page"><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span><span>Monthly reports</span></a>
+          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" />
+                <path d="m10.3 12.9 4.8-4.8" />
+              </svg>
+            </span>
+            <span>Telegram bot</span>
+          </a>
         </nav>
       </aside>
 
-      <main class="shell report-shell">
+      <main class="shell report-shell" id="mainContent" tabindex="-1">
         <section class="report-control-panel">
           <div class="hero-title-row">
             <div class="sidebar-shell" id="sidebarShell">
@@ -40,34 +60,50 @@
             </div>
           </div>
 
-          <form id="monthlyReportForm" class="monthly-report-form" autocomplete="off">
-            <label>
-              <span>Month</span>
-              <input id="reportMonth" name="month" type="month" />
-            </label>
-            <label>
-              <span>Fuel scope</span>
-              <select id="fuelScope" name="fuelScope">
-                <option value="all">All fuels</option>
-                <option value="segment">Fuel segment/family</option>
-                <option value="exact">Exact VAHAN fuel label</option>
-              </select>
-            </label>
-            <label>
-              <span>Fuel</span>
-              <input id="reportFuel" name="fuel" placeholder="EV, PETROL, DIESEL, CNG, HYBRID, PURE EV" />
-            </label>
-            <button type="submit" id="loadReportBtn">Generate report</button>
-            <a class="secondary-action report-pdf-action" id="downloadReportPdf" href="#" aria-disabled="true">Download PDF</a>
-          </form>
+          <section class="report-auth-strip" aria-label="Monthly report account">
+            <div class="report-account-copy">
+              <span class="panel-kicker">Account</span>
+              <strong id="accountStatus">Signed out</strong>
+            </div>
+            <div class="report-account-actions">
+              <a class="secondary-action report-login" id="authGate" href="/auth/google?returnTo=/reports/monthly-sales.html">Sign in with Google</a>
+              <button type="button" class="secondary-action danger-action" id="logoutBtn" hidden>Logout</button>
+            </div>
+          </section>
+
+          <div id="monthlyReportWorkspace" hidden>
+            <form id="monthlyReportForm" class="monthly-report-form" autocomplete="off">
+              <label>
+                <span>Month</span>
+                <input id="reportMonth" name="month" type="month" />
+              </label>
+              <label>
+                <span>Location</span>
+                <input id="reportLocation" name="location" placeholder="All India, Maharashtra, Pune RTO" />
+              </label>
+              <label>
+                <span>Fuel scope</span>
+                <select id="fuelScope" name="fuelScope">
+                  <option value="all">All fuels</option>
+                  <option value="segment">Fuel segment/family</option>
+                  <option value="exact">Exact VAHAN fuel label</option>
+                </select>
+              </label>
+              <label>
+                <span>Fuel</span>
+                <input id="reportFuel" name="fuel" placeholder="EV, PETROL, DIESEL, CNG, HYBRID, PURE EV" />
+              </label>
+              <button type="submit" id="loadReportBtn">Generate report</button>
+              <a class="secondary-action report-pdf-action" id="downloadReportPdf" href="#" aria-disabled="true">Download PDF</a>
+            </form>
+          </div>
         </section>
 
-        <section id="reportWarnings" class="warnings" hidden></section>
         <section id="monthlyReport" class="monthly-report-output">
           <p class="result-empty">Choose a month and fuel scope to generate an EVReporter-style report for any fuel category.</p>
         </section>
       </main>
     </div>
-    <script src="/reports/monthly-sales.js"></script>
+    <script src="/reports/monthly-sales.js?v=20260725-atlas-prerequisite"></script>
   </body>
 </html>

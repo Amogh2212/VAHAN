@@ -1,9 +1,6 @@
-name: Daily Tracked Queries
+name: Manual Cloud Tracked Queries
 
 on:
-  schedule:
-    # 02:30 UTC = 08:00 IST, matching the default tracked query run time.
-    - cron: "30 2 * * *"
   workflow_dispatch:
 
 jobs:
@@ -47,6 +44,7 @@ jobs:
           TELEGRAM_ALERT_THRESHOLD_POINTS: ${{ vars.TELEGRAM_ALERT_THRESHOLD_POINTS }}
           TELEGRAM_PUBLIC_DAILY_LIMIT: ${{ vars.TELEGRAM_PUBLIC_DAILY_LIMIT }}
           TRACKED_QUERY_FAIL_ON_PARTIAL: ${{ vars.TRACKED_QUERY_FAIL_ON_PARTIAL || '0' }}
+          TRACKED_QUERY_BACKFILL_DAYS: ${{ vars.TRACKED_QUERY_BACKFILL_DAYS || '7' }}
         run: |
           {
             printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
@@ -62,6 +60,7 @@ jobs:
             printf 'TRACKED_QUERY_DEFAULT_RUN_TIME=08:00\n'
             printf 'TRACKED_QUERY_RUN_TIMEOUT_MS=300000\n'
             printf 'TRACKED_QUERY_FAIL_ON_PARTIAL=%s\n' "$TRACKED_QUERY_FAIL_ON_PARTIAL"
+            printf 'TRACKED_QUERY_BACKFILL_DAYS=%s\n' "$TRACKED_QUERY_BACKFILL_DAYS"
           } > .env
 
       - name: Run daily tracked queries

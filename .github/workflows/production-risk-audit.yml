@@ -1,5 +1,8 @@
 name: Production Risk Audit
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -29,14 +32,8 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Check module syntax
-        run: npm run check:syntax
-
       - name: Audit production dependencies
         run: npm run check:audit
 
-      - name: Run local regression check
-        run: npm run check:local
-
-      - name: Run production smoke check
-        run: npm run check:production
+      - name: Run full release and security gate
+        run: npm test

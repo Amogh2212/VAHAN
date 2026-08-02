@@ -1,4 +1,11 @@
 <!doctype html>
+<!--
+THESIS: The India map is an evidence plate for geographic comparison, not a decorative choropleth.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut controls, fine rules, tabular figures and a persistent atlas index.
+STORY: Set a bounded EV query, read saved-data coverage, scan state intensity, then inspect the selected state and its RTO evidence.
+FIRST VIEWPORT: The atlas index frames a navy geography masthead; the query sheet establishes scope before the map and detail column.
+FORM: Public-data atlas map room in Operate mode with Read support; user-pinned direction, seed key user-pinned.
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,15 +13,17 @@
     <meta name="description" content="Explore state-wise EV registration share across India and drill into available VAHAN RTO data." />
     <title>VAHAN EV Map</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/atlas.css" />
   </head>
-  <body>
+  <body class="atlas-page map-page" data-atlas-route="map">
+    <a class="skip-link" href="#mapApp">Skip to map workspace</a>
     <div class="app-frame map-app-frame">
       <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
         <div class="sidebar-brand">
           <span class="sidebar-mark brand-mark">V</span>
           <div>
-            <strong>VAHAN</strong>
-            <small>Features</small>
+            <strong>VAHAN Analyst</strong>
+            <small>India mobility intelligence</small>
           </div>
         </div>
         <nav class="feature-nav" aria-label="Feature navigation">
@@ -43,14 +52,44 @@
             </span>
             <span>Map view</span>
           </a>
-          <a class="feature-link" href="/tracked.html">
+          <a class="feature-link" href="/rto-trends.html">
             <span class="feature-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M5 5h14v14H5z" />
-                <path d="M8 12h3l2-4 3 8 2-4" />
+                <path d="M4 19V5" />
+                <path d="M4 19h16" />
+                <path d="m7 15 3-4 3 2 4-7" />
               </svg>
             </span>
-            <span>Tracked queries</span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link" href="/rto-reports.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v16H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link" href="/rto-insights.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 19h16M4 19V5" />
+                <circle cx="8" cy="14" r="2" />
+                <circle cx="13" cy="10" r="2" />
+                <circle cx="18" cy="7" r="2" />
+              </svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v18H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>Monthly reports</span>
           </a>
           <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
             <span class="feature-icon" aria-hidden="true">
@@ -64,7 +103,7 @@
         </nav>
       </aside>
 
-      <main class="shell map-shell" id="mapApp">
+      <main class="shell map-shell" id="mapApp" tabindex="-1">
         <section class="compare-topbar map-topbar">
           <div class="hero-title-row">
             <div class="sidebar-shell" id="sidebarShell">
@@ -142,7 +181,7 @@
               </div>
             </div>
             <div class="map-stage" id="mapStage">
-              <svg id="indiaMap" class="india-map" viewBox="0 0 620 760" role="img" aria-label="India state EV registration map"></svg>
+              <svg id="indiaMap" class="india-map" viewBox="0 0 620 760" role="group" aria-label="Interactive India state EV registration map"></svg>
               <button type="button" class="map-zoom-out" id="mapZoomOutBtn" hidden disabled>Zoom out</button>
               <div class="map-tooltip" id="mapTooltip" hidden></div>
             </div>
@@ -155,6 +194,7 @@
             <div class="map-state-summary" id="stateSummary">
               <p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>
             </div>
+            <div class="map-bucket-list" id="mapBucketList" aria-live="polite"></div>
             <div class="map-rto-list" id="rtoList"></div>
           </aside>
         </section>

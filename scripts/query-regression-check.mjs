@@ -24,7 +24,18 @@ const newQueries = [
 function startServer() {
   const child = spawn(process.execPath, ["--env-file=.env", "server.mjs"], {
     cwd: process.cwd(),
-    env: { ...process.env, PORT: String(PORT) },
+    env: {
+      ...process.env,
+      PORT: String(PORT),
+      AI_QUERY_PROVIDER: "none",
+      FACTOR_AGENT_PROVIDER: "none",
+      OLLAMA_BASE_URL: "http://127.0.0.1:11434",
+      OLLAMA_QUERY_MODEL: "qwen3:4b",
+      OLLAMA_FACTOR_MODEL: "qwen3:4b",
+      OLLAMA_TIMEOUT_MS: "10000",
+      GEMINI_API_KEY: "",
+      GROQ_API_KEY: "",
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
 

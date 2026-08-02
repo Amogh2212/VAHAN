@@ -20,6 +20,7 @@ const resetMapBtn = document.querySelector("#resetMapBtn");
 const mapZoomOutBtn = document.querySelector("#mapZoomOutBtn");
 const selectedStateTitle = document.querySelector("#selectedStateTitle");
 const stateSummary = document.querySelector("#stateSummary");
+const mapBucketList = document.querySelector("#mapBucketList");
 const rtoList = document.querySelector("#rtoList");
 const appFrame = document.querySelector(".app-frame");
 const sidebarTrigger = document.querySelector("#sidebarTrigger");
@@ -181,6 +182,37 @@ function legendAllows(item) {
   return selectedLegendLevels.size === 0 || selectedLegendLevels.has(legendLevelFor(item));
 }
 
+function legendItems(filters = latestMapFilters) {
+  const nextMetric = mapMetric(filters);
+  if (mapColorMode === "compare") {
+    return [
+      ["is-empty", "No data"],
+      ["compare-lowest", "Far below avg"],
+      ["compare-low", "Below avg"],
+      ["compare-mid", "Near avg"],
+      ["compare-high", "Above avg"],
+      ["compare-highest", "Far above avg"],
+    ];
+  }
+  if (nextMetric === "registrations") {
+    return [
+      ["is-empty", "No data"],
+      ["level-2", "Matching rows"],
+    ];
+  }
+  return [
+    ["is-empty", "No data"],
+    ["level-1", "0-5%"],
+    ["level-2", "5-15%"],
+    ["level-3", "15-30%"],
+    ["level-4", "30%+"],
+  ];
+}
+
+function legendLabel(level, filters = latestMapFilters) {
+  return legendItems(filters).find(([itemLevel]) => itemLevel === level)?.[1] ?? level;
+}
+
 function mapMetric(filters = latestMapFilters) {
   return filters?.metric === "registrations" ? "registrations" : "ev_share";
 }
@@ -287,6 +319,7 @@ function applyMapData(states) {
       `${group.dataset.state}: ${item?.rowCount ? `${metricLabel()} ${formatMapValue(mapValue(item))}` : "no saved data"}`,
     );
   }
+  renderBucketList();
 }
 
 function showTooltip(event, state) {
@@ -391,6 +424,7 @@ function resetZoom() {
   applyMapData([...stateData.values()]);
   selectedStateTitle.textContent = "Select a state";
   stateSummary.innerHTML = `<p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>`;
+  renderBucketList();
   rtoList.innerHTML = "";
 }
 
@@ -471,6 +505,58 @@ function renderStateDetail(data) {
     .join("");
 }
 
+function renderBucketList() {
+  if (!mapBucketList) return;
+  if (!selectedLegendLevels.size) {
+    mapBucketList.innerHTML = `
+      <section class="map-bucket-card empty">
+        <div class="map-bucket-head">
+          <span class="eyebrow">Selected bucket</span>
+          <strong>No color bucket selected</strong>
+        </div>
+        <p class="compare-empty">Choose a color index filter above the map to see every state in that category.</p>
+      </section>
+    `;
+    return;
+  }
+
+  const activeLevels = [...selectedLegendLevels];
+  const matchingStates = [...stateData.values()]
+    .filter((item) => selectedLegendLevels.has(legendLevelFor(item)))
+    .sort((left, right) => {
+      const leftValue = mapValue(left);
+      const rightValue = mapValue(right);
+      if (leftValue === null && rightValue === null) return left.state.localeCompare(right.state);
+      if (leftValue === null) return 1;
+      if (rightValue === null) return -1;
+      return rightValue - leftValue || left.state.localeCompare(right.state);
+    });
+  const title = activeLevels.map((level) => legendLabel(level)).join(", ");
+  const statesMarkup = matchingStates.length
+    ? matchingStates
+      .map((item) => `
+        <button type="button" class="map-bucket-state${selectedState === item.state ? " active" : ""}" data-bucket-state="${escapeHtml(item.state)}">
+          <span>${escapeHtml(item.state)}</span>
+          <strong>${escapeHtml(formatMapValue(mapValue(item)))}</strong>
+        </button>
+      `)
+      .join("")
+    : `<p class="compare-empty">No states fall in this selected category for the current map data.</p>`;
+
+  mapBucketList.innerHTML = `
+    <section class="map-bucket-card">
+      <div class="map-bucket-head">
+        <span class="eyebrow">Selected bucket</span>
+        <strong>${escapeHtml(title)}</strong>
+        <small>${fmt.format(matchingStates.length)} state${matchingStates.length === 1 ? "" : "s"}</small>
+      </div>
+      <div class="map-bucket-states">
+        ${statesMarkup}
+      </div>
+    </section>
+  `;
+}
+
 async function loadMap() {
   coverageText.textContent = "Loading saved VAHAN coverage.";
   const rangeError = validateMonthRange();
@@ -545,27 +631,7 @@ function renderMapHeading(filters = {}) {
       : baseTitle;
   }
   if (!mapLegend) return;
-  const items = mapColorMode === "compare"
-    ? [
-      ["is-empty", "No data"],
-      ["compare-lowest", "Far below avg"],
-      ["compare-low", "Below avg"],
-      ["compare-mid", "Near avg"],
-      ["compare-high", "Above avg"],
-      ["compare-highest", "Far above avg"],
-    ]
-    : nextMetric === "registrations"
-    ? [
-      ["is-empty", "No data"],
-      ["level-2", "Matching rows"],
-    ]
-    : [
-      ["is-empty", "No data"],
-      ["level-1", "0-5%"],
-      ["level-2", "5-15%"],
-      ["level-3", "15-30%"],
-      ["level-4", "30%+"],
-    ];
+  const items = legendItems(filters);
   const baseline = comparisonBaseline(filters);
   const note = mapColorMode === "compare"
     ? `Compared with India average: ${formatMapValue(baseline, filters)}`
@@ -604,6 +670,12 @@ mapLegend?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-level]");
   if (!button) return;
   toggleLegendLevel(button.dataset.level);
+});
+
+mapBucketList?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-bucket-state]");
+  if (!button) return;
+  selectState(button.dataset.bucketState);
 });
 
 function setMapColorMode(mode) {

@@ -1,4 +1,11 @@
 <!doctype html>
+<!--
+THESIS: A useful comparison reads as one ruled analytical spread, not two detached mini dashboards.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut fields, fine rules, tabular figures and a persistent atlas index.
+STORY: Define two registration slices, understand the delta, compare their timelines, then inspect the evidence on each side.
+FIRST VIEWPORT: The atlas index frames a navy comparison masthead; the mode switch and paired natural-language queries lead directly into the summary.
+FORM: Public-data atlas comparison desk in Operate mode with Read support; user-pinned direction, seed key user-pinned.
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,15 +13,17 @@
     <meta name="description" content="Compare two VAHAN queries side by side to see how registrations change across months or locations." />
     <title>VAHAN Compare View</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/atlas.css" />
   </head>
-  <body class="compare-page">
+  <body class="atlas-page compare-page" data-atlas-route="compare">
+    <a class="skip-link" href="#mainContent">Skip to comparison workspace</a>
     <div class="app-frame">
       <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
         <div class="sidebar-brand">
           <span class="sidebar-mark brand-mark">V</span>
           <div>
-            <strong>VAHAN</strong>
-            <small>Features</small>
+            <strong>VAHAN Analyst</strong>
+            <small>India mobility intelligence</small>
           </div>
         </div>
         <nav class="feature-nav" aria-label="Feature navigation">
@@ -43,14 +52,44 @@
             </span>
             <span>Map view</span>
           </a>
-          <a class="feature-link" href="/tracked.html">
+          <a class="feature-link" href="/rto-trends.html">
             <span class="feature-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M5 5h14v14H5z" />
-                <path d="M8 12h3l2-4 3 8 2-4" />
+                <path d="M4 19V5" />
+                <path d="M4 19h16" />
+                <path d="m7 15 3-4 3 2 4-7" />
               </svg>
             </span>
-            <span>Tracked queries</span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link" href="/rto-reports.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v16H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link" href="/rto-insights.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 19h16M4 19V5" />
+                <circle cx="8" cy="14" r="2" />
+                <circle cx="13" cy="10" r="2" />
+                <circle cx="18" cy="7" r="2" />
+              </svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v18H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>Monthly reports</span>
           </a>
           <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
             <span class="feature-icon" aria-hidden="true">
@@ -63,7 +102,7 @@
           </a>
         </nav>
       </aside>
-      <main class="shell">
+      <main class="shell" id="mainContent" tabindex="-1">
       <section class="compare-topbar">
         <div class="compare-intro">
           <div class="hero-title-row compare-title-row">
@@ -81,7 +120,7 @@
         </div>
         <div class="compare-actions">
           <a class="back-link" href="/">Back to dashboard</a>
-          <div class="mode-toggle" role="tablist" aria-label="Compare mode">
+          <div class="mode-toggle" role="group" aria-label="Compare mode">
             <button type="button" id="monthMode" class="active" aria-pressed="true">Month vs month</button>
             <button type="button" id="locationMode" aria-pressed="false">Location vs location</button>
           </div>

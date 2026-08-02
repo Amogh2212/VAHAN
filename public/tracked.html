@@ -1,4 +1,11 @@
 <!doctype html>
+<!--
+THESIS: Scheduled queries belong in a legible operations register, not a wall of subscription cards.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut fields, fine rules, tabular figures and a persistent atlas index.
+STORY: Sign in, define a recurring query, review the saved register, then audit its observation history and exceptions.
+FIRST VIEWPORT: The atlas index frames a navy legacy-operations masthead followed by account state and the query register.
+FORM: Public-data atlas operations ledger in Operate mode; user-pinned direction, seed key user-pinned.
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,15 +13,17 @@
     <meta name="description" content="Manage daily VAHAN tracked queries and review stored observations." />
     <title>VAHAN Tracked Queries</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/atlas.css" />
   </head>
-  <body class="tracked-page">
+  <body class="atlas-page tracked-page tracked-legacy-page" data-atlas-route="tracked">
+    <a class="skip-link" href="#mainContent">Skip to tracked query workspace</a>
     <div class="app-frame">
       <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
         <div class="sidebar-brand">
           <span class="sidebar-mark brand-mark">V</span>
           <div>
-            <strong>VAHAN</strong>
-            <small>Features</small>
+            <strong>VAHAN Analyst</strong>
+            <small>India mobility intelligence</small>
           </div>
         </div>
         <nav class="feature-nav" aria-label="Feature navigation">
@@ -43,14 +52,44 @@
             </span>
             <span>Map view</span>
           </a>
-          <a class="feature-link active" href="/tracked.html" aria-current="page">
+          <a class="feature-link" href="/rto-trends.html">
             <span class="feature-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M5 5h14v14H5z" />
-                <path d="M8 12h3l2-4 3 8 2-4" />
+                <path d="M4 19V5" />
+                <path d="M4 19h16" />
+                <path d="m7 15 3-4 3 2 4-7" />
               </svg>
             </span>
-            <span>Tracked queries</span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link" href="/rto-reports.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v16H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link" href="/rto-insights.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 19h16M4 19V5" />
+                <circle cx="8" cy="14" r="2" />
+                <circle cx="13" cy="10" r="2" />
+                <circle cx="18" cy="7" r="2" />
+              </svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M5 4h14v18H5z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
+            <span>Monthly reports</span>
           </a>
           <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
             <span class="feature-icon" aria-hidden="true">
@@ -64,7 +103,7 @@
         </nav>
       </aside>
 
-      <main class="shell tracked-shell">
+      <main class="shell tracked-shell" id="mainContent" tabindex="-1">
         <section class="tracked-topbar">
           <div class="hero-title-row">
             <div class="sidebar-shell" id="sidebarShell">
@@ -78,87 +117,101 @@
               <p class="compare-empty">Save location, fuel, and vehicle queries; the daily runner uses the run month when no month is written.</p>
             </div>
           </div>
-          <button type="button" class="secondary-action tracked-refresh" id="refreshTrackedBtn">Refresh</button>
         </section>
 
-        <section id="trackedNotice" class="warnings tracked-notice" hidden></section>
-
-        <section class="tracked-create panel">
-          <div class="panel-head">
-            <h2 id="trackedFormTitle">Add tracked query</h2>
-            <span class="panel-kicker">External cron runs the daily batch</span>
+        <section class="tracked-auth-strip" aria-label="Tracked query account">
+          <div class="tracked-account-copy">
+            <span class="panel-kicker">Account</span>
+            <strong id="accountStatus">Signed out</strong>
           </div>
-          <form id="trackedForm" class="tracked-form" autocomplete="off">
-            <label>
-              <span class="eyebrow">Label</span>
-              <input id="trackedLabel" name="label" placeholder="Maharashtra EV" />
-            </label>
-            <label class="tracked-query-field">
-              <span class="eyebrow">Query</span>
-              <input id="trackedQuery" name="query" placeholder="EV registrations in Maharashtra" required />
-            </label>
-            <label>
-              <span class="eyebrow">Run time</span>
-              <input id="trackedRunTime" name="runTimeLocal" type="time" value="08:00" />
-            </label>
-            <label>
-              <span class="eyebrow">Timezone</span>
-              <input id="trackedTimezone" name="timezone" value="Asia/Calcutta" />
-            </label>
-            <label class="tracked-active-toggle">
-              <input id="trackedActive" name="active" type="checkbox" checked />
-              <span>Active</span>
-            </label>
-            <button type="submit" id="createTrackedBtn">Save query</button>
-            <button type="button" class="secondary-action tracked-cancel-edit" id="cancelEditBtn" hidden>Cancel edit</button>
-          </form>
+          <div class="tracked-account-actions">
+            <a class="secondary-action tracked-login" id="authGate" href="/auth/google?returnTo=/tracked.html">Sign in with Google</a>
+            <button type="button" class="secondary-action" id="telegramLinkBtn" hidden>Link Telegram</button>
+            <button type="button" class="secondary-action tracked-refresh" id="refreshTrackedBtn" hidden>Refresh</button>
+            <button type="button" class="secondary-action danger-action" id="logoutBtn" hidden>Logout</button>
+          </div>
         </section>
 
-        <section class="tracked-grid">
-          <article class="panel tracked-list-panel">
-            <div class="panel-head">
-              <h2>Saved queries</h2>
-              <span class="panel-kicker" id="trackedCount">Loading</span>
-            </div>
-            <div id="trackedList" class="tracked-list">
-              <p class="result-empty">Loading tracked queries.</p>
-            </div>
-          </article>
+        <section id="trackedNotice" class="warnings tracked-notice" role="status" aria-live="polite" hidden></section>
 
-          <article class="panel tracked-detail-panel">
+        <div class="tracked-workspace" id="trackedWorkspace" hidden>
+          <section class="tracked-create panel">
             <div class="panel-head">
-              <div>
-                <h2 id="trackedDetailTitle">Observation history</h2>
-                <span class="panel-kicker" id="trackedDetailMeta">Select a tracked query</span>
+              <h2 id="trackedFormTitle">Add tracked query</h2>
+              <span class="panel-kicker">External cron runs the daily batch</span>
+            </div>
+            <form id="trackedForm" class="tracked-form" autocomplete="off">
+              <label>
+                <span class="eyebrow">Label</span>
+                <input id="trackedLabel" name="label" placeholder="Maharashtra EV" />
+              </label>
+              <label class="tracked-query-field">
+                <span class="eyebrow">Query</span>
+                <input id="trackedQuery" name="query" placeholder="EV registrations in Maharashtra" required />
+              </label>
+              <label>
+                <span class="eyebrow">Run time</span>
+                <input id="trackedRunTime" name="runTimeLocal" type="time" value="08:00" />
+              </label>
+              <label>
+                <span class="eyebrow">Timezone</span>
+                <input id="trackedTimezone" name="timezone" value="Asia/Calcutta" />
+              </label>
+              <label class="tracked-active-toggle">
+                <input id="trackedActive" name="active" type="checkbox" checked />
+                <span>Active</span>
+              </label>
+              <button type="submit" id="createTrackedBtn">Save query</button>
+              <button type="button" class="secondary-action tracked-cancel-edit" id="cancelEditBtn" hidden>Cancel edit</button>
+            </form>
+          </section>
+
+          <section class="tracked-grid">
+            <article class="panel tracked-list-panel">
+              <div class="panel-head">
+                <h2>Saved queries</h2>
+                <span class="panel-kicker" id="trackedCount">Loading</span>
               </div>
-              <span class="status-pill" id="trackedDetailStatus">Idle</span>
-            </div>
-            <div id="trackedObservationSummary" class="tracked-observation-summary">
-              <p class="result-empty">Choose a saved query to review daily totals and deltas.</p>
-            </div>
-            <div class="tracked-table-wrap">
-              <table class="tracked-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Total</th>
-                    <th>Daily</th>
-                    <th>Weekly</th>
-                    <th>Status</th>
-                    <th>Warnings</th>
-                  </tr>
-                </thead>
-                <tbody id="trackedObservations">
-                  <tr>
-                    <td colspan="6">No query selected.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </article>
-        </section>
+              <div id="trackedList" class="tracked-list">
+                <p class="result-empty">Loading tracked queries.</p>
+              </div>
+            </article>
+
+            <article class="panel tracked-detail-panel">
+              <div class="panel-head">
+                <div>
+                  <h2 id="trackedDetailTitle">Observation history</h2>
+                  <span class="panel-kicker" id="trackedDetailMeta">Select a tracked query</span>
+                </div>
+                <span class="status-pill" id="trackedDetailStatus">Idle</span>
+              </div>
+              <div id="trackedObservationSummary" class="tracked-observation-summary">
+                <p class="result-empty">Choose a saved query to review daily totals and deltas.</p>
+              </div>
+              <div class="tracked-table-wrap">
+                <table class="tracked-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Total</th>
+                      <th>Daily</th>
+                      <th>Weekly</th>
+                      <th>Status</th>
+                      <th>Warnings</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trackedObservations">
+                    <tr>
+                      <td colspan="6">No query selected.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+        </div>
       </main>
     </div>
-    <script src="/tracked.js" defer></script>
+    <script src="/tracked.js?v=20260725-atlas-source-states" defer></script>
   </body>
 </html>

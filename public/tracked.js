@@ -26,6 +26,7 @@ let trackedQueries = [];
 let selectedId = null;
 let editingId = null;
 let currentUser = null;
+let csrfToken = null;
 
 function setSidebarOpen(open) {
   appFrame?.classList.toggle("sidebar-open", open);
@@ -50,10 +51,15 @@ function showNotice(message, type = "info") {
 }
 
 async function apiJson(url, options = {}) {
+  const method = String(options.method ?? "GET").toUpperCase();
+  const csrfHeaders = !["GET", "HEAD", "OPTIONS"].includes(method) && csrfToken
+    ? { "x-csrf-token": csrfToken }
+    : {};
   const response = await fetch(url, {
     ...options,
     headers: {
       "content-type": "application/json",
+      ...csrfHeaders,
       ...(options.headers ?? {}),
     },
   });
@@ -68,6 +74,7 @@ async function apiJson(url, options = {}) {
 
 function setAuthState(user) {
   currentUser = user;
+  if (!user) csrfToken = null;
   const authenticated = Boolean(user);
   if (authGate) authGate.hidden = authenticated;
   if (trackedWorkspace) trackedWorkspace.hidden = !authenticated;
@@ -81,9 +88,10 @@ function setAuthState(user) {
 
 async function loadCurrentUser() {
   const body = await apiJson("/api/me");
+  csrfToken = body.csrfToken ?? null;
   setAuthState(body.user);
   if (!body.authenticated && !body.googleConfigured) {
-    showNotice("Google login is not configured. Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, and APP_BASE_URL.", "error");
+    showNotice("Google sign-in is unavailable in this environment. Configure server authentication to enable saved queries.", "error");
   }
   return body.user;
 }
@@ -98,11 +106,36 @@ function statusPill(item) {
     : `<span class="status-pill tracked-status-paused">Paused</span>`;
 }
 
-function deltaText(value) {
+function runStatusPill(run) {
+  const status = run?.status ?? "none";
+  const labels = {
+    success: "Success",
+    failed: "Failed",
+    running: "Running",
+    none: "No runs",
+  };
+  const tone = ["success", "failed", "running"].includes(status) ? status : "none";
+  return `<span class="status-pill tracked-run-status tracked-run-${tone}">${labels[status] ?? "No runs"}</span>`;
+}
+
+function deltaPercent(total, delta) {
+  if (total === null || total === undefined || delta === null || delta === undefined) return null;
+  const baseline = Number(total) - Number(delta);
+  if (!Number.isFinite(baseline) || baseline <= 0) return null;
+  return Number(delta) / baseline;
+}
+
+function formatPercent(value) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
+  return `${value > 0 ? "+" : ""}${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 }).format(Number(value) * 100)}%`;
+}
+
+function deltaText(value, percent = null) {
   if (value === null || value === undefined) return `<span class="tracked-delta muted">-</span>`;
   const sign = value > 0 ? "+" : "";
   const tone = value > 0 ? "up" : value < 0 ? "down" : "flat";
-  return `<span class="tracked-delta ${tone}">${sign}${fmt.format(value)}</span>`;
+  const percentText = formatPercent(percent);
+  return `<span class="tracked-delta ${tone}">${sign}${fmt.format(value)}${percentText ? ` <small>(${percentText})</small>` : ""}</span>`;
 }
 
 function escapeHtml(value) {
@@ -127,6 +160,80 @@ async function latestRun(id) {
 function latestListLabel(latest, run) {
   if (run?.status === "failed" && (!latest || run.observationDate >= latest.observationDate)) return "Failed";
   return latest ? fmt.format(latest.total) : "No observations";
+}
+
+function metricCard(label, value, secondary = "") {
+  return `
+    <div class="tracked-metric">
+      <span>${escapeHtml(label)}</span>
+      <strong>${value}</strong>
+      ${secondary ? `<small>${escapeHtml(secondary)}</small>` : ""}
+    </div>
+  `;
+}
+
+function successfulObservationTotals(observations) {
+  return (observations ?? [])
+    .filter((item) => Number.isFinite(Number(item.total)))
+    .map((item) => ({
+      date: item.observationDate,
+      total: Number(item.total),
+    }));
+}
+
+function sevenDayAverage(observations) {
+  const items = successfulObservationTotals(observations).slice(0, 7);
+  if (!items.length) return null;
+  return Math.round(items.reduce((sum, item) => sum + item.total, 0) / items.length);
+}
+
+function renderSparkline(observations) {
+  const items = successfulObservationTotals(observations).slice(0, 30).reverse();
+  if (items.length < 2) {
+    return `
+      <div class="tracked-sparkline tracked-sparkline-empty">
+        <span>30-observation trend</span>
+        <p class="result-empty">Need at least two observations for a trend line.</p>
+      </div>
+    `;
+  }
+
+  const width = 560;
+  const height = 96;
+  const padding = 12;
+  const min = Math.min(...items.map((item) => item.total));
+  const max = Math.max(...items.map((item) => item.total));
+  const span = Math.max(1, max - min);
+  const xFor = (index) => padding + (index / Math.max(1, items.length - 1)) * (width - padding * 2);
+  const yFor = (total) => padding + (height - padding * 2) - ((total - min) / span) * (height - padding * 2);
+  const points = items.map((item, index) => `${xFor(index).toFixed(1)},${yFor(item.total).toFixed(1)}`).join(" ");
+  const first = items[0];
+  const last = items[items.length - 1];
+
+  return `
+    <div class="tracked-sparkline">
+      <div class="tracked-sparkline-head">
+        <span>30-observation trend</span>
+        <strong>${fmt.format(first.total)} to ${fmt.format(last.total)}</strong>
+      </div>
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Tracked query total trend from ${escapeHtml(first.date)} to ${escapeHtml(last.date)}">
+        <polyline points="${points}" />
+        <circle cx="${xFor(0).toFixed(1)}" cy="${yFor(first.total).toFixed(1)}" r="4" />
+        <circle cx="${xFor(items.length - 1).toFixed(1)}" cy="${yFor(last.total).toFixed(1)}" r="4" />
+      </svg>
+    </div>
+  `;
+}
+
+function trackedActions(item) {
+  return `
+    <div class="tracked-actions">
+      <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
+      <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
+      <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
+      <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
+    </div>
+  `;
 }
 
 async function loadTrackedQueries() {
@@ -174,7 +281,10 @@ async function loadTrackedQueries() {
           <small>${escapeHtml(item.query)}</small>
         </span>
         <span class="tracked-item-meta">
-          ${statusPill(item)}
+          <span class="tracked-item-pills">
+            ${statusPill(item)}
+            ${runStatusPill(run)}
+          </span>
           <span>${escapeHtml(item.runTimeLocal)} ${escapeHtml(item.timezone)}</span>
           <span>${escapeHtml(latestListLabel(latest, run))}</span>
         </span>
@@ -268,62 +378,24 @@ async function loadObservations(id) {
   const runs = runBody.runs ?? [];
   const latest = observations[0] ?? null;
   const latestAttempt = runs[0] ?? null;
-  const latestAttemptFailed = latestAttempt?.status === "failed" && (!latest || latestAttempt.observationDate >= latest.observationDate);
+  const average7 = sevenDayAverage(observations);
   const historyRows = trackedHistoryRows(observations, runs);
   const hasHistory = historyRows.length > 0;
   observationSummary.classList.toggle("empty-observation-state", !hasHistory);
   if (observationTableWrap) observationTableWrap.hidden = !hasHistory;
 
-  observationSummary.innerHTML = latestAttemptFailed
+  observationSummary.innerHTML = latest
     ? `
-      <div class="tracked-metric">
-        <span>Latest run</span>
-        <strong>Failed</strong>
-      </div>
-      <div class="tracked-metric">
-        <span>Observation date</span>
-        <strong>${escapeHtml(latestAttempt.observationDate)}</strong>
-      </div>
-      <div class="tracked-metric">
-        <span>Last good total</span>
-        <strong>${latest ? fmt.format(latest.total) : "-"}</strong>
-      </div>
-      <div class="tracked-actions">
-        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
-        <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
-        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
-        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
-      </div>
-    `
-    : latest
-    ? `
-      <div class="tracked-metric">
-        <span>Latest total</span>
-        <strong>${fmt.format(latest.total)}</strong>
-      </div>
-      <div class="tracked-metric">
-        <span>Daily delta</span>
-        <strong>${deltaText(latest.dailyDelta)}</strong>
-      </div>
-      <div class="tracked-metric">
-        <span>Weekly delta</span>
-        <strong>${deltaText(latest.weeklyDelta)}</strong>
-      </div>
-      <div class="tracked-actions">
-        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
-        <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
-        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
-        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
-      </div>
+      ${metricCard("Latest total", fmt.format(latest.total))}
+      ${metricCard("Daily delta", deltaText(latest.dailyDelta, deltaPercent(latest.total, latest.dailyDelta)))}
+      ${metricCard("Weekly delta", deltaText(latest.weeklyDelta, deltaPercent(latest.total, latest.weeklyDelta)))}
+      ${metricCard("7-day average", average7 === null ? "-" : fmt.format(average7), "Latest successful observations")}
+      ${renderSparkline(observations)}
+      ${trackedActions(item)}
     `
     : `
-      <p class="result-empty">${runs.some((run) => run.status === "failed") ? "The latest daily runner attempt failed before a trustworthy observation could be stored." : "The daily runner has not stored observations for this query yet."}</p>
-      <div class="tracked-actions">
-        <button type="button" class="secondary-action edit-action" data-action="edit">Edit</button>
-        <button type="button" class="secondary-action" data-action="toggle">${item.active ? "Pause" : "Resume"}</button>
-        <button type="button" class="secondary-action danger-action" data-action="disable">Disable</button>
-        <button type="button" class="secondary-action danger-action" data-action="delete">Delete</button>
-      </div>
+      <p class="result-empty">${latestAttempt?.status === "failed" ? "The latest daily runner attempt failed before a trustworthy observation could be stored." : "The daily runner has not stored observations for this query yet."}</p>
+      ${trackedActions(item)}
     `;
 
   observationSummary.querySelector("[data-action='edit']")?.addEventListener("click", () => editTrackedQuery(item));
@@ -336,8 +408,8 @@ async function loadObservations(id) {
       <tr>
         <td>${escapeHtml(row.observationDate)}</td>
         <td>${row.total === null || row.total === undefined ? "-" : fmt.format(row.total)}</td>
-        <td>${deltaText(row.dailyDelta)}</td>
-        <td>${deltaText(row.weeklyDelta)}</td>
+        <td>${deltaText(row.dailyDelta, deltaPercent(row.total, row.dailyDelta))}</td>
+        <td>${deltaText(row.weeklyDelta, deltaPercent(row.total, row.weeklyDelta))}</td>
         <td>${escapeHtml(row.statusLabel)}</td>
         <td>${fmt.format(row.warningCount ?? 0)}</td>
       </tr>
@@ -432,6 +504,7 @@ refreshTrackedBtn?.addEventListener("click", () => {
 
 logoutBtn?.addEventListener("click", async () => {
   await apiJson("/auth/logout", { method: "POST" });
+  csrfToken = null;
   trackedQueries = [];
   selectedId = null;
   resetTrackedForm();

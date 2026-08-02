@@ -1,0 +1,13 @@
+# Generated datasets and runtime artifacts are not architecture source.
+data/
+backups/
+logs/
+output/
+reports/
+ui-preview-screenshots/
+
+# Local runtime and generated graph output.
+node_modules/
+graphify-out/
+.local/
+.playwright-cli/

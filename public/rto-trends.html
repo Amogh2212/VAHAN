@@ -1,0 +1,199 @@
+<!doctype html>
+<!--
+THESIS: Daily RTO monitoring should read as a collection ledger, not a generic monitoring dashboard.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut controls, fine rules, tabular figures and a persistent atlas index.
+STORY: Confirm national coverage, resolve an official RTO, inspect its daily movement, and manage a small priority list.
+FIRST VIEWPORT: The atlas index frames a navy collection masthead; account and coverage strips lead into the lookup workbench.
+FORM: Public-data atlas collection ledger in Operate mode with Read support; user-pinned direction, seed key user-pinned.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Search official VAHAN RTO snapshot trends and pin selected RTOs for daily priority collection." />
+    <title>VAHAN RTO Daily Trends</title>
+    <link rel="stylesheet" href="/styles.css?v=20260624-rto-dropdown-fix" />
+    <link rel="stylesheet" href="/atlas.css" />
+  </head>
+  <body class="atlas-page tracked-page rto-trends-page" data-atlas-route="rto-trends">
+    <a class="skip-link" href="#mainContent">Skip to RTO trend workspace</a>
+    <div class="app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div><strong>VAHAN Analyst</strong><small>India mobility intelligence</small></div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+          <a class="feature-link" href="/compare.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>
+            </span>
+            <span>Compare data</span>
+          </a>
+          <a class="feature-link" href="/map.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" /><path d="M9 3v15M15 6v15" /></svg>
+            </span>
+            <span>Map view</span>
+          </a>
+          <a class="feature-link active" href="/rto-trends.html" aria-current="page">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 15 3-4 3 2 4-7" /></svg>
+            </span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link" href="/rto-reports.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link" href="/rto-insights.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19h16M4 19V5" /><circle cx="8" cy="14" r="2" /><circle cx="13" cy="10" r="2" /><circle cx="18" cy="7" r="2" /></svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>Monthly reports</span>
+          </a>
+          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" /><path d="m10.3 12.9 4.8-4.8" /></svg>
+            </span>
+            <span>Telegram bot</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="shell tracked-shell" id="mainContent" tabindex="-1">
+        <section class="tracked-topbar">
+          <div class="hero-title-row">
+            <div class="sidebar-shell" id="sidebarShell">
+              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
+                <span class="sidebar-mark trigger-mark">V</span>
+              </button>
+            </div>
+            <div>
+              <p class="eyebrow">Daily RTO snapshots</p>
+              <h1>Search once. Pin for every day.</h1>
+              <p class="compare-empty">Look up any official RTO, or pin up to ten RTOs for first-priority daily collection.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="tracked-auth-strip" aria-label="RTO pinning account">
+          <div class="tracked-account-copy">
+            <span class="panel-kicker">Account</span>
+            <strong id="rtoAccountStatus">Checking sign-in</strong>
+          </div>
+          <div class="tracked-account-actions">
+            <span class="panel-kicker" id="rtoPinCount">0 / 10 pinned</span>
+            <a class="secondary-action tracked-login" id="rtoLoginBtn" href="/auth/google?returnTo=/rto-trends.html" hidden>Sign in to pin</a>
+            <button type="button" class="secondary-action danger-action" id="rtoLogoutBtn" hidden>Logout</button>
+          </div>
+        </section>
+
+        <section id="rtoTrendNotice" class="warnings tracked-notice" role="status" aria-live="polite" hidden></section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>National collection coverage</h2>
+              <span class="panel-kicker" id="rtoCoverageMeta">No collection cycle yet</span>
+            </div>
+            <span class="status-pill" id="rtoCoverageStatus">Idle</span>
+          </div>
+          <div id="rtoCoverageSummary" class="tracked-observation-summary">
+            <p class="result-empty">Loading collection coverage.</p>
+          </div>
+        </section>
+
+        <section class="panel rto-trend-controls">
+          <div class="panel-head">
+            <div>
+              <h2>RTO lookup</h2>
+              <span class="panel-kicker" id="rtoTrendFreshness">Type a city, RTO name, alias, or code</span>
+            </div>
+            <div class="rto-selection-actions">
+              <button type="button" class="secondary-action" id="rtoRequestBtn" hidden>Queue first snapshot</button>
+              <button type="button" class="secondary-action" id="rtoPinBtn" hidden>Pin RTO</button>
+            </div>
+          </div>
+          <form id="rtoTrendForm" class="tracked-form rto-trend-form" autocomplete="off">
+            <label class="tracked-query-field rto-combobox-field">
+              <span class="eyebrow">Search official RTO</span>
+              <div class="rto-combobox">
+                <input
+                  id="rtoLookupInput"
+                  name="rtoLookup"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="rtoLookupSuggestions"
+                  aria-expanded="false"
+                  placeholder="Haridwar, Noida, UP-16..."
+                  required
+                />
+                <div id="rtoLookupSuggestions" class="rto-suggestions" role="listbox" hidden></div>
+              </div>
+            </label>
+            <label>
+              <span class="eyebrow">Fuel</span>
+              <select id="rtoFuelGroup"><option value="EV">EV</option><option value="ICE">ICE</option></select>
+            </label>
+            <label>
+              <span class="eyebrow">Category</span>
+              <select id="rtoCategory"><option value="2W">2W</option><option value="3W">3W</option><option value="4W">4W</option></select>
+            </label>
+            <label>
+              <span class="eyebrow">OEM</span>
+              <select id="rtoOem"></select>
+            </label>
+            <button type="submit">Load trend</button>
+          </form>
+        </section>
+
+        <section class="tracked-grid rto-trend-grid">
+          <article class="panel tracked-detail-panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="rtoTrendTitle">Snapshot trend</h2>
+                <span class="panel-kicker" id="rtoTrendMeta">Choose an RTO to load data</span>
+              </div>
+              <span class="status-pill" id="rtoTrendStatus">Idle</span>
+            </div>
+            <div id="rtoTrendSummary" class="tracked-observation-summary empty-observation-state">
+              <p class="result-empty">Daily snapshots retain 30 days of month-to-date VAHAN totals.</p>
+            </div>
+            <div class="tracked-table-wrap" id="rtoTrendTableWrap" hidden>
+              <table class="tracked-table">
+                <thead><tr><th>Date</th><th>Target month</th><th>Count</th><th>Daily movement</th><th>Status</th></tr></thead>
+                <tbody id="rtoTrendRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel tracked-list-panel">
+            <div class="panel-head">
+              <div><h2>My pinned RTOs</h2><span class="panel-kicker">Shared collection, private list</span></div>
+              <span class="panel-kicker" id="rtoPinnedCount">Sign in</span>
+            </div>
+            <div id="rtoPinnedList" class="tracked-list">
+              <p class="result-empty">Sign in to keep personal daily RTO pins across devices.</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="/rto-trends.js?v=20260725-atlas-source-states" defer></script>
+  </body>
+</html>

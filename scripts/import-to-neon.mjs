@@ -23,6 +23,7 @@ function parseArgs(argv) {
     legacyMakerFile: DEFAULT_LEGACY_MAKER_CSV,
     tdcMakerFile: DEFAULT_TDC_MAKER_CSV,
     batchSize: 500,
+    includeTdcMaker: false,
     skipFuel: false,
     skipMaker: false,
   };
@@ -37,6 +38,10 @@ function parseArgs(argv) {
     }
     if (key === "skip-maker") {
       args.skipMaker = true;
+      continue;
+    }
+    if (key === "include-tdc-maker") {
+      args.includeTdcMaker = true;
       continue;
     }
 
@@ -65,7 +70,7 @@ async function main() {
     const result = await upsertRegistrationRows(rows, { batchSize: args.batchSize });
 
     if (result.skipped) {
-      throw new Error("DATABASE_URL is not configured. Add the Neon connection string to .env.");
+      throw new Error("DATABASE_URL is not configured. Add a Postgres-compatible connection string to .env.");
     }
 
     console.log(`Imported ${result.count} registration rows from ${args.file}`);
@@ -75,16 +80,16 @@ async function main() {
     const makerRows = [
       ...(await readMakerRegistrationsCsv(args.makerFile)),
       ...(await readLegacyMakerFuelCsv(args.legacyMakerFile)),
-      ...(await readTdcMakerRegistrationsCsv(args.tdcMakerFile)),
+      ...(args.includeTdcMaker ? await readTdcMakerRegistrationsCsv(args.tdcMakerFile) : []),
     ].filter((row) => row.maker);
     const makerResult = await upsertMakerRegistrationRows(makerRows, { batchSize: args.batchSize });
 
     if (makerResult.skipped) {
-      throw new Error("DATABASE_URL is not configured. Add the Neon connection string to .env.");
+      throw new Error("DATABASE_URL is not configured. Add a Postgres-compatible connection string to .env.");
     }
 
     console.log(
-      `Imported ${makerResult.count} maker registration rows from ${args.makerFile}, ${args.legacyMakerFile}, and ${args.tdcMakerFile}`,
+      `Imported ${makerResult.count} maker registration rows from ${args.makerFile}, ${args.legacyMakerFile}${args.includeTdcMaker ? `, and ${args.tdcMakerFile}` : ""}`,
     );
   }
 }

@@ -336,6 +336,7 @@ function renderSide(prefix, query, data, status = statusLabel(data)) {
 async function fetchQuery(query) {
   const response = await fetch("/api/query", {
     method: "POST",
+    cache: "no-store",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ query }),
   });
@@ -349,7 +350,7 @@ async function fetchQuery(query) {
 async function pollQueryRefresh(jobId) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 2500));
-    const response = await fetch(`/api/query-refresh/${encodeURIComponent(jobId)}`);
+    const response = await fetch(`/api/query-refresh/${encodeURIComponent(jobId)}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Live refresh failed: ${response.status}`);
     const data = await response.json();
     if (data.liveRefresh?.status !== "pending") return data;

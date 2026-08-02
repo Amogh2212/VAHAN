@@ -1,16 +1,16 @@
-# Graph Report - Vahan EY  (2026-06-12)
+# Graph Report - Vahan EY  (2026-08-02)
 
 ## Corpus Check
-- 30 files · ~2,192,200 words
+- 115 files · ~258,605 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 705 nodes · 1729 edges · 27 communities detected
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 96 edges (avg confidence: 0.8)
+- 2198 nodes · 5785 edges · 65 communities detected
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 420 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4f94abc1`
+- Built from commit: `60ae044d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -42,155 +42,332 @@
 - [[_COMMUNITY_Community 24|Community 24]]
 - [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Community 26|Community 26]]
+- [[_COMMUNITY_Community 27|Community 27]]
+- [[_COMMUNITY_Community 28|Community 28]]
+- [[_COMMUNITY_Community 29|Community 29]]
+- [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
+- [[_COMMUNITY_Community 55|Community 55]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 58|Community 58]]
+- [[_COMMUNITY_Community 59|Community 59]]
+- [[_COMMUNITY_Community 60|Community 60]]
+- [[_COMMUNITY_Community 61|Community 61]]
+- [[_COMMUNITY_Community 62|Community 62]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `query()` - 40 edges
-2. `buildMonthlySalesReport()` - 34 edges
-3. `queryData()` - 30 edges
-4. `hasDatabaseUrl()` - 23 edges
-5. `normalizeLookup()` - 18 edges
-6. `render()` - 18 edges
-7. `scrape()` - 18 edges
-8. `buildTelegramSummary()` - 13 edges
-9. `loadObservations()` - 13 edges
-10. `loadRows()` - 12 edges
+1. `query()` - 143 edges
+2. `queryData()` - 66 edges
+3. `inputError()` - 38 edges
+4. `transaction()` - 37 edges
+5. `buildMonthlySalesReport()` - 36 edges
+6. `hasDatabaseUrl()` - 33 edges
+7. `ensureDatabase()` - 33 edges
+8. `normalizeLookup()` - 31 edges
+9. `closePool()` - 29 edges
+10. `decodeWithRules()` - 27 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `loadCatalog()` --calls--> `buildRtoCatalogFromRows()`  [INFERRED]
-  server.mjs → lib/rto-resolver.mjs
-- `loadCatalog()` --calls--> `hasDatabaseUrl()`  [INFERRED]
-  server.mjs → lib/db.mjs
-- `resolveRto()` --calls--> `resolveRtoWithCatalog()`  [INFERRED]
-  server.mjs → lib/rto-resolver.mjs
-- `queryData()` --calls--> `queryRegistrationRows()`  [INFERRED]
-  server.mjs → lib/registrations.mjs
-- `queryData()` --calls--> `readRegistrationsCsv()`  [INFERRED]
-  server.mjs → lib/registrations.mjs
+- `clarificationFor()` --calls--> `queryData()`  [INFERRED]
+  scripts/query-ai-repair-unit-check.mjs → server.mjs
+- `expectQueryError()` --calls--> `queryData()`  [INFERRED]
+  scripts/query-routing-telemetry-unit-check.mjs → server.mjs
+- `safeErrorMessage()` --calls--> `redactLogValue()`  [INFERRED]
+  server.mjs → lib/http-security.mjs
+- `getRtoReportWithFactorContext()` --calls--> `getRtoReport()`  [INFERRED]
+  server.mjs → lib/rto-reports.mjs
+- `getRtoReportWithFactorContext()` --calls--> `listApprovedRtoReportExplanations()`  [INFERRED]
+  server.mjs → lib/rto-factor-events.mjs
 
-## Communities (30 total, 0 thin omitted)
+## Communities (74 total, 4 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
-Nodes (65): hasDatabaseUrl(), buildMakerRegistrationWhere(), deleteMakerRegistrationContexts(), monthKeyNumber(), parseCsvLine(), queryMakerRegistrationRows(), readLegacyMakerFuelCsv(), readMakerRegistrationsCsv() (+57 more)
+Nodes (85): loadRtoReportWithOptionalFactorContext(), addDays(), assignRanks(), boundedInt(), buildOemMetric(), buildRtoReportPayloads(), buildSeriesIndex(), capitalize() (+77 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.07
-Nodes (59): appendFileWithRetry(), applyReportSideFilters(), applySideFilters(), assertPrimeCheckboxGroup(), buildReportItems(), buildRtoCatalog(), buildWorkItems(), captureFailureArtifacts() (+51 more)
+Nodes (92): transaction(), ensureCycleWithQuery(), updateCycleTotalWithQuery(), upsertRtoDailySnapshotsWithQuery(), addDays(), addFilter(), assertEventEvidenceEligibility(), assertEvidenceWindowAlignment() (+84 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.09
-Nodes (56): buildMonthlySalesReport(), categoryNarrative(), dataNotes(), describeFuelSelection(), displayDateTime(), displayMonth(), displayShortMonth(), escapeHtml() (+48 more)
+Cohesion: 0.06
+Nodes (79): acquireRtoFactorDailyLock(), assertDailyAutomationWriteEnabled(), boundedAsOfDate(), boundedInteger(), countBy(), dateOnlyOrNull(), listPendingRtoFactorValidations(), normalizeCandidate() (+71 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (36): queryRtos(), loadRtoCatalog(), buildMonthlySalesReportForUrl(), cleanupJobMap(), cleanupRateLimitBuckets(), cleanupRefreshJobs(), clientIp(), createMapProgress() (+28 more)
+Cohesion: 0.04
+Nodes (69): buildSecurityHeaders(), monthlySalesOemRefreshContexts(), monthlySalesSegmentRefreshContexts(), assertProductionReadinessConfig(), cleanupJobMap(), cleanupRateLimitBuckets(), cleanupRefreshJobs(), clientIp() (+61 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.1
-Nodes (42): closePool(), connectionStringForPg(), getPool(), query(), shouldUseSsl(), addDays(), completeTrackedQueryRun(), createTrackedQuery() (+34 more)
+Cohesion: 0.07
+Nodes (69): addNumericIfPresent(), allowedNumericTokensForSentence(), appendNumericFacts(), assertEvidencePack(), boundedInteger(), buildEvidenceFacts(), buildRetryPrompt(), buildRtoFactorEvidencePack() (+61 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.12
-Nodes (43): applyMapData(), comparisonBaseline(), comparisonDelta(), comparisonLevelFor(), currentBody(), currentParams(), dashboardQuery(), escapeHtml() (+35 more)
+Cohesion: 0.06
+Nodes (67): deleteRegistrationContexts(), replaceRegistrationRows(), upsertBatch(), appendFileWithRetry(), applyReportSideFilters(), applySideFilters(), assertPrimeCheckboxGroup(), buildReportItems() (+59 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.1
-Nodes (40): animateCounter(), buildReportCsv(), buildTrendLineChart(), clampChartValue(), compactChartNumber(), compactFilterEntries(), compactRefreshMessage(), dataStatusLabel() (+32 more)
+Cohesion: 0.07
+Nodes (63): buildMonthlySalesReport(), categoryNarrative(), contextItems(), dataNotes(), describeFuelSelection(), displayDateTime(), displayMonth(), displayShortMonth() (+55 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.14
-Nodes (30): apiJson(), compactRefreshMessage(), displayMonth(), escapeHtml(), formatCoverageCount(), formatDelta(), formatPercent(), loadCurrentUser() (+22 more)
+Cohesion: 0.07
+Nodes (61): addDays(), baseResult(), booleanOrNull(), bootstrapEffectInterval(), boundedInt(), boundedNumber(), canonicalMtdRow(), cleanText() (+53 more)
 
 ### Community 8 - "Community 8"
+Cohesion: 0.08
+Nodes (55): addRowToRankGroup(), aggregateTotals(), anomalyFromRow(), barWidth(), buildDailyEvReportSet(), buildMovement(), buildReportForScope(), buildWarnings() (+47 more)
+
+### Community 9 - "Community 9"
+Cohesion: 0.07
+Nodes (52): adminEmails(), appBaseUrl(), authCookieName(), clearCookieHeader(), cookieHeader(), createGoogleSession(), createSession(), createSessionWithQuery() (+44 more)
+
+### Community 10 - "Community 10"
+Cohesion: 0.08
+Nodes (52): normalizeDashboardQueryText(), normalizeDashboardStructuralText(), rtoStateForCode(), interpretation(), allowLlmVehicleCategory(), allowLlmVehicleClass(), allowLlmVehicleGroup(), appendDefinitionEvidence() (+44 more)
+
+### Community 11 - "Community 11"
+Cohesion: 0.09
+Nodes (49): actualFilterSnapshot(), aliasCases(), assertCondition(), assertLocalDatabase(), atomicCases(), canonicalArray(), canonicalFilters(), checkExpectedError() (+41 more)
+
+### Community 12 - "Community 12"
+Cohesion: 0.07
+Nodes (54): hasDatabaseUrl(), loadRegistrationRowsFromDb(), buildMonthlySalesReportForUrl(), buildTelegramSummary(), checkTelegramBigChangeAlerts(), csvHealthPayload(), dashboardMetricRate(), dashboardQueryRoutingMetricsSnapshot() (+46 more)
+
+### Community 13 - "Community 13"
+Cohesion: 0.08
+Nodes (50): concurrentFetch(), headers(), requestReserveFetch(), successfulFetch(), successfulResponse(), tokenReserveFetch(), actualFilterSnapshot(), applyPairChecks() (+42 more)
+
+### Community 14 - "Community 14"
+Cohesion: 0.09
+Nodes (44): apiJson(), batchesForCadence(), categoryBars(), changeText(), escapeHtml(), evShareComparison(), factorExplanationCard(), factorSourceList() (+36 more)
+
+### Community 15 - "Community 15"
+Cohesion: 0.09
+Nodes (44): animateCounter(), buildReportCsv(), buildTrendLineChart(), clampChartValue(), compactChartNumber(), compactFilterEntries(), compactRefreshMessage(), dataStatusLabel() (+36 more)
+
+### Community 16 - "Community 16"
+Cohesion: 0.12
+Nodes (45): addDays(), claimRtoDailyJob(), completeRtoDailyCollectionRun(), completeRtoDailyJob(), createRtoDailyCollectionRun(), createRtoDailyPin(), dateOnly(), deferStaleRtoDailyCycles() (+37 more)
+
+### Community 17 - "Community 17"
+Cohesion: 0.11
+Nodes (46): applyMapData(), comparisonBaseline(), comparisonDelta(), comparisonLevelFor(), currentBody(), currentParams(), dashboardQuery(), escapeHtml() (+38 more)
+
+### Community 18 - "Community 18"
+Cohesion: 0.1
+Nodes (37): buildMakerRegistrationWhere(), dedupeMakerRegistrationRows(), deleteMakerRegistrationContexts(), makerRegistrationKey(), monthKeyNumber(), parseCsvLine(), queryMakerRegistrationRows(), readLegacyMakerFuelCsv() (+29 more)
+
+### Community 19 - "Community 19"
+Cohesion: 0.1
+Nodes (37): boundedLimit(), buildInsightRow(), choosePattern(), clamp01(), dateOnly(), finiteOrNull(), geocodeQueriesForRto(), getRtoGeoProfile() (+29 more)
+
+### Community 20 - "Community 20"
+Cohesion: 0.1
+Nodes (35): configuredModelName(), empiricalSupportScore(), envInteger(), envPercent(), finiteOr(), finiteOrNull(), firstFinite(), hypothesisConfidenceScore() (+27 more)
+
+### Community 21 - "Community 21"
+Cohesion: 0.1
+Nodes (39): addImportStats(), assertOsmiumAvailable(), averageCoordinate(), buildOsmiumExportConfig(), buildOsmiumFilterExpressions(), createImportStats(), createSpatialIndex(), downloadGeofabrikExtract() (+31 more)
+
+### Community 22 - "Community 22"
+Cohesion: 0.12
+Nodes (39): buildOverpassQuery(), dedupeOsmElements(), summarizeOsmSignal(), upsertRtoExternalSignal(), addImportStats(), assertValidOverpassBody(), buildFalloutReport(), confidenceForNominatim() (+31 more)
+
+### Community 23 - "Community 23"
+Cohesion: 0.12
+Nodes (35): apiJson(), autoRefreshKey(), compactRefreshMessage(), displayMonth(), displayMonthList(), escapeHtml(), formatCoverageCount(), formatDelta() (+27 more)
+
+### Community 24 - "Community 24"
+Cohesion: 0.11
+Nodes (35): addDays(), completeTrackedQueryRun(), createTrackedQuery(), createTrackedQueryRun(), dateOnly(), dateRange(), deleteTrackedQuery(), disableTrackedQuery() (+27 more)
+
+### Community 25 - "Community 25"
+Cohesion: 0.08
+Nodes (33): appliedFilters(), assertExpectedFilters(), errorCase(), sampleRows(), successCase(), expectedError(), answerFilterVariants(), applyDefaultDateRange() (+25 more)
+
+### Community 26 - "Community 26"
+Cohesion: 0.13
+Nodes (34): apiJson(), closeSuggestions(), escapeHtml(), hideNotice(), init(), latestMovement(), loadCurrentUser(), loadPins() (+26 more)
+
+### Community 27 - "Community 27"
+Cohesion: 0.13
+Nodes (32): buildSnapshotRows(), countForOem(), heartbeatRtoDailyJob(), listRtoDailyConfigs(), markRtoDailyConfigStatus(), previewRtoDailyCycle(), rollupAndPruneRtoDailySnapshots(), rtoDailyCombinationMatrix() (+24 more)
+
+### Community 28 - "Community 28"
+Cohesion: 0.09
+Nodes (32): addMonths(), aggregateComparisonKey(), completeLoadedMonthKeys(), currentMonthKey(), dateRange(), filterContext(), filterContextValue(), filterRows() (+24 more)
+
+### Community 29 - "Community 29"
+Cohesion: 0.1
+Nodes (31): fetchImpl(), compact(), configuredAiQueryProvider(), configuredDashboardQueryRoutingMode(), configuredGroqCacheTtl(), configuredGroqInterval(), configuredGroqModel(), configuredGroqRateLimitCooldown() (+23 more)
+
+### Community 30 - "Community 30"
 Cohesion: 0.14
 Nodes (24): apiJson(), deleteTrackedQuery(), deltaPercent(), deltaText(), disableTrackedQuery(), displayLabel(), escapeHtml(), formatPercent() (+16 more)
 
-### Community 9 - "Community 9"
+### Community 31 - "Community 31"
+Cohesion: 0.12
+Nodes (28): arrayIncludesAll(), buildMarkdownReport(), buildQueue(), callQuery(), callRefresh(), categorize(), compactResult(), emitRegressionCases() (+20 more)
+
+### Community 32 - "Community 32"
+Cohesion: 0.13
+Nodes (25): query(), getRtoReport(), getRtoReportBatch(), listRtoReportsForBatch(), renderRtoReportBatchCsv(), main(), applyCohort(), coverage() (+17 more)
+
+### Community 33 - "Community 33"
+Cohesion: 0.17
+Nodes (27): assertAllowedKeys(), assertEvidenceEligibility(), assertManualIntakeMethod(), assertServices(), assertUnique(), assertWriteGate(), boundedText(), compileManualRtoFactorEventInput() (+19 more)
+
+### Community 34 - "Community 34"
 Cohesion: 0.16
 Nodes (24): computeDelta(), dataWarnings(), displayMonthList(), escapeHtml(), extractBracketMeta(), extractQueryLocation(), fetchQuery(), formatChange() (+16 more)
 
-### Community 10 - "Community 10"
-Cohesion: 0.11
-Nodes (25): allowLlmVehicleClass(), allowLlmVehicleGroup(), closestStateAlias(), decodeWithRules(), findFilterValues(), findFuzzyCityAlias(), findMatchingFilterDefinitions(), findStateByLocationText() (+17 more)
+### Community 35 - "Community 35"
+Cohesion: 0.2
+Nodes (18): apiJson(), displayDateTime(), escapeHtml(), loadDetail(), loadSummary(), metricCard(), renderEmptyDetail(), renderHealth() (+10 more)
 
-### Community 11 - "Community 11"
-Cohesion: 0.14
-Nodes (24): appBaseUrl(), authCookieName(), clearCookieHeader(), cookieHeader(), createSession(), createTelegramLinkCode(), currentUser(), destroySession() (+16 more)
+### Community 36 - "Community 36"
+Cohesion: 0.18
+Nodes (20): cacheKey(), cleanPlaceLabel(), confidenceForMatch(), formatConfidence(), formatCoordinate(), geocode(), geocodeRow(), hasCoordinates() (+12 more)
 
-### Community 12 - "Community 12"
+### Community 37 - "Community 37"
 Cohesion: 0.17
 Nodes (18): buildQueue(), buildRetryQueue(), callQuery(), callRefresh(), compactResult(), fileExists(), loadOrCreateReport(), main() (+10 more)
 
-### Community 13 - "Community 13"
-Cohesion: 0.14
-Nodes (19): applyDefaultDateRange(), clampFutureDateRange(), decodeWithAiProviders(), groupMonthKeys(), hasRequestedSideFilterContext(), hasRequiredScrapeFilters(), liveRefreshInfo(), monthKeyToParts() (+11 more)
+### Community 38 - "Community 38"
+Cohesion: 0.16
+Nodes (21): appendExactRepairConflict(), boundedModelText(), buildSemanticVocabulary(), canonicalAiState(), combineSemanticPlan(), exactInterpretationValues(), labelIntersections(), modelStringArray() (+13 more)
 
-### Community 14 - "Community 14"
-Cohesion: 0.13
-Nodes (19): completeLoadedMonthKeys(), filterContext(), filterContextValue(), findMissingMonths(), findMissingMonthsFromDb(), hasActiveContext(), hasCompleteMonthlyReportBaseCoverage(), hasMapCoverageFor() (+11 more)
+### Community 39 - "Community 39"
+Cohesion: 0.12
+Nodes (6): Flowable, callout(), make_table(), p(), section(), SectionRule
 
-### Community 15 - "Community 15"
-Cohesion: 0.18
-Nodes (16): checkTelegramBigChangeAlerts(), describeFilters(), evShare(), findStatesInText(), formatDashboardTelegramResult(), formatMapComparison(), formatMapStateDetail(), formatMapTopStates() (+8 more)
+### Community 40 - "Community 40"
+Cohesion: 0.12
+Nodes (18): queryRtos(), loadRtoCatalog(), canonicalRtoInput(), findStateByLocationText(), fuzzyCandidateSignature(), hasExplicitMapLocation(), isSameStateLocation(), loadCatalog() (+10 more)
 
-### Community 16 - "Community 16"
-Cohesion: 0.29
-Nodes (10): buildRtoCatalogFromRows(), deriveAliases(), flattenCatalog(), normalizeRtoLookup(), rankEntries(), resolveRtoWithCatalog(), scoreEntry(), toCatalogRto() (+2 more)
+### Community 41 - "Community 41"
+Cohesion: 0.22
+Nodes (13): buildRtoCatalogFromRows(), deriveAliases(), flattenCatalog(), normalizeRtoLookup(), rankEntries(), resolveRtoWithCatalog(), scoreEntry(), searchRtoCatalog() (+5 more)
 
-### Community 17 - "Community 17"
+### Community 42 - "Community 42"
+Cohesion: 0.23
+Nodes (16): bestMatch(), candidateNames(), cleanPlaceLabel(), formatConfidence(), formatCoordinate(), hasCoordinates(), loadAdmin1(), loadGeoNames() (+8 more)
+
+### Community 43 - "Community 43"
+Cohesion: 0.22
+Nodes (12): closePool(), loadExistingProfiles(), main(), parseArgs(), printHelp(), toCsv(), callQuery(), countMonthRows() (+4 more)
+
+### Community 44 - "Community 44"
+Cohesion: 0.28
+Nodes (14): assert(), assertMonthlyReport(), assertQuery(), callMapQueryError(), callMapSummary(), callMonthlySalesPdf(), callMonthlySalesReport(), callQuery() (+6 more)
+
+### Community 45 - "Community 45"
 Cohesion: 0.32
-Nodes (12): assert(), assertMonthlyReport(), assertQuery(), callMapSummary(), callMonthlySalesPdf(), callMonthlySalesReport(), callQuery(), callRtoResolve() (+4 more)
+Nodes (10): acceptance_chart(), build_report(), bullet(), data_table(), filter_summary(), p(), phase_block(), routing_chart() (+2 more)
 
-### Community 18 - "Community 18"
-Cohesion: 0.29
-Nodes (11): buildSemanticVocabulary(), combineSemanticPlan(), compact(), exactVocabularyLabels(), findVehicleGroups(), normalizeConfidence(), normalizeSemanticPlan(), semanticFuelSelection() (+3 more)
+### Community 46 - "Community 46"
+Cohesion: 0.24
+Nodes (11): assertNoPageOverflow(), assertReadinessPillAligned(), assertTabsContained(), expectMetricCard(), fulfillEmptyReportApi(), fulfillReportApi(), fullReport(), json() (+3 more)
 
-### Community 19 - "Community 19"
+### Community 47 - "Community 47"
 Cohesion: 0.32
-Nodes (8): dashboardPayload(), dataReliabilityWarning(), filterRows(), filterRowsIgnoringDate(), hasAmbiguousRtos(), resolveDataStatus(), resolveImmediateDataStatus(), summarizeScraperRuns()
+Nodes (12): copyTable(), counts(), isLocalHostname(), main(), parseArgs(), parsedDatabaseUrl(), poolConfig(), quoteIdentifier() (+4 more)
 
-### Community 20 - "Community 20"
-Cohesion: 0.32
-Nodes (8): currentMonthKey(), monthKey(), parseDateRange(), parseMonthYear(), parseYearOnly(), parseYearRange(), summarize(), summarizeMapRtoRows()
+### Community 48 - "Community 48"
+Cohesion: 0.26
+Nodes (9): buildRegistrationWhere(), contextValue(), monthKeyNumber(), parseCsvLine(), queryAvailableMonthFuelTypes(), queryAvailableMonths(), queryRegistrationFreshness(), queryRegistrationRows() (+1 more)
 
-### Community 21 - "Community 21"
-Cohesion: 0.29
-Nodes (8): userForTelegramChat(), consumeTelegramPublicQuota(), handleTelegramMessage(), handleTelegramQuery(), isTrustedTelegramChat(), telegramQuotaLine(), telegramUsageDateKey(), withTelegramQuota()
+### Community 49 - "Community 49"
+Cohesion: 0.25
+Nodes (10): clampFalloutCycles(), clampWorkerCount(), freshnessCutoffFor(), freshnessCutoffForImport(), nonNegativeNumber(), parseArgs(), printHelp(), signalItemKey() (+2 more)
 
-### Community 22 - "Community 22"
+### Community 50 - "Community 50"
+Cohesion: 0.36
+Nodes (9): connectionStringForPg(), getPool(), isRetryableDatabaseError(), queryWithRetry(), retryDelayMs(), shouldUseSsl(), sleep(), acquireVahanScrapeLock() (+1 more)
+
+### Community 52 - "Community 52"
+Cohesion: 0.46
+Nodes (7): upsertRtoGeoProfile(), main(), numericOrNull(), parseArgs(), parseBoolean(), parseCsv(), printHelp()
+
+### Community 53 - "Community 53"
 Cohesion: 0.46
 Nodes (7): downloadResource(), fetchJson(), main(), parseArgs(), safeFileName(), selectResources(), writeManualTemplate()
 
-### Community 23 - "Community 23"
+### Community 54 - "Community 54"
 Cohesion: 0.54
 Nodes (7): assert(), fetchJson(), main(), postQuery(), startServer(), stopServer(), waitForHealth()
 
-### Community 24 - "Community 24"
+### Community 55 - "Community 55"
 Cohesion: 0.38
 Nodes (4): createTelegramBot(), parseAllowedChatIds(), scheduleTelegramSummaries(), startTelegramCommandCenter()
 
-### Community 25 - "Community 25"
+### Community 57 - "Community 57"
+Cohesion: 0.52
+Nodes (6): assertErrorContract(), assertLocalDatabase(), main(), requestJson(), startServer(), waitForHealth()
+
+### Community 58 - "Community 58"
+Cohesion: 0.62
+Nodes (6): insertRows(), localDatabaseUrl(), main(), parseArgs(), quoted(), resetSequence()
+
+### Community 60 - "Community 60"
+Cohesion: 0.67
+Nodes (5): canConnect(), cleanStop(), config(), ensureDatabase(), main()
+
+### Community 61 - "Community 61"
 Cohesion: 0.8
 Nodes (4): fetchJson(), getFreshness(), getSampleRows(), main()
 
-### Community 26 - "Community 26"
-Cohesion: 0.67
-Nodes (4): decodeWithGemini(), decodeWithGroq(), parseJsonFromModelText(), semanticPlannerPrompt()
+### Community 62 - "Community 62"
+Cohesion: 0.7
+Nodes (4): localDatabaseUrl(), main(), pruneBackups(), timestamp()
+
+### Community 64 - "Community 64"
+Cohesion: 0.83
+Nodes (3): existingLocalPassword(), main(), setEnvValue()
+
+## Knowledge Gaps
+- **4 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `buildMonthlySalesReport()` connect `Community 2` to `Community 0`, `Community 3`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `query()` connect `Community 4` to `Community 0`, `Community 3`, `Community 11`, `Community 21`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `renderMonthlySalesReportHtml()` connect `Community 2` to `Community 0`, `Community 3`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Are the 32 inferred relationships involving `query()` (e.g. with `upsertGoogleUser()` and `createSession()`) actually correct?**
-  _`query()` has 32 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 2 inferred relationships involving `buildMonthlySalesReport()` (e.g. with `buildMonthlySalesReportForUrl()` and `main()`) actually correct?**
-  _`buildMonthlySalesReport()` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 3 inferred relationships involving `queryData()` (e.g. with `queryRegistrationRows()` and `readRegistrationsCsv()`) actually correct?**
-  _`queryData()` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 18 inferred relationships involving `hasDatabaseUrl()` (e.g. with `loadRows()` and `loadMakerRows()`) actually correct?**
-  _`hasDatabaseUrl()` has 18 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `query()` connect `Community 32` to `Community 0`, `Community 1`, `Community 2`, `Community 5`, `Community 8`, `Community 9`, `Community 11`, `Community 12`, `Community 13`, `Community 16`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 24`, `Community 27`, `Community 40`, `Community 43`, `Community 48`, `Community 50`, `Community 52`?**
+  _High betweenness centrality (0.107) - this node is a cross-community bridge._
+- **Why does `runQuery()` connect `Community 1` to `Community 16`, `Community 9`, `Community 15`?**
+  _High betweenness centrality (0.055) - this node is a cross-community bridge._
+- **Why does `closePool()` connect `Community 43` to `Community 32`, `Community 33`, `Community 2`, `Community 0`, `Community 5`, `Community 8`, `Community 11`, `Community 13`, `Community 16`, `Community 50`, `Community 18`, `Community 52`, `Community 21`, `Community 22`, `Community 20`, `Community 24`, `Community 27`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Are the 115 inferred relationships involving `query()` (e.g. with `destroySession()` and `currentUser()`) actually correct?**
+  _`query()` has 115 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 8 inferred relationships involving `queryData()` (e.g. with `readRegistrationsCsv()` and `successCase()`) actually correct?**
+  _`queryData()` has 8 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 25 inferred relationships involving `transaction()` (e.g. with `createGoogleSession()` and `upsertRtoDailyConfigs()`) actually correct?**
+  _`transaction()` has 25 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 3 inferred relationships involving `buildMonthlySalesReport()` (e.g. with `buildMonthlySalesReportForUrl()` and `monthlySalesRecentRefresh()`) actually correct?**
+  _`buildMonthlySalesReport()` has 3 INFERRED edges - model-reasoned connections that need verification._

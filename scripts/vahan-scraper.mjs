@@ -1,11 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { closePool } from "../lib/db.mjs";
 import { replaceMakerRegistrationRows } from "../lib/maker-registrations.mjs";
 import { replaceRegistrationRows } from "../lib/registrations.mjs";
+import { upsertRtoDailyConfigs } from "../lib/rto-daily-snapshots.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
+import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 
 const SOURCE_URL =
   "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml";
@@ -544,9 +547,12 @@ async function selectPrimeOption(page, controlConfig, value) {
   );
 
   if (!option) {
+    const latestOptions = await page.locator(control.selector).evaluate((select) =>
+      [...select.options].map((item) => item.textContent.replace(/\s+/g, " ").trim()).filter(Boolean),
+    ).catch(() => control.options.map((item) => item.label));
     throw new Error(
       `Could not find option "${value}" in ${control.id || control.name}. Sample options: ${JSON.stringify(
-        control.options.slice(0, 12).map((item) => item.label),
+        latestOptions.slice(0, 12),
       )}`,
     );
   }
@@ -559,6 +565,7 @@ async function selectPrimeOption(page, controlConfig, value) {
     option.value,
   );
   await page.waitForLoadState("networkidle", { timeout: DEFAULT_TIMEOUT_MS }).catch(() => {});
+  await page.locator(".ui-blockui.ui-widget-overlay:visible").first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(1500);
   return control;
 }
@@ -652,17 +659,18 @@ async function configureReport(page, { state, rto, year, dimension = "fuel" }) {
     },
     "Actual Value",
   );
+  const uiStateName = state === "INDIA TOTAL" ? "All Vahan4 Running States (36/36)" : state;
   await selectPrimeOption(
     page,
     {
       description: "state",
       fastIds: ["j_idt41_input"],
       labelPatterns: [/state/i],
-      knownOptions: [state, "Assam", "Maharashtra", "Delhi"],
-      optionPatterns: [/andhra pradesh|assam|maharashtra|uttar pradesh/i],
+      knownOptions: [uiStateName, state, "Assam", "Maharashtra", "Delhi", "All Vahan4 Running States (36/36)"],
+      optionPatterns: [/andhra pradesh|assam|maharashtra|uttar pradesh/i, /All Vahan.* Running States/i],
       minOptions: 10,
     },
-    state,
+    uiStateName,
   );
   if (rto) {
     await selectPrimeOption(
@@ -771,7 +779,7 @@ async function buildRtoCatalog(args) {
       await selectStateForCatalog(page, state);
       const labels = await extractRtoOptions(page);
       const rtos = labels
-        .filter((label) => label !== "All Vahan4 Running Office")
+        .filter((label) => !/^All Vahan4 Running Office/i.test(label))
         .map(toCatalogRto)
         .sort((a, b) => a.label.localeCompare(b.label));
       catalogStates.push({ state, rtos });
@@ -783,11 +791,28 @@ async function buildRtoCatalog(args) {
       updated_at: new Date().toISOString(),
       states: catalogStates,
     };
+    const configs = catalogStates.flatMap((group) => group.rtos.map((rto, index) => ({
+      state: group.state,
+      rto: rto.label ?? rto,
+      enabled: true,
+      priority: index + 100,
+    })));
+    const database = process.env.DATABASE_URL
+      ? await upsertRtoDailyConfigs(configs, {
+          refreshedAt: catalog.updated_at,
+          reconcileMissing: args.states.length === 0,
+        })
+      : { skipped: true };
     await writeFileWithRetry(outputFile, JSON.stringify(catalog, null, 2));
     console.log(`Wrote ${outputFile}`);
+    console.log(JSON.stringify({ rtoCatalog: { states: catalogStates.length, rtos: configs.length, database } }, null, 2));
   } finally {
     await browser.close();
   }
+}
+
+export function hasRequestedSideFilters({ fuels = [], vehicleCategories = [], norms = [], vehicleClasses = [] } = {}) {
+  return [fuels, vehicleCategories, norms, vehicleClasses].some((labels) => labels.length > 0);
 }
 
 async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, vehicleClasses }) {
@@ -795,7 +820,14 @@ async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, v
   const expectedVehicleCategories = vehicleCategories.map(normalizeFilterName);
   const expectedNorms = norms.map(normalizeFilterName);
   const expectedVehicleClasses = vehicleClasses.map(normalizeFilterName);
-  const sideFiltersChanged = [
+  const shouldRefreshSideFilters = hasRequestedSideFilters({
+    fuels: expectedFuels,
+    vehicleCategories: expectedVehicleCategories,
+    norms: expectedNorms,
+    vehicleClasses: expectedVehicleClasses,
+  });
+
+  [
     expectedFuels.length ? await setPrimeCheckboxGroup(page, "fuel", expectedFuels) : false,
     vehicleCategories.length
       ? await setPrimeCheckboxGroup(page, "VhCatg", expectedVehicleCategories)
@@ -804,9 +836,13 @@ async function applyReportSideFilters(page, { fuels, vehicleCategories, norms, v
     vehicleClasses.length
       ? await setPrimeCheckboxGroup(page, "VhClass", expectedVehicleClasses)
       : false,
-  ].some(Boolean);
+  ];
 
-  if (sideFiltersChanged) {
+  // configureReport() refreshes the main report before this function runs. A
+  // checkbox can already be selected from a previous report while that refresh
+  // has rendered unfiltered data, so refreshing only after a checkbox toggle
+  // can store an unfiltered table under a filtered context label.
+  if (shouldRefreshSideFilters) {
     await applySideFilters(page);
   }
 
@@ -827,9 +863,9 @@ function monthFromHeader(value) {
   return MONTH_LABELS.get(cleaned) ?? null;
 }
 
-async function extractReportRows(page, { dimension = "fuel" } = {}) {
+async function extractVisibleReportRows(page, { dimension = "fuel" } = {}) {
   const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
-  if (/no data available|no records found|record not found|no data found/i.test(bodyText)) {
+  if (/no data available|no records found|record not found|no data found|no information available/i.test(bodyText)) {
     return [];
   }
 
@@ -845,11 +881,20 @@ async function extractReportRows(page, { dimension = "fuel" } = {}) {
 
   const candidates = tables
     .map((table) => table.filter((row) => row.length >= 3))
-    .filter((table) =>
-      table.some((row) => row.some((cell) => /fuel|month|jan|feb|mar/i.test(cell))),
-    )
-    .sort((a, b) => b.length - a.length);
-  const report = candidates[0];
+    .map((table) => {
+      const headerIndex = table.findIndex((row) => row.some((cell) => monthFromHeader(cell)));
+      const parentHeaders = headerIndex > 0 ? table[headerIndex - 1] : [];
+      const labelPattern = dimension === "maker" ? /maker|manufacturer|oem/i : /fuel/i;
+      const hasLabelColumn = table.some((row) => row.some((cell) => labelPattern.test(cell)));
+      const hasMonthWiseParent = parentHeaders.some((cell) => /month wise/i.test(cell));
+      return { table, headerIndex, hasLabelColumn, hasMonthWiseParent };
+    })
+    .filter((item) => item.headerIndex !== -1 && item.hasLabelColumn)
+    .sort((a, b) => {
+      if (a.hasMonthWiseParent !== b.hasMonthWiseParent) return a.hasMonthWiseParent ? -1 : 1;
+      return b.table.length - a.table.length;
+    });
+  const report = candidates[0]?.table;
 
   if (!report) {
     const tableSamples = tables
@@ -900,7 +945,50 @@ async function extractReportRows(page, { dimension = "fuel" } = {}) {
     counts: Object.fromEntries(
       monthColumns.map(({ index, month }) => [month, normalizeCount(row[index]) ?? 0]),
     ),
-  }));
+  })).filter((row) => row.label);
+}
+
+function reportRowKey(row) {
+  return [
+    row.label,
+    ...Object.entries(row.counts ?? {}).sort(([left], [right]) => Number(left) - Number(right)).map(([month, count]) => `${month}:${count}`),
+  ].join("||");
+}
+
+async function clickNextReportPage(page) {
+  const next = page.locator(".ui-paginator-next:not(.ui-state-disabled)").last();
+  if (!(await next.count())) return false;
+  await page.locator(".ui-blockui.ui-widget-overlay:visible").first().waitFor({ state: "hidden", timeout: 20_000 }).catch(() => {});
+  await next.click({ timeout: 10_000 }).catch(async (error) => {
+    await page.locator(".ui-blockui.ui-widget-overlay:visible").first().waitFor({ state: "hidden", timeout: 20_000 }).catch(() => {});
+    await next.click({ timeout: 10_000 }).catch(() => {
+      throw error;
+    });
+  });
+  await page.waitForLoadState("networkidle", { timeout: DEFAULT_TIMEOUT_MS }).catch(() => {});
+  await page.locator(".ui-blockui.ui-widget-overlay:visible").first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+  return true;
+}
+
+async function extractReportRows(page, reportItem = {}) {
+  const rowsByLabel = new Map();
+  const seenPages = new Set();
+
+  for (let pageIndex = 0; pageIndex < 100; pageIndex += 1) {
+    const rows = await extractVisibleReportRows(page, reportItem);
+    const pageKey = rows.map(reportRowKey).join("\n");
+    if (pageKey && seenPages.has(pageKey)) break;
+    if (pageKey) seenPages.add(pageKey);
+
+    for (const row of rows) {
+      rowsByLabel.set(row.label, row);
+    }
+
+    if (!(await clickNextReportPage(page))) break;
+  }
+
+  return [...rowsByLabel.values()];
 }
 
 async function scrapeReport(page, reportItem) {
@@ -1184,6 +1272,13 @@ async function extractVehicleCount(page) {
   return tableCount;
 }
 
+export function resolveMakerReportTotal({ metricTotal = null, rows = [], explicitZero = false } = {}) {
+  if (explicitZero) return 0;
+  const rowTotal = rows.reduce((sum, row) => sum + Number(row.vehicle_count ?? row.vehicleCount ?? 0), 0);
+  if (Number.isFinite(metricTotal) && metricTotal >= rowTotal) return metricTotal;
+  return rowTotal;
+}
+
 function buildWorkItems(args) {
   const states = args.states.length ? args.states : STATE_NAMES;
   const fuels = args.fuels;
@@ -1399,8 +1494,10 @@ async function scrape(args) {
         }
         scrapedRows.push(...newRows);
         const replacementKeys = new Set(newRows.map((row) => keyForItem(row)));
+        const replacementContexts = new Set(reportItem.items.map((item) => keyForItem(item)));
         for (let rowIndex = rows.length - 1; rowIndex >= 0; rowIndex -= 1) {
-          if (replacementKeys.has(keyForItem(rows[rowIndex]))) rows.splice(rowIndex, 1);
+          const existingKey = keyForItem(rows[rowIndex]);
+          if (replacementKeys.has(existingKey) || replacementContexts.has(existingKey)) rows.splice(rowIndex, 1);
         }
         rows.push(...newRows);
         succeeded += newRows.length;
@@ -1472,6 +1569,103 @@ async function scrape(args) {
   }
 }
 
+export async function createVahanMakerSession(options = {}) {
+  const args = {
+    mode: "scrape",
+    dimension: "maker",
+    outputDir: options.outputDir ?? DEFAULT_OUTPUT_DIR,
+    delayMs: Number(options.delayMs ?? DEFAULT_DELAY_MS),
+    headed: Boolean(options.headed),
+    channel: options.channel ?? "",
+  };
+  await ensureDir(args.outputDir);
+  const browser = await launchBrowser(args);
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+  });
+  let page = await context.newPage();
+  let closed = false;
+
+  return {
+    async scrapeReport(input) {
+      if (closed) throw new Error("VAHAN maker session is closed.");
+      const reportItem = {
+        year: Number(input.year),
+        state: input.state,
+        rto: input.rto,
+        dimension: "maker",
+        fuels: input.fuels ?? [],
+        vehicleCategories: input.vehicleCategories ?? [],
+        norms: input.norms ?? [],
+        vehicleClasses: input.vehicleClasses ?? [],
+        fuel_filter: (input.fuels ?? []).join("|") || "ALL",
+        vehicle_category_filter: (input.vehicleCategories ?? []).join("|") || "ALL",
+        norms_filter: (input.norms ?? []).join("|") || "ALL",
+        vehicle_class_filter: (input.vehicleClasses ?? []).join("|") || "ALL",
+        items: [{ month: Number(input.month) }],
+      };
+      const result = await scrapeReportWithRetries(context, page, args.outputDir, reportItem);
+      page = result.page;
+      const reportRows = result.reportRows.filter((row) => row.label && !/total/i.test(row.label));
+      const rows = reportRows.map((row) => ({
+        maker: row.label,
+        vehicle_count: Number(row.counts?.[Number(input.month)] ?? 0),
+      }));
+      let reportTotal = await extractVehicleCount(page);
+      const bodyText = rows.length ? "" : await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
+      const emptyTableEvidence = rows.length ? null : await page.evaluate((expectedRto) => {
+        const table = document.querySelector("#groupingTable");
+        const panelText = document.querySelector("#tablePnl")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+        const normalized = (value) => String(value ?? "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+        const expected = normalized(expectedRto).split(" ").slice(0, 4).join(" ");
+        return {
+          tablePresent: Boolean(table),
+          dataRows: table?.querySelectorAll("tbody tr[data-ri]").length ?? 0,
+          titleMatches: panelText.includes("Maker Month Wise Data") && normalized(panelText).includes(expected),
+        };
+      }, input.rto).catch(() => null);
+      const explicitZero = rows.length === 0 && (
+        reportTotal === 0
+        || /no records?|no data|nothing found/i.test(bodyText)
+        || (emptyTableEvidence?.tablePresent && emptyTableEvidence.dataRows === 0 && emptyTableEvidence.titleMatches)
+      );
+      if (!rows.length && !explicitZero) {
+        throw new Error("VAHAN returned no maker rows without an explicit zero-result signal.");
+      }
+      reportTotal = resolveMakerReportTotal({ metricTotal: reportTotal, rows, explicitZero });
+      return {
+        status: "success",
+        state: input.state,
+        rto: input.rto,
+        fuelGroup: input.fuelGroup,
+        vehicleCategory: input.vehicleCategory,
+        filtersConfirmed: true,
+        reportTotal: reportTotal ?? rows.reduce((sum, row) => sum + row.vehicle_count, 0),
+        rows,
+        explicitZero,
+        attempts: result.attempts,
+        scrapedAt: new Date().toISOString(),
+        evidence: {
+          sourceUrl: SOURCE_URL,
+          year: Number(input.year),
+          month: Number(input.month),
+          fuels: reportItem.fuels,
+          vehicleCategories: reportItem.vehicleCategories,
+          vehicleClasses: reportItem.vehicleClasses,
+          emptyTableEvidence,
+        },
+      };
+    },
+    async close() {
+      if (closed) return;
+      closed = true;
+      await browser.close();
+    },
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -1488,16 +1682,29 @@ async function main() {
     } else if (args.mode === "scrape") {
       await scrape(args);
     } else if (args.mode === "rto-catalog") {
-      await buildRtoCatalog(args);
+      const releaseLock = await acquireVahanScrapeLock("rto-catalog", {
+        waitMs: Number(process.env.RTO_CATALOG_LOCK_WAIT_MS ?? 30 * 60_000),
+      });
+      try {
+        await buildRtoCatalog(args);
+      } finally {
+        await releaseLock();
+      }
     } else {
       throw new Error(`Unsupported mode: ${args.mode}`);
     }
   } finally {
     if (browser) await browser.close();
+    await closePool();
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+const isMainModule = process.argv[1]
+  && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isMainModule) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

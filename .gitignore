@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.cockroach.test.example
 example.env
 node_modules/
 data/tdc-history/vahan-vehicle-registrations-by-maker.csv
@@ -10,3 +11,26 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 data/vahan/failures/
+data/vahan/rto_catalog.json
+data/rto-insights/geofabrik/
+graphify-out/
+backups/postgres/
+logs/local-jobs/
+.local/postgres/
+
+# Local runtime output and visual-inspection artifacts.
+logs/*.log
+output/
+reports/bulk-query-test-latest.json
+reports/bulk-query-test-latest.md
+reports/daily-ev-try/
+reports/rto-exports/
+reports/rto-factor-daily/
+reports/rto-factor-source-candidates/
+
+# Local Codex/design-tool state and one-off diagnostic helpers.
+.codex/config.toml
+.impeccable/
+/check-vehicle-class.mjs
+/fix.cjs
+/patch-server.cjs

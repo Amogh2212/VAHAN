@@ -1,0 +1,168 @@
+<!doctype html>
+<!--
+THESIS: A top-RTO report should feel like an indexed evidence dossier, not a dark admin console.
+OWN-WORLD: Cool paper, statistical navy, signal marigold and evidence teal; taut controls, fine rules, tabular figures and a persistent atlas index.
+STORY: Verify the collection gate, choose a cadence and RTO, then read the report, warnings, trend and underlying rows as one document.
+FIRST VIEWPORT: The atlas index frames a navy reporting masthead; readiness and cadence controls form a ruled preface above the dossier.
+FORM: Public-data atlas report index in Operate and Read modes; user-pinned direction, seed key user-pinned.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Daily, weekly, and monthly registration reports for the frozen top-100 VAHAN RTO cohort." />
+    <title>VAHAN Top-100 RTO Reports</title>
+    <link rel="stylesheet" href="/styles.css?v=20260727-period-calendar-v2" />
+    <link rel="stylesheet" href="/atlas.css" />
+  </head>
+  <body class="atlas-page tracked-page rto-reports-page rto-reports-no-batch" data-atlas-route="rto-reports">
+    <a class="skip-link" href="#mainContent">Skip to RTO reports</a>
+    <div class="app-frame">
+      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark brand-mark">V</span>
+          <div><strong>VAHAN Analyst</strong><small>India mobility intelligence</small></div>
+        </div>
+        <nav class="feature-nav" aria-label="Feature navigation">
+          <a class="feature-link" href="/">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" /></svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+          <a class="feature-link" href="/compare.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" /></svg>
+            </span>
+            <span>Compare data</span>
+          </a>
+          <a class="feature-link" href="/map.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" /><path d="M9 3v15M15 6v15" /></svg>
+            </span>
+            <span>Map view</span>
+          </a>
+          <a class="feature-link" href="/rto-trends.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19V5" /><path d="M4 19h16" /><path d="m7 15 3-4 3 2 4-7" /></svg>
+            </span>
+            <span>RTO daily trends</span>
+          </a>
+          <a class="feature-link active" href="/rto-reports.html" aria-current="page">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>RTO reports</span>
+          </a>
+          <a class="feature-link" href="/rto-insights.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M4 19h16M4 19V5" /><circle cx="8" cy="14" r="2" /><circle cx="13" cy="10" r="2" /><circle cx="18" cy="7" r="2" /></svg>
+            </span>
+            <span>RTO insights</span>
+          </a>
+          <a class="feature-link" href="/reports/monthly-sales.html">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="M5 4h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+            </span>
+            <span>Monthly reports</span>
+          </a>
+          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false"><path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" /><path d="m10.3 12.9 4.8-4.8" /></svg>
+            </span>
+            <span>Telegram bot</span>
+          </a>
+        </nav>
+      </aside>
+
+      <main class="shell tracked-shell rto-report-shell" id="mainContent" tabindex="-1">
+        <section class="tracked-topbar">
+          <div class="hero-title-row">
+            <div class="sidebar-shell" id="sidebarShell">
+              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
+                <span class="sidebar-mark trigger-mark">V</span>
+              </button>
+            </div>
+            <div>
+              <p class="eyebrow">Top-100 registration intelligence</p>
+              <h1>RTO reports</h1>
+              <p class="compare-empty" id="rtoReportSubtitle">Daily, weekly, and monthly reports for each frozen cohort member.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="rto-report-readiness" aria-labelledby="rtoReportReadinessTitle">
+          <div>
+            <span class="panel-kicker">Collection gate</span>
+            <strong id="rtoReportReadinessTitle">Checking top-100 readiness</strong>
+          </div>
+          <div class="rto-report-readiness-metrics" id="rtoReportReadinessMetrics">
+            <span>0 / 100 complete</span>
+          </div>
+          <span class="status-pill" id="rtoReportReadinessStatus">Checking</span>
+          <p class="rto-report-readiness-message" id="rtoReportReadinessMessage" hidden></p>
+        </section>
+
+        <section class="rto-report-toolbar" aria-label="Report controls">
+          <div class="rto-report-tabs" role="tablist" aria-label="Report cadence">
+            <button type="button" class="rto-report-tab active" role="tab" aria-selected="true" data-cadence="daily">Daily</button>
+            <button type="button" class="rto-report-tab" role="tab" aria-selected="false" data-cadence="weekly">Weekly</button>
+            <button type="button" class="rto-report-tab" role="tab" aria-selected="false" data-cadence="monthly">Monthly</button>
+          </div>
+          <label class="rto-report-control rto-report-period-control">
+            <span>Period</span>
+            <div class="rto-report-period-picker">
+              <input id="rtoReportBatchDate" type="date" aria-label="Report period date" />
+              <span class="status-pill" id="rtoReportPeriodStatus">No report</span>
+            </div>
+          </label>
+          <label class="rto-report-control rto-report-search-control">
+            <span>RTO</span>
+            <input id="rtoReportSearch" type="search" placeholder="Search RTO or state" autocomplete="off" />
+          </label>
+          <label class="rto-report-control rto-report-status-control">
+            <span>Status</span>
+            <select id="rtoReportStatusFilter">
+              <option value="">All statuses</option>
+              <option value="ready">Ready</option>
+              <option value="ready_with_warnings">Warnings</option>
+              <option value="needs_review">Needs review</option>
+            </select>
+          </label>
+          <a class="secondary-action rto-report-batch-download" id="rtoReportBatchCsv" href="#" hidden>Download all CSV</a>
+        </section>
+
+        <section class="rto-report-batch-strip" id="rtoReportBatchStrip" hidden>
+          <div><span>Available</span><strong id="rtoReportGeneratedCount">0 / 100</strong></div>
+          <div><span>Ready</span><strong id="rtoReportReadyCount">0</strong></div>
+          <div><span>Warnings</span><strong id="rtoReportWarningCount">0</strong></div>
+          <div><span>Review</span><strong id="rtoReportReviewCount">0</strong></div>
+          <div><span>Revision</span><strong id="rtoReportRevision">1</strong></div>
+        </section>
+
+        <section class="rto-report-workspace">
+          <aside class="rto-report-list-panel" aria-labelledby="rtoReportListTitle">
+            <div class="rto-report-section-head">
+              <div>
+                <h2 id="rtoReportListTitle">Individual RTO reports</h2>
+                <span id="rtoReportListMeta">No generated batch</span>
+              </div>
+            </div>
+            <div class="rto-report-list" id="rtoReportList">
+              <p class="result-empty">No report batch has been generated yet.</p>
+            </div>
+          </aside>
+
+          <article class="rto-report-detail" id="rtoReportDetail">
+            <div class="rto-report-empty">
+              <span class="panel-kicker">Report detail</span>
+              <h2>Awaiting a completed top-100 cycle</h2>
+              <p>Completed RTOs appear with their saved VAHAN evidence. RTOs that could not be collected remain visible with an unavailable-data warning instead of being treated as zero.</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="/rto-reports.js?v=20260802-mtd-fallback-v1" defer></script>
+  </body>
+</html>

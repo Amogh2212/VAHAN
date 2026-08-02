@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "pmedrive-policy",
+      "sourceKey": "pmedrive.heavyindustries.policy",
+      "publisher": "Ministry of Heavy Industries - PM E-DRIVE",
+      "sourceTier": "A",
+      "sourceType": "government",
+      "canonicalHost": "pmedrive.heavyindustries.gov.in",
+      "evidencePolicy": "report_evidence",
+      "notes": "Official PM E-DRIVE scheme notices and amendments. Review the linked document before treating a notice as an event.",
+      "discoveryUrl": "https://pmedrive.heavyindustries.gov.in/policy_document",
+      "parser": "html_links",
+      "itemPathPrefixes": [
+        "/docs/",
+        "/policy_document"
+      ],
+      "titleKeywords": [
+        "electric",
+        "vehicle",
+        "vehicles",
+        "e-drive",
+        "charging",
+        "e-2w",
+        "e-3w",
+        "e-truck",
+        "e-bus"
+      ],
+      "maxCandidates": 20,
+      "enabled": true
+    },
+    {
+      "id": "morth-notifications",
+      "sourceKey": "morth.road-transport.notifications",
+      "publisher": "Ministry of Road Transport and Highways",
+      "sourceTier": "A",
+      "sourceType": "transport_authority",
+      "canonicalHost": "www.morth.gov.in",
+      "evidencePolicy": "report_evidence",
+      "notes": "Official road-transport circulars and notifications. A notice must be geographically and temporally relevant before it becomes an event.",
+      "discoveryUrl": "https://www.morth.gov.in/Circulars-Notifications-related-to-Road-Transport",
+      "parser": "html_links",
+      "itemPathPrefixes": [
+        "/"
+      ],
+      "titleKeywords": [
+        "electric",
+        "vehicle",
+        "vehicles",
+        "motor",
+        "registration",
+        "permit",
+        "aggregator",
+        "transport"
+      ],
+      "maxCandidates": 20,
+      "enabled": true
+    },
+    {
+      "id": "pib-government-transport-ev",
+      "sourceKey": "pib.government.transport-ev",
+      "publisher": "Press Information Bureau, Government of India",
+      "sourceTier": "A",
+      "sourceType": "government",
+      "canonicalHost": "www.pib.gov.in",
+      "allowedHosts": [
+        "pib.gov.in"
+      ],
+      "evidencePolicy": "report_evidence",
+      "notes": "Official government release index. A press release is discovery evidence; the reviewer must identify the actual policy or operational event and affected geography.",
+      "discoveryUrl": "https://www.pib.gov.in/AllRelease.aspx?MenuId=287&PMO=1&lang=1&reg=6",
+      "parser": "html_links",
+      "itemPathPrefixes": [
+        "/PressReleseDetail.aspx",
+        "/PressReleasePage.aspx"
+      ],
+      "titleKeywords": [
+        "electric",
+        "vehicle",
+        "vehicles",
+        "e-drive",
+        "charging",
+        "automobile"
+      ],
+      "requirePublishedAt": true,
+      "maxCandidates": 20,
+      "enabled": true
+    },
+    {
+      "id": "imd-warnings",
+      "sourceKey": "imd.weather.warnings",
+      "publisher": "India Meteorological Department",
+      "sourceTier": "A",
+      "sourceType": "weather_authority",
+      "canonicalHost": "internal.imd.gov.in",
+      "evidencePolicy": "report_evidence",
+      "notes": "Official weather and nowcast warnings. Only an alert that matches an RTO geography and its observation window can become a weather-disruption event.",
+      "discoveryUrl": "https://internal.imd.gov.in/pages/press_release_mausam.php",
+      "parser": "html_table_rows",
+      "itemPathPrefixes": [
+        "/"
+      ],
+      "titleKeywords": [
+        "warning",
+        "rain",
+        "rainfall",
+        "weather",
+        "flood",
+        "heat",
+        "cyclone",
+        "fog",
+        "thunderstorm"
+      ],
+      "requirePublishedAt": true,
+      "maxCandidates": 20,
+      "enabled": true
+    },
+    {
+      "id": "siam-press-releases",
+      "sourceKey": "siam.industry.press-releases",
+      "publisher": "Society of Indian Automobile Manufacturers",
+      "sourceTier": "B",
+      "sourceType": "industry_body",
+      "canonicalHost": "www.siam.in",
+      "evidencePolicy": "report_evidence",
+      "notes": "Industry-level context, not a substitute for an official policy notice or OEM-specific announcement. Disabled until a source-specific card parser is confirmed against the live page.",
+      "discoveryUrl": "https://www.siam.in/press-release.aspx",
+      "parser": "html_cards",
+      "itemPathPrefixes": [
+        "/"
+      ],
+      "titleKeywords": [
+        "vehicle",
+        "vehicles",
+        "automobile",
+        "electric",
+        "mobility",
+        "sales",
+        "industry"
+      ],
+      "requirePublishedAt": true,
+      "maxCandidates": 20,
+      "enabled": false
+    },
+    {
+      "id": "nse-corporate-filings",
+      "sourceKey": "nse.corporate-filings",
+      "publisher": "National Stock Exchange of India",
+      "sourceTier": "B",
+      "sourceType": "stock_exchange",
+      "canonicalHost": "www.nseindia.com",
+      "evidencePolicy": "report_evidence",
+      "notes": "Disabled until an operator confirms the source's access terms and selects an OEM-specific, stable discovery route.",
+      "discoveryUrl": "https://www.nseindia.com/companies-listing/corporate-filings-announcements?tabIndex=equity",
+      "parser": "html_links",
+      "itemPathPrefixes": [
+        "/"
+      ],
+      "titleKeywords": [
+        "vehicle",
+        "vehicles",
+        "automobile",
+        "electric",
+        "mobility",
+        "launch",
+        "price"
+      ],
+      "maxCandidates": 20,
+      "enabled": false
+    }
+  ]
+}
