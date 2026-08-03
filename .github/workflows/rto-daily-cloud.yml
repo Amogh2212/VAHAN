@@ -1,0 +1,55 @@
+name: RTO Daily Cloud Collection
+
+on:
+  schedule:
+    # Five resumable four-hour slices provide up to twenty hours of collection
+    # capacity per IST day without exceeding the hosted-runner job limit.
+    - cron: "0 0,4,8,12,16 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: vahan-rto-daily-neon
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Create runtime environment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          test -n "$DATABASE_URL"
+          {
+            printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
+            printf 'PGSSL=true\n'
+            printf 'RTO_DAILY_WORKERS=2\n'
+            printf 'RTO_DAILY_RETENTION_DAYS=30\n'
+            printf 'RTO_DAILY_DELAY_MS=1200\n'
+            printf 'RTO_DAILY_JITTER_MS=400\n'
+            printf 'RTO_DAILY_MAX_JOB_ATTEMPTS=3\n'
+            printf 'RTO_DAILY_WORK_BUDGET_MINUTES=240\n'
+          } > .env
+
+      - name: Run RTO daily queue
+        run: npm run rto-daily:work -- --retry-failed --time-budget-minutes 240 --workers 2
