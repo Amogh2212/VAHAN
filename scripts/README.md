@@ -447,6 +447,37 @@ completion time. While it runs, the terminal progress bar shows successful RTOs
 fetched against the full cycle, plus the current running, queued, and failed
 counts. Each scheduled invocation resumes the same durable cycle.
 
+### GitHub Actions with Neon
+
+For a laptop-free deployment, this repository includes
+`.github/workflows/rto-daily-cloud.yml`. It runs five resumable four-hour
+slices per day against the Neon-backed queue. The workflow installs Chromium,
+creates the ignored `.env` file required by the npm scripts, and runs:
+
+```text
+npm run rto-daily:work -- --retry-failed --time-budget-minutes 240 --workers 2
+```
+
+Before enabling the schedule:
+
+1. Apply `db/schema.sql` to Neon with `npm.cmd run db:schema:neon` from a
+   trusted environment.
+2. Add the Neon pooled connection string as the GitHub Actions repository
+   secret `DATABASE_URL`.
+3. Confirm that Neon has 100 enabled top-EV configurations in
+   `rto_daily_snapshot_configs`; the worker uses this table rather than the
+   ignored local catalog cache.
+4. Trigger the workflow manually once and confirm a successful browser access
+   to VAHAN before relying on the schedule.
+
+The hosted runner is ephemeral, so all resumable state must remain in Neon.
+The workflow deliberately serializes runs; the database advisory lock and
+GitHub concurrency group prevent overlapping VAHAN scrapers. A full cycle is
+usable only when its run is `success`, its frozen cohort is 100, all 100 RTOs
+are successful, and no jobs remain failed. If VAHAN blocks GitHub data-center
+IPs or the 100-RTO cycle needs more than one IST day, use an always-on cloud
+VM/self-hosted runner with a stable outbound IP instead.
+
 Use `--workers 1`, `--workers 2`, or `--workers 4` for the live benchmark. The
 runner caps concurrency at four, atomically claims one RTO per worker, reuses
 each worker browser across many RTOs, retries failures, and resumes expired
