@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run check:syntax",
+    "postinstall": "playwright install chromium",
     "dev": "node --env-file=.env server.mjs",
     "start": "node server.mjs",
     "test": "npm run check:syntax && npm run check:query-normalization && npm run check:query-composition && npm run check:query-fuzzy && npm run check:query-routing && npm run check:query-ai-repair && npm run check:query-acceptance && npm run check:query-telemetry && npm run check:query-contract && npm run check:http-router && npm run check:security && npm run check:secrets && npm run check:scraper && npm run check:oem && npm run check:rto-daily && npm run check:rto-reports && npm run check:rto-factor-agent && npm run check:rto-insights && npm run check:daily-ev-report && npm run check:local && npm run check:production",
