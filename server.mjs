@@ -138,7 +138,10 @@ const ALL_FILTER = "ALL";
 const INDIA_TOTAL = "INDIA TOTAL";
 const ALL_STATES = "All Vahan4 Running States";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-const LIVE_REFRESH_DISABLED = IS_PRODUCTION || envFlag("VAHAN_DISABLE_LIVE_REFRESH", false);
+// Missing supported queries are collected asynchronously.  Set this only for
+// maintenance windows; production requests are protected by the database rate
+// limiter and the shared VAHAN scrape lock rather than being silently abandoned.
+const LIVE_REFRESH_DISABLED = envFlag("VAHAN_DISABLE_LIVE_REFRESH", false);
 const TELEGRAM_ENABLE_POLLING = envFlag("TELEGRAM_ENABLE_POLLING", !IS_PRODUCTION);
 const TELEGRAM_ALERT_THRESHOLD_POINTS = envNumber("TELEGRAM_ALERT_THRESHOLD_POINTS", 2);
 const TELEGRAM_SUMMARY_FETCH_MISSING = envFlag("TELEGRAM_SUMMARY_FETCH_MISSING", !IS_PRODUCTION);
@@ -6438,11 +6441,6 @@ function assertProductionReadinessConfig() {
   }
   if (RATE_LIMIT_STORE !== "database" && !envFlag("ALLOW_IN_MEMORY_RATE_LIMIT", false)) {
     const error = new Error("Production readiness requires RATE_LIMIT_STORE=database.");
-    error.statusCode = 503;
-    throw error;
-  }
-  if (!LIVE_REFRESH_DISABLED) {
-    const error = new Error("HTTP-triggered VAHAN refresh must remain disabled in production.");
     error.statusCode = 503;
     throw error;
   }
