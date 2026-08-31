@@ -630,12 +630,12 @@ function compactRefreshMessage(data) {
   const count = data.liveRefresh?.requiredMonths?.length ?? 0;
   if (hasSideFilterContext(data.filters)) {
     return count
-      ? `Fetching exact VAHAN side-filter data for ${count} month${count === 1 ? "" : "s"}. The answer will update after validation.`
-      : "Fetching exact VAHAN side-filter data. The answer will update after validation.";
+      ? `Fetching exact Public Dashboard data for ${count} month${count === 1 ? "" : "s"}. The answer will update after validation.`
+      : "Fetching exact Public Dashboard data. The answer will update after validation.";
   }
   return count
-    ? `Fetching ${count} missing/latest month${count === 1 ? "" : "s"} from VAHAN. Saved data is shown now and will update automatically.`
-    : "Fetching missing/latest VAHAN data. Saved data is shown now and will update automatically.";
+    ? `Fetching ${count} missing/latest month${count === 1 ? "" : "s"} from the Public Dashboard. Saved data is shown now and will update automatically.`
+    : "Fetching missing/latest Public Dashboard data. Saved data is shown now and will update automatically.";
 }
 
 /* Main Render */
@@ -669,8 +669,8 @@ function render(data, query, requestId) {
 
   const scraperMessage = data.scraper?.autoTriggered
     ? data.scraper.success
-      ? [`Auto-scraped missing VAHAN data for ${data.scraper.runs.map((run) => `${run.year}`).join(", ")} before answering.`]
-      : [`Live VAHAN fetch failed for ${data.scraper.failedRuns?.length ?? 0} run(s). Results may be missing or stale.`]
+      ? [`Auto-scraped missing Public Dashboard data for ${data.scraper.runs.map((run) => `${run.year}`).join(", ")} before answering.`]
+      : [`Public Dashboard fetch failed for ${data.scraper.failedRuns?.length ?? 0} run(s). Results may be missing or stale.`]
     : [];
   const statusMessage =
     data.dataStatus === "fetch_failed"
@@ -678,7 +678,7 @@ function render(data, query, requestId) {
       : data.dataStatus === "stale"
         ? ["Showing stale local data because the live fetch failed."]
         : data.dataStatus === "live"
-          ? ["Showing freshly scraped VAHAN data while it is saved in the background."]
+          ? ["Showing freshly scraped Public Dashboard data while it is saved in the background."]
         : data.dataStatus === "refreshing"
           ? [compactRefreshMessage(data)]
         : data.dataStatus === "partial"
@@ -1043,6 +1043,13 @@ async function runQuery(query) {
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       if (requestId !== activeQueryRequestId) return { status: "stale", requestId };
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get("retry-after"));
+        const retryHint = Number.isFinite(retryAfter) && retryAfter > 0
+          ? ` Try again in ${retryAfter} second${retryAfter === 1 ? "" : "s"}.`
+          : " Please try again shortly.";
+        throw new Error(`${body.error ?? "Too many dashboard queries."}${retryHint}`);
+      }
       throw new Error(body.error ?? `Query failed: ${response.status}`);
     }
     const data = await response.json();
@@ -1090,7 +1097,7 @@ async function pollLiveRefresh(jobId, requestId, query) {
   }
 
   if (requestId === activeQueryRequestId && activeRefreshJobId === jobId) {
-    renderWarnings(["Live VAHAN refresh is still running. Submit the query again in a few minutes for the latest data."]);
+    renderWarnings(["Public Dashboard refresh is still running. Submit the query again in a few minutes for the latest data."]);
   }
 }
 

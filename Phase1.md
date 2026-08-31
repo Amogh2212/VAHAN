@@ -7,7 +7,7 @@
 Use the official VAHAN public dashboard report page as the primary reference source for aggregate registration counts:
 
 ```text
-https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en
 ```
 
 This is not a documented public API. It is a public dashboard/report source, so the product must describe the data as **official VAHAN public dashboard aggregate data**, not live API data.

@@ -28,10 +28,10 @@ function startServer(overrides = {}) {
       GROQ_API_KEY: "",
       TELEGRAM_BOT_TOKEN: "",
       TELEGRAM_ENABLE_POLLING: "0",
-      VAHAN_DISABLE_LIVE_REFRESH: "1",
+      PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH: "1",
       MAX_JSON_BODY_BYTES: "1024",
-      EXPENSIVE_RATE_LIMIT_WINDOW_MS: "60000",
-      EXPENSIVE_RATE_LIMIT_MAX: "4",
+      DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS: "60000",
+      DASHBOARD_QUERY_RATE_LIMIT_MAX: "4",
       ...overrides,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -126,6 +126,9 @@ async function main() {
     const query = await postQuery(smokeQueryText);
     assert(query.response.ok, `query smoke failed with ${query.response.status}: ${query.body.error}`);
     assert(query.body.liveRefresh === null, "live refresh should not start in production smoke");
+    assert(typeof query.body.refreshContext?.canonicalFiltersJson === "string", "query responses should expose canonical filter JSON");
+    assert(typeof query.body.refreshContext?.coverage?.complete === "boolean", "query responses should expose Neon coverage");
+    assert(typeof query.body.refreshContext?.sourceUrl === "string", "query responses should expose the upstream source URL");
     const routedHealth = await fetchJson("/health");
     assert(routedHealth.body.queryRouting?.totalQueries === 1, "health should count the completed dashboard query");
     assert(routedHealth.body.queryRouting?.outcomes?.localDeterministicSuccesses === 1, "health should count the local deterministic success");
@@ -160,6 +163,9 @@ async function main() {
     assert(spamOne.response.ok, `rate setup query one failed with ${spamOne.response.status}`);
     assert(spamTwo.response.ok, `rate setup query two failed with ${spamTwo.response.status}`);
     assert(spamThree.response.status === 429, `rate limit should return 429, got ${spamThree.response.status}`);
+    assert(Number(spamThree.response.headers.get("retry-after")) > 0, "rate-limited queries should include Retry-After");
+    const refreshPollAfterRateLimit = await fetchJson("/api/query-refresh/does-not-exist");
+    assert(refreshPollAfterRateLimit.response.status === 404, "refresh-status polling must not consume the dashboard-query limit");
 
     await stopServer(server.child);
     let missingDatabaseReadinessStatus = null;

@@ -40,6 +40,14 @@ import {
   upsertRegistrationRows,
 } from "./lib/registrations.mjs";
 import {
+  PUBLIC_DASHBOARD_SOURCE_URL,
+  canonicalRefreshJson,
+  canonicalRefreshKey,
+  createQueryRefreshAudit,
+  publicDashboardRefreshEligibility,
+  updateQueryRefreshAudit,
+} from "./lib/query-refresh-audit.mjs";
+import {
   buildRtoCatalogFromRows,
   loadRtoCatalog,
   resolveRtoWithCatalog,
@@ -130,7 +138,7 @@ const MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_maker_month
 const LEGACY_MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_state_maker_fuel.csv");
 const RTO_CATALOG_FILE = path.join(__dirname, "data", "vahan", "rto_catalog.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
-const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
+const SOURCE_LABEL = "Parivahan Public Dashboard aggregate data";
 const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
@@ -138,10 +146,10 @@ const ALL_FILTER = "ALL";
 const INDIA_TOTAL = "INDIA TOTAL";
 const ALL_STATES = "All Vahan4 Running States";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-// Missing supported queries are collected asynchronously.  Set this only for
-// maintenance windows; production requests are protected by the database rate
-// limiter and the shared VAHAN scrape lock rather than being silently abandoned.
-const LIVE_REFRESH_DISABLED = envFlag("VAHAN_DISABLE_LIVE_REFRESH", false);
+// Missing supported queries are collected asynchronously from the Public Dashboard.
+// Set this only for maintenance windows; rate limits and the shared scraper lock
+// protect the upstream rather than silently abandoning supported missing queries.
+const LIVE_REFRESH_DISABLED = envFlag("PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH", false);
 const TELEGRAM_ENABLE_POLLING = envFlag("TELEGRAM_ENABLE_POLLING", !IS_PRODUCTION);
 const TELEGRAM_ALERT_THRESHOLD_POINTS = envNumber("TELEGRAM_ALERT_THRESHOLD_POINTS", 2);
 const TELEGRAM_SUMMARY_FETCH_MISSING = envFlag("TELEGRAM_SUMMARY_FETCH_MISSING", !IS_PRODUCTION);
@@ -159,6 +167,9 @@ const PUBLIC_RATE_LIMIT_GLOBAL_MAX = envNumber("PUBLIC_RATE_LIMIT_GLOBAL_MAX", 6
 const EXPENSIVE_RATE_LIMIT_WINDOW_MS = envNumber("EXPENSIVE_RATE_LIMIT_WINDOW_MS", 60_000);
 const EXPENSIVE_RATE_LIMIT_MAX = envNumber("EXPENSIVE_RATE_LIMIT_MAX", 20);
 const EXPENSIVE_RATE_LIMIT_GLOBAL_MAX = envNumber("EXPENSIVE_RATE_LIMIT_GLOBAL_MAX", 1_000);
+const DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS = envNumber("DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS", 60_000);
+const DASHBOARD_QUERY_RATE_LIMIT_MAX = envNumber("DASHBOARD_QUERY_RATE_LIMIT_MAX", 10);
+const DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX = envNumber("DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX", 500);
 const REFRESH_JOB_TTL_MS = envNumber("REFRESH_JOB_TTL_MS", 30 * 60_000);
 const MAP_REFRESH_JOB_TTL_MS = envNumber("MAP_REFRESH_JOB_TTL_MS", 60 * 60_000);
 const REQUEST_TIMEOUT_MS = Math.max(5_000, envNumber("REQUEST_TIMEOUT_MS", 30_000));
@@ -760,6 +771,8 @@ let databaseUnavailable = false;
 let persistenceQueue = Promise.resolve();
 let nextRefreshJobId = 1;
 const refreshJobs = new Map();
+const refreshJobsByCanonicalKey = new Map();
+let publicDashboardRefreshTail = Promise.resolve();
 const mapRefreshJobs = new Map();
 const MAX_MAP_FETCH_MONTHS = 12;
 
@@ -768,7 +781,13 @@ function securityHeaders(headers = {}) {
 }
 
 async function enforceRateLimit(request, group, userId = null) {
-  const config = group === "expensive"
+  const config = group === "dashboard-query"
+    ? {
+        max: DASHBOARD_QUERY_RATE_LIMIT_MAX,
+        windowMs: DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS,
+        globalMax: DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX,
+      }
+    : group === "expensive"
     ? {
         max: EXPENSIVE_RATE_LIMIT_MAX,
         windowMs: EXPENSIVE_RATE_LIMIT_WINDOW_MS,
@@ -804,6 +823,18 @@ async function withExpensiveSlot(callback) {
   }
 }
 
+async function withPublicDashboardRefreshSlot(callback) {
+  const previous = publicDashboardRefreshTail;
+  let release;
+  publicDashboardRefreshTail = new Promise((resolve) => { release = resolve; });
+  await previous;
+  try {
+    return await callback();
+  } finally {
+    release();
+  }
+}
+
 function cleanupJobMap(map, ttlMs) {
   if (ttlMs <= 0) return;
   const now = Date.now();
@@ -816,6 +847,9 @@ function cleanupJobMap(map, ttlMs) {
 
 function cleanupRefreshJobs() {
   cleanupJobMap(refreshJobs, REFRESH_JOB_TTL_MS);
+  for (const [key, jobId] of refreshJobsByCanonicalKey.entries()) {
+    if (!refreshJobs.has(jobId)) refreshJobsByCanonicalKey.delete(key);
+  }
   cleanupJobMap(mapRefreshJobs, MAP_REFRESH_JOB_TTL_MS);
 }
 
@@ -5055,7 +5089,7 @@ async function freshnessFromDb() {
   return { latestMonth: stats.latestMonth, source: SOURCE_LABEL, rowCount: stats.rowCount };
 }
 
-function dashboardPayload({
+export function dashboardPayload({
   filters,
   rows,
   scraperRuns = [],
@@ -5066,6 +5100,7 @@ function dashboardPayload({
   preFiltered = false,
   freshnessInfo = null,
   dataQualityWarnings = [],
+  refreshContext = null,
 }) {
   const scraper = summarizeScraperRuns(scraperRuns);
   const resultRows = filters.ambiguousRtos ? [] : preFiltered ? rows : filterRows(rows, filters);
@@ -5090,15 +5125,16 @@ function dashboardPayload({
     freshness: freshnessInfo ?? freshness(rows),
     scraper,
     liveRefresh,
+    refreshContext,
     warnings: [
       ...dataQualityWarnings,
       llmFilters?.decodeWarning,
-      liveRefresh?.status === "pending" ? `Fetching ${liveRefresh.requiredMonths.length} missing/latest month${liveRefresh.requiredMonths.length === 1 ? "" : "s"} from VAHAN. Saved data is shown now and will update automatically.` : null,
-      liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may still be incomplete." : null,
+      liveRefresh?.status === "pending" ? `Fetching ${liveRefresh.requiredMonths.length} missing/latest month${liveRefresh.requiredMonths.length === 1 ? "" : "s"} from the Public Dashboard. Saved data is shown now and will update automatically.` : null,
+      liveRefresh?.status === "failed" ? "Public Dashboard refresh did not complete. Results may still be incomplete." : null,
       scraper.failedRuns.length
-        ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
+        ? "Public Dashboard fetch failed for this query. Results may be missing or stale."
         : null,
-      persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
+      persistenceStatus === "pending" ? "Fresh Public Dashboard data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
       dataReliabilityWarning(status, summary),
       status === "partial" ? "Some requested months are missing from local data." : null,
@@ -5125,12 +5161,24 @@ function liveRefreshInfo(job) {
     jobId: job.id,
     status: job.status,
     requiredMonths: job.requiredMonths,
+    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL,
+    auditId: job.auditId ?? null,
     error: job.error ?? null,
   };
 }
 
-function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
+function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, auditId = null, canonicalKey }) {
   cleanupRefreshJobs();
+  const existingId = refreshJobsByCanonicalKey.get(canonicalKey);
+  const existing = existingId ? refreshJobs.get(existingId) : null;
+  if (existing?.status === "pending") {
+    if (auditId && !existing.auditIds.includes(auditId)) {
+      existing.auditIds.push(auditId);
+      void updateQueryRefreshAudit(auditId, { outcome: "fetching", refreshJobId: existing.id })
+        .catch((auditError) => console.warn(`[refresh:${existing.id}] Audit update failed: ${safeErrorMessage(auditError)}`));
+    }
+    return existing;
+  }
   const id = String(nextRefreshJobId++);
   const job = {
     id,
@@ -5143,15 +5191,19 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
     scraperRuns: [],
     freshRows: [],
     persistenceStatus: "saved",
+    auditId,
+    auditIds: auditId ? [auditId] : [],
+    canonicalKey,
     error: null,
     payload: null,
     createdAt: Date.now(),
   };
   refreshJobs.set(id, job);
+  refreshJobsByCanonicalKey.set(canonicalKey, id);
 
   job.promise = (async () => {
     try {
-      const runs = await runScraperForFilters(filters, refreshGroups);
+      const runs = await withPublicDashboardRefreshSlot(() => runScraperForFilters(filters, refreshGroups));
       const freshRows = runs.flatMap((run) => run.rows ?? []);
       job.scraperRuns = runs;
       job.freshRows = freshRows;
@@ -5172,12 +5224,22 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
 
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);
       const missingMonths = findMissingAnswerMonths(filters, combinedRows);
-      job.status = runs.some((run) => !run.success) ? "failed" : "complete";
+      job.status = runs.some((run) => !run.success) || missingMonths.length > 0 ? "failed" : "complete";
+      job.error = job.status === "failed"
+        ? runs.find((run) => !run.success)?.error
+          ?? (missingMonths.length > 0 ? "Public dashboard did not return every requested month." : "Public dashboard refresh failed.")
+        : null;
+      void Promise.all(job.auditIds.map((entryId) => updateQueryRefreshAudit(entryId, {
+        outcome: missingMonths.length > 0 ? "incomplete" : job.status,
+        refreshJobId: job.id,
+        error: job.error,
+        coverage: { complete: missingMonths.length === 0, missingMonths },
+      }))).catch((auditError) => console.warn(`[refresh:${id}] Audit update failed: ${safeErrorMessage(auditError)}`));
       if (job.status === "failed") {
         notifyTelegramAlert([
           "Query refresh failed.",
           `Scope: ${describeFilters(filters)}`,
-          runs.find((run) => !run.success)?.error ?? "One or more VAHAN scraper runs failed.",
+          job.error,
         ].join("\n"));
       }
       job.payload = dashboardPayload({
@@ -5194,6 +5256,9 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
     } catch (error) {
       job.status = "failed";
       job.error = error.message;
+      void Promise.all(job.auditIds.map((entryId) => updateQueryRefreshAudit(entryId, {
+        outcome: "failed", refreshJobId: job.id, error: error.message,
+      }))).catch((auditError) => console.warn(`[refresh:${id}] Audit update failed: ${safeErrorMessage(auditError)}`));
       notifyTelegramAlert([
         "Query refresh failed.",
         `Scope: ${describeFilters(filters)}`,
@@ -5357,10 +5422,42 @@ export async function queryData(input, {
     ? [rejectedSideFilterWarning(sideFilterRowsNeedRefresh ? "refreshing" : "unapplied")]
     : [];
   const missingMonths = rejectSavedSideFilterRows ? requestedMonthGroups(filters) : loadedMissingMonths;
-  const refreshGroups = savedSideFilterRowsRejected && !LIVE_REFRESH_DISABLED ? requestedMonthGroups(filters) : loadedRefreshGroups;
+  const candidateRefreshGroups = savedSideFilterRowsRejected && !LIVE_REFRESH_DISABLED
+    ? requestedMonthGroups(filters)
+    : loadedRefreshGroups;
+  const refreshEligibility = publicDashboardRefreshEligibility(filters);
+  const refreshGroups = refreshEligibility.eligible ? candidateRefreshGroups : [];
+  if (candidateRefreshGroups.length && !refreshEligibility.eligible) {
+    dataQualityWarnings.push(`Public-dashboard refresh was not started: ${refreshEligibility.reason}`);
+  }
+  const requestedMonths = requestedMonthGroups(filters);
+  const canonicalKey = canonicalRefreshKey(filters, candidateRefreshGroups);
+  const coverage = {
+    complete: missingMonths.length === 0 && !rejectSavedSideFilterRows,
+    missingMonths,
+    refreshEligible: refreshEligibility.eligible,
+    refreshReason: refreshEligibility.reason,
+  };
+  const auditOutcome = refreshGroups.length ? "fetching" : coverage.complete ? "cached" : "incomplete";
+  const audit = await createQueryRefreshAudit({
+    canonicalKey, filters, requestedMonths, coverage, outcome: auditOutcome,
+  }).catch((auditError) => {
+    console.warn(`[query-refresh] Audit insert failed: ${safeErrorMessage(auditError)}`);
+    return { skipped: true, id: null };
+  });
   const liveRefreshJob = refreshGroups.length
-    ? startLiveRefreshJob({ filters, baseRows: answerRows, refreshGroups, llmFilters })
+    ? startLiveRefreshJob({
+        filters, baseRows: answerRows, refreshGroups, llmFilters, auditId: audit.id, canonicalKey,
+      })
     : null;
+  if (liveRefreshJob && audit.id) {
+    void updateQueryRefreshAudit(audit.id, { outcome: "fetching", refreshJobId: liveRefreshJob.id })
+      .catch((auditError) => console.warn(`[query-refresh] Audit update failed: ${safeErrorMessage(auditError)}`));
+  }
+  const refreshContext = {
+    canonicalFiltersJson: canonicalRefreshJson(filters), canonicalKey, auditId: audit.id,
+    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL, coverage,
+  };
 
   const payload = dashboardPayload({
     filters,
@@ -5371,6 +5468,7 @@ export async function queryData(input, {
     preFiltered: queryUsesDatabase && !hasSideFilterExclusions(filters),
     freshnessInfo: queryUsesDatabase ? await freshnessFromDb().catch(() => null) : null,
     dataQualityWarnings,
+    refreshContext,
   });
   if (routing.state === "local") recordDashboardLocalSuccess(routing);
   if (routing.state === "repair" && repairProviderName === "groq") {
@@ -6806,7 +6904,8 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/query") {
-      await enforceRateLimit(request, "expensive");
+      const user = await currentUser(request);
+      await enforceRateLimit(request, "dashboard-query", user?.id ?? null);
       const body = await readBody(request);
       sendJson(response, 200, await withExpensiveSlot(() => queryData(body)));
       return;

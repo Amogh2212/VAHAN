@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { hasRequestedSideFilters, resolveMakerReportTotal } from "./vahan-scraper.mjs";
+import { hasRequestedSideFilters, parsePublicMonthlyRows, resolveMakerReportTotal } from "./vahan-scraper.mjs";
 
 const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 
@@ -25,6 +25,19 @@ assert.equal(
   resolveMakerReportTotal({ metricTotal: 1200, rows: [{ maker: "A", vehicle_count: 5 }] }),
   1200,
   "a larger VAHAN metric total should still be preserved",
+);
+assert.deepEqual(
+  parsePublicMonthlyRows([
+    { yearAsString: "2024-March", registeredVehicleCount: 154 },
+    { yearAsString: "2024-April", registeredVehicleCount: "355" },
+  ], { year: 2024, label: "PURE EV" }),
+  { label: "PURE EV", counts: { 3: 154, 4: 355 } },
+  "public dashboard calendar-month rows must retain their original month keys",
+);
+assert.throws(
+  () => parsePublicMonthlyRows([{ yearAsString: "2023-January", registeredVehicleCount: 1 }], { year: 2024, label: "PURE EV" }),
+  /no monthly values/i,
+  "a response outside the requested year must never be persisted under that year",
 );
 assert.equal(
   resolveMakerReportTotal({ metricTotal: 44, rows: [{ maker: "A", vehicle_count: 5 }], explicitZero: true }),

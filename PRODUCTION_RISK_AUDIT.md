@@ -27,7 +27,7 @@ npx playwright install --with-deps chromium
   `GOOGLE_REDIRECT_URI` for the deployed hostname.
 - Keep `REQUIRE_DATABASE_FOR_READINESS=1` so `/ready` fails when Neon is absent
   or unavailable.
-- Keep `VAHAN_DISABLE_LIVE_REFRESH=1` unless the host is approved to run
+- Set `PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH=1` only when the host must pause
   Playwright scraper jobs.
 - Set `TELEGRAM_ENABLE_POLLING=0` on web hosts unless that process should own
   Telegram polling.

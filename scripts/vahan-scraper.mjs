@@ -3,15 +3,19 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { closePool } from "../lib/db.mjs";
+import { closePool, hasDatabaseUrl } from "../lib/db.mjs";
 import { replaceMakerRegistrationRows } from "../lib/maker-registrations.mjs";
 import { replaceRegistrationRows } from "../lib/registrations.mjs";
 import { upsertRtoDailyConfigs } from "../lib/rto-daily-snapshots.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 
+// The legacy Vahan4Dashboard was retired. The public dashboard exposes the
+// aggregate registration data through a monthly filter contract.
 const SOURCE_URL =
-  "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml";
+  "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en";
+const PUBLIC_MONTHLY_TABLE_ENDPOINT =
+  "/analytics/publicdashboard/vahandashboard/durationWiseRegistrationTable";
 
 const DEFAULT_OUTPUT_DIR = "data/vahan";
 const DEFAULT_DELAY_MS = 1200;
@@ -991,11 +995,109 @@ async function extractReportRows(page, reportItem = {}) {
   return [...rowsByLabel.values()];
 }
 
+function publicStateLabel(state) {
+  return state === "Jammu and Kashmir" ? "Jammu & Kashmir" : state;
+}
+
+function publicMonthFromLabel(value) {
+  const match = String(value ?? "").match(/(\d{4})[-\s]+([A-Za-z]+)/);
+  if (!match) return null;
+  return { year: Number(match[1]), month: monthFromHeader(match[2]) };
+}
+
+export function parsePublicMonthlyRows(rows, { year, label }) {
+  if (!Array.isArray(rows)) throw new Error("Public dashboard returned an invalid monthly response.");
+  const counts = {};
+  for (const row of rows) {
+    const period = publicMonthFromLabel(row?.yearAsString);
+    const count = normalizeCount(row?.registeredVehicleCount);
+    if (!period?.month || period.year !== Number(year) || count === null) continue;
+    counts[period.month] = count;
+  }
+  if (!Object.keys(counts).length) {
+    throw new Error(`Public dashboard returned no monthly values for ${label}.`);
+  }
+  return { label, counts };
+}
+
+async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
+  const options = await page.locator(selector).evaluate((select) =>
+    [...select.options].map((option) => ({
+      label: option.textContent.replace(/\s+/g, " ").trim(),
+      value: option.value,
+    })),
+  ).catch(() => []);
+  const desired = normalizeLookup(wanted);
+  const match = options.find((option) => normalizeLookup(option.label) === desired)
+    ?? options.find((option) => normalizeLookup(option.label).includes(desired));
+  if (match) return match.value;
+  if (optional) return "";
+  throw new Error(`Could not find public-dashboard option "${wanted}" in ${selector}.`);
+}
+
+async function fetchPublicMonthlyTable(page, params) {
+  const query = new URLSearchParams(params).toString();
+  const result = await page.evaluate(async (url) => {
+    const response = await fetch(url, { method: "GET", credentials: "same-origin" });
+    const text = await response.text();
+    return { status: response.status, text };
+  }, `${PUBLIC_MONTHLY_TABLE_ENDPOINT}?${query}`);
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Public dashboard monthly endpoint returned HTTP ${result.status}.`);
+  }
+  try {
+    return JSON.parse(result.text);
+  } catch {
+    throw new Error("Public dashboard monthly endpoint did not return JSON.");
+  }
+}
+
+async function scrapePublicFuelReport(page, reportItem) {
+  await openDashboard(page);
+  const stateCode = reportItem.state === "INDIA TOTAL"
+    ? ""
+    : await publicOptionValue(page, "#stateCode", publicStateLabel(reportItem.state));
+  let rtoCode = "0";
+  if (reportItem.rto) {
+    await page.locator("#stateCode").selectOption(stateCode);
+    await page.waitForTimeout(300);
+    rtoCode = await publicOptionValue(page, "#rtoCode", reportItem.rto);
+  }
+  const vehicleCategoryGroup = reportItem.vehicleCategories?.length
+    ? await publicOptionValue(page, "#vehicleCategoryGroup", reportItem.vehicleCategories[0])
+    : "";
+  const vehicleClasses = reportItem.vehicleClasses?.length
+    ? await publicOptionValue(page, "#vehicleClass", reportItem.vehicleClasses[0])
+    : "";
+  const vehicleEmissions = reportItem.norms?.length
+    ? await publicOptionValue(page, "#vehicleEmission", reportItem.norms[0])
+    : "";
+  const requestedFuels = reportItem.fuels?.length ? reportItem.fuels : FUEL_NAMES;
+  const rows = [];
+  for (const fuel of requestedFuels) {
+    const vehicleFuels = await publicOptionValue(page, "#vehicleFuel", normalizeFuelName(fuel), { optional: true });
+    if (!vehicleFuels) {
+      if (reportItem.fuels?.length) throw new Error(`Public dashboard does not expose the requested fuel filter "${fuel}".`);
+      continue;
+    }
+    const response = await fetchPublicMonthlyTable(page, {
+      stateCode, rtoCode, fromYear: String(reportItem.year), toYear: String(reportItem.year),
+      vehicleClasses, vehicleMakers: "", vehicleSubCategories: "", vehicleEmissions, vehicleFuels,
+      timePeriod: "0", calendarType: "3", vehicleCategoryGroup, evType: "", vehicleStatus: "",
+      vehicleOwnerType: "", fitnessCheck: "", vehicleType: "", archiveTypeAC: "ACTIVE_COMPLIANT",
+      archiveTypeANC: "ACTIVE_NON_COMPLIANT", archiveTypePA: "", archiveTypeTA: "", archiveTypeNA: "",
+    });
+    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
+  }
+  if (!rows.length) throw new Error("Public dashboard returned no matching fuel filters.");
+  return rows;
+}
+
 async function scrapeReport(page, reportItem) {
-  await configureReport(page, reportItem);
-  await refreshReport(page);
-  await applyReportSideFilters(page, reportItem);
-  return extractReportRows(page, reportItem);
+  if (reportItem.dimension !== "fuel") {
+    throw new Error("The public dashboard adapter currently supports fuel-month ingestion only; maker collection remains disabled until a complete monthly maker contract is verified.");
+  }
+  return scrapePublicFuelReport(page, reportItem);
 }
 
 async function captureFailureArtifacts(page, outputDir, reportItem, attempt, error) {
@@ -1680,7 +1782,16 @@ async function main() {
       const page = await context.newPage();
       await discoverDashboard(page, args.outputDir);
     } else if (args.mode === "scrape") {
-      await scrape(args);
+      const releaseLock = hasDatabaseUrl()
+        ? await acquireVahanScrapeLock("public-dashboard-scrape", {
+            waitMs: Number(process.env.PUBLIC_DASHBOARD_LOCK_WAIT_MS ?? 30 * 60_000),
+          })
+        : null;
+      try {
+        await scrape(args);
+      } finally {
+        await releaseLock?.();
+      }
     } else if (args.mode === "rto-catalog") {
       const releaseLock = await acquireVahanScrapeLock("rto-catalog", {
         waitMs: Number(process.env.RTO_CATALOG_LOCK_WAIT_MS ?? 30 * 60_000),

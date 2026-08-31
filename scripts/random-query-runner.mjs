@@ -191,7 +191,7 @@ function startServer() {
       OLLAMA_TIMEOUT_MS: "10000",
       GEMINI_API_KEY: "",
       GROQ_API_KEY: "",
-      VAHAN_DISABLE_LIVE_REFRESH: LIVE ? "0" : "1",
+      PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH: LIVE ? "0" : "1",
       TELEGRAM_ENABLE_POLLING: "0",
     },
     stdio: ["ignore", "pipe", "pipe"],

@@ -292,7 +292,7 @@ Phase validation must:
 - use a dedicated local port;
 - use `AI_QUERY_PROVIDER=none`;
 - blank external AI keys in the test process;
-- set `VAHAN_DISABLE_LIVE_REFRESH=1`;
+- set `PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH=1`;
 - disable Telegram polling and the factor agent;
 - use in-memory test rate limits;
 - avoid scraper, scheduler, queue, migration, schema, and provider calls;
