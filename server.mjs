@@ -4214,6 +4214,12 @@ function hasRequiredScrapeFilters(filters) {
   );
 }
 
+export function requestedPublicFuelFilters(filters = {}) {
+  return filters.fuelFilters?.length
+    ? uniqueSorted(filters.fuelFilters)
+    : uniqueSorted(filters.selectedFuelTypes ?? []);
+}
+
 function shouldAutoScrape(filters, resultRows, missingMonths) {
   if (!hasRequiredScrapeFilters(filters)) return false;
   if (filters.ambiguousRtos) return false;
@@ -4260,7 +4266,8 @@ async function runScraperForFilters(filters, missingMonths) {
       "--months", group.months.join(","),
     ];
     if (rto) args.push("--rtos", rto);
-    if (runFilters.fuelFilters?.length) args.push("--fuels", runFilters.fuelFilters.join(","));
+    const requestedFuels = requestedPublicFuelFilters(runFilters);
+    if (requestedFuels.length) args.push("--fuels", requestedFuels.join(","));
     if (runFilters.vehicleCategories?.length) args.push("--vehicle-categories", runFilters.vehicleCategories.join(","));
     if (runFilters.norms?.length) args.push("--norms", runFilters.norms.join(","));
     if (runFilters.vehicleClasses?.length) args.push("--vehicle-classes", runFilters.vehicleClasses.join(","));

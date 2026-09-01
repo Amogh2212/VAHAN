@@ -1035,8 +1035,26 @@ async function publicOptionValue(page, selector, wanted, { optional = false } = 
   throw new Error(`Could not find public-dashboard option "${wanted}" in ${selector}.`);
 }
 
+async function publicOptionValues(page, selector, wanted = []) {
+  return Promise.all(wanted.map((label) => publicOptionValue(page, selector, label)));
+}
+
+export function publicMonthlyQueryString(params = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== null && item !== undefined && String(item) !== "") query.append(`${key}[]`, String(item));
+      }
+    } else if (value !== null && value !== undefined && String(value) !== "") {
+      query.append(key, String(value));
+    }
+  }
+  return query.toString();
+}
+
 async function fetchPublicMonthlyTable(page, params) {
-  const query = new URLSearchParams(params).toString();
+  const query = publicMonthlyQueryString(params);
   const result = await page.evaluate(async (url) => {
     const response = await fetch(url, { method: "GET", credentials: "same-origin" });
     const text = await response.text();
@@ -1063,15 +1081,9 @@ async function scrapePublicFuelReport(page, reportItem) {
     await page.waitForTimeout(300);
     rtoCode = await publicOptionValue(page, "#rtoCode", reportItem.rto);
   }
-  const vehicleCategoryGroup = reportItem.vehicleCategories?.length
-    ? await publicOptionValue(page, "#vehicleCategoryGroup", reportItem.vehicleCategories[0])
-    : "";
-  const vehicleClasses = reportItem.vehicleClasses?.length
-    ? await publicOptionValue(page, "#vehicleClass", reportItem.vehicleClasses[0])
-    : "";
-  const vehicleEmissions = reportItem.norms?.length
-    ? await publicOptionValue(page, "#vehicleEmission", reportItem.norms[0])
-    : "";
+  const vehicleSubCategories = await publicOptionValues(page, "#vehicleSubCategory", reportItem.vehicleCategories ?? []);
+  const vehicleClasses = await publicOptionValues(page, "#vehicleClass", reportItem.vehicleClasses ?? []);
+  const vehicleEmissions = await publicOptionValues(page, "#vehicleEmission", reportItem.norms ?? []);
   const requestedFuels = reportItem.fuels?.length ? reportItem.fuels : FUEL_NAMES;
   const rows = [];
   for (const fuel of requestedFuels) {
@@ -1081,11 +1093,28 @@ async function scrapePublicFuelReport(page, reportItem) {
       continue;
     }
     const response = await fetchPublicMonthlyTable(page, {
-      stateCode, rtoCode, fromYear: String(reportItem.year), toYear: String(reportItem.year),
-      vehicleClasses, vehicleMakers: "", vehicleSubCategories: "", vehicleEmissions, vehicleFuels,
-      timePeriod: "0", calendarType: "3", vehicleCategoryGroup, evType: "", vehicleStatus: "",
-      vehicleOwnerType: "", fitnessCheck: "", vehicleType: "", archiveTypeAC: "ACTIVE_COMPLIANT",
-      archiveTypeANC: "ACTIVE_NON_COMPLIANT", archiveTypePA: "", archiveTypeTA: "", archiveTypeNA: "",
+      stateCode,
+      rtoCode,
+      fromYear: String(reportItem.year),
+      toYear: String(reportItem.year),
+      vehicleClasses,
+      vehicleMakers: [],
+      vehicleSubCategories,
+      vehicleEmissions,
+      vehicleFuels: [vehicleFuels],
+      timePeriod: "0",
+      calendarType: "3",
+      vehicleCategoryGroup: [],
+      evType: [],
+      vehicleStatus: [],
+      vehicleOwnerType: [],
+      fitnessCheck: "0",
+      vehicleType: "",
+      archiveTypeAC: "ACTIVE_COMPLIANT",
+      archiveTypeANC: "ACTIVE_NON_COMPLIANT",
+      archiveTypePA: "",
+      archiveTypeTA: "",
+      archiveTypeNA: "",
     });
     rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
   }

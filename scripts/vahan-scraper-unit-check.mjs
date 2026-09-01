@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { hasRequestedSideFilters, parsePublicMonthlyRows, resolveMakerReportTotal } from "./vahan-scraper.mjs";
+import { hasRequestedSideFilters, parsePublicMonthlyRows, publicMonthlyQueryString, resolveMakerReportTotal } from "./vahan-scraper.mjs";
 
 const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 
@@ -34,6 +34,19 @@ assert.deepEqual(
   { label: "PURE EV", counts: { 3: 154, 4: 355 } },
   "public dashboard calendar-month rows must retain their original month keys",
 );
+const multiSelectQuery = publicMonthlyQueryString({
+  vehicleSubCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"],
+  vehicleClasses: ["Motor Car", "Motor Caravan"],
+  vehicleEmissions: ["BHARAT STAGE IV", "BHARAT STAGE VI"],
+  vehicleFuels: ["DIESEL", "PETROL"],
+});
+assert.match(multiSelectQuery, /vehicleSubCategories%5B%5D=LIGHT\+MOTOR\+VEHICLE/);
+assert.match(multiSelectQuery, /vehicleSubCategories%5B%5D=LIGHT\+PASSENGER\+VEHICLE/);
+assert.match(multiSelectQuery, /vehicleClasses%5B%5D=Motor\+Car/);
+assert.match(multiSelectQuery, /vehicleEmissions%5B%5D=BHARAT\+STAGE\+VI/);
+assert.match(multiSelectQuery, /vehicleFuels%5B%5D=DIESEL/);
+assert.match(multiSelectQuery, /vehicleFuels%5B%5D=PETROL/);
+assert.doesNotMatch(multiSelectQuery, /vehicleCategoryGroup/);
 assert.throws(
   () => parsePublicMonthlyRows([{ yearAsString: "2023-January", registeredVehicleCount: 1 }], { year: 2024, label: "PURE EV" }),
   /no monthly values/i,
