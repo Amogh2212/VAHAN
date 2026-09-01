@@ -140,6 +140,7 @@ const RTO_CATALOG_FILE = path.join(__dirname, "data", "vahan", "rto_catalog.json
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SOURCE_LABEL = "Parivahan Public Dashboard aggregate data";
 const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
+const FUEL_DISTRIBUTION_MARKER = "VAHAN_FUEL_DISTRIBUTION_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 const ALL_FILTER = "ALL";
@@ -1287,6 +1288,15 @@ function rowIdentity(row) {
 function mergeRegistrationRows(existingRows, freshRows) {
   const merged = new Map();
   for (const row of existingRows) merged.set(rowIdentity(row), row);
+  const aggregateContexts = new Set(freshRows
+    .filter((row) => String(row.fuel_type ?? "") === ALL_FILTER)
+    .map((row) => [row.year, row.month, row.state, row.rto, row.fuel_filter ?? ALL_FILTER, row.vehicle_category_filter ?? ALL_FILTER, row.norms_filter ?? ALL_FILTER, row.vehicle_class_filter ?? ALL_FILTER].join("||")));
+  if (aggregateContexts.size) {
+    for (const [key, row] of merged) {
+      const context = [row.year, row.month, row.state, row.rto, row.fuel_filter ?? ALL_FILTER, row.vehicle_category_filter ?? ALL_FILTER, row.norms_filter ?? ALL_FILTER, row.vehicle_class_filter ?? ALL_FILTER].join("||");
+      if (aggregateContexts.has(context)) merged.delete(key);
+    }
+  }
   for (const row of freshRows) merged.set(rowIdentity(row), row);
   return [...merged.values()].sort((a, b) =>
     a.year - b.year ||
@@ -4246,6 +4256,26 @@ function extractScrapedRows(stdout = "") {
   }
 }
 
+function extractFuelDistribution(stdout = "") {
+  const line = stdout.split(/\r?\n/).find((entry) => entry.startsWith(FUEL_DISTRIBUTION_MARKER));
+  if (!line) return [];
+  try {
+    const reports = JSON.parse(line.slice(FUEL_DISTRIBUTION_MARKER.length));
+    const totals = new Map();
+    for (const report of Array.isArray(reports) ? reports : []) {
+      for (const item of Array.isArray(report?.distribution) ? report.distribution : []) {
+        const fuelType = String(item?.fuelType ?? "").trim();
+        const count = Number(item?.count);
+        if (fuelType && Number.isFinite(count)) totals.set(fuelType, (totals.get(fuelType) ?? 0) + count);
+      }
+    }
+    return [...totals.entries()].map(([fuelType, count]) => ({ fuelType, count })).sort((a, b) => b.count - a.count);
+  } catch (error) {
+    console.warn(`[auto-scrape] Could not parse fuel distribution: ${safeErrorMessage(error)}`);
+    return [];
+  }
+}
+
 async function runScraperForFilters(filters, missingMonths) {
   const state = filters.state ?? INDIA_TOTAL;
   const rto = filters.rtoSearch ?? filters.rto ?? filters.locationText;
@@ -4268,6 +4298,7 @@ async function runScraperForFilters(filters, missingMonths) {
     if (rto) args.push("--rtos", rto);
     const requestedFuels = requestedPublicFuelFilters(runFilters);
     if (requestedFuels.length) args.push("--fuels", requestedFuels.join(","));
+    else args.push("--emit-fuel-distribution-json");
     if (runFilters.vehicleCategories?.length) args.push("--vehicle-categories", runFilters.vehicleCategories.join(","));
     if (runFilters.norms?.length) args.push("--norms", runFilters.norms.join(","));
     if (runFilters.vehicleClasses?.length) args.push("--vehicle-classes", runFilters.vehicleClasses.join(","));
@@ -4283,6 +4314,7 @@ async function runScraperForFilters(filters, missingMonths) {
         months: group.months,
         success: true,
         rows: extractScrapedRows(result.stdout),
+        fuelDistribution: extractFuelDistribution(result.stdout),
         stdout: result.stdout,
         stderr: result.stderr,
       });
@@ -4293,6 +4325,7 @@ async function runScraperForFilters(filters, missingMonths) {
         months: group.months,
         success: false,
         rows: extractScrapedRows(error.stdout),
+        fuelDistribution: extractFuelDistribution(error.stdout),
         error: publicOperationalError(error, "VAHAN refresh failed."),
         stderr: error.stderr,
       });
@@ -5107,6 +5140,7 @@ export function dashboardPayload({
   preFiltered = false,
   freshnessInfo = null,
   dataQualityWarnings = [],
+  fuelBreakdownOverride = null,
   refreshContext = null,
 }) {
   const scraper = summarizeScraperRuns(scraperRuns);
@@ -5127,7 +5161,7 @@ export function dashboardPayload({
       peakMonthCount: summary.peakMonthCount,
     },
     trend: summary.trend,
-    fuelBreakdown: summary.fuelBreakdown,
+    fuelBreakdown: fuelBreakdownOverride?.length ? fuelBreakdownOverride : summary.fuelBreakdown,
     rows: resultRows,
     freshness: freshnessInfo ?? freshness(rows),
     scraper,
@@ -5212,6 +5246,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
     try {
       const runs = await withPublicDashboardRefreshSlot(() => runScraperForFilters(filters, refreshGroups));
       const freshRows = runs.flatMap((run) => run.rows ?? []);
+      const fuelBreakdownOverride = runs.flatMap((run) => run.fuelDistribution ?? []);
       job.scraperRuns = runs;
       job.freshRows = freshRows;
 
@@ -5259,6 +5294,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         liveRefresh: liveRefreshInfo(job),
         preFiltered: false,
         freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
+        fuelBreakdownOverride,
       });
     } catch (error) {
       job.status = "failed";

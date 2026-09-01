@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { hasRequestedSideFilters, parsePublicMonthlyRows, publicMonthlyQueryString, publicRtoOptionValue, resolveMakerReportTotal } from "./vahan-scraper.mjs";
+import { hasRequestedSideFilters, parsePublicFuelDistribution, parsePublicMonthlyRows, publicChartQueryString, publicMonthlyQueryString, publicRtoOptionValue, resolveMakerReportTotal } from "./vahan-scraper.mjs";
 
 const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 
@@ -47,6 +47,16 @@ assert.match(multiSelectQuery, /vehicleEmissions%5B%5D=BHARAT\+STAGE\+VI/);
 assert.match(multiSelectQuery, /vehicleFuels%5B%5D=DIESEL/);
 assert.match(multiSelectQuery, /vehicleFuels%5B%5D=PETROL/);
 assert.doesNotMatch(multiSelectQuery, /vehicleCategoryGroup/);
+assert.equal(
+  publicChartQueryString({ vehicleSubCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"] }),
+  "vehicleSubCategories=LIGHT+MOTOR+VEHICLE%2CLIGHT+PASSENGER+VEHICLE",
+  "the Public Dashboard fuel chart expects a single comma-separated multi-select value",
+);
+assert.deepEqual(
+  parsePublicFuelDistribution({ labels: ["PETROL", "PURE EV"], data: [120, "34"] }),
+  [{ fuelType: "PETROL", count: 120 }, { fuelType: "PURE EV", count: 34 }],
+  "one fuel chart response must preserve every raw fuel bucket",
+);
 assert.equal(
   publicRtoOptionValue([
     { label: "Noida - UP16", value: "UP16" },
