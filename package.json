@@ -29,6 +29,7 @@
     "check:api-contracts": "node --env-file=.env scripts/api-contract-check.mjs",
     "check:security": "node scripts/security-unit-check.mjs",
     "check:secrets": "node scripts/secret-scan.mjs",
+    "check:public-dashboard": "node scripts/public-dashboard-client-unit-check.mjs",
     "check:scraper": "node scripts/vahan-scraper-unit-check.mjs",
     "check:oem": "node scripts/monthly-oem-unit-check.mjs",
     "check:rto-daily": "node scripts/rto-daily-unit-check.mjs",

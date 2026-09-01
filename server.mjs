@@ -48,6 +48,10 @@ import {
   updateQueryRefreshAudit,
 } from "./lib/query-refresh-audit.mjs";
 import {
+  fetchPublicDashboardRows,
+  fetchPublicFuelDistribution,
+} from "./lib/public-dashboard-client.mjs";
+import {
   buildRtoCatalogFromRows,
   loadRtoCatalog,
   resolveRtoWithCatalog,
@@ -4286,37 +4290,40 @@ async function runScraperForFilters(filters, missingMonths) {
   const runs = [];
   for (const group of groups) {
     const runFilters = group.filters ?? filters;
-    const args = [
-      "scripts/vahan-scraper.mjs",
-      "--mode", "scrape",
-      "--no-persist",
-      "--emit-rows-json",
-      "--states", state,
-      "--years", String(group.year),
-      "--months", group.months.join(","),
-    ];
-    if (rto) args.push("--rtos", rto);
     const requestedFuels = requestedPublicFuelFilters(runFilters);
-    if (requestedFuels.length) args.push("--fuels", requestedFuels.join(","));
-    else args.push("--emit-fuel-distribution-json");
-    if (runFilters.vehicleCategories?.length) args.push("--vehicle-categories", runFilters.vehicleCategories.join(","));
-    if (runFilters.norms?.length) args.push("--norms", runFilters.norms.join(","));
-    if (runFilters.vehicleClasses?.length) args.push("--vehicle-classes", runFilters.vehicleClasses.join(","));
-    console.log(`[auto-scrape] ${state} / ${rto} / ${group.year} months=${group.months.join(",")}`);
+    console.log(`[auto-refresh] direct public API ${state} / ${rto} / ${group.year} months=${group.months.join(",")}`);
     try {
-      const result = await execFileAsync(process.execPath, args, {
-        cwd: __dirname,
-        timeout: 300_000,
-        maxBuffer: 1024 * 1024 * 10,
-      });
+      const request = {
+        state,
+        rto,
+        year: group.year,
+        months: group.months,
+        fuels: requestedFuels,
+        vehicleCategories: runFilters.vehicleCategories ?? [],
+        norms: runFilters.norms ?? [],
+        vehicleClasses: runFilters.vehicleClasses ?? [],
+      };
+      const rows = await fetchPublicDashboardRows(request);
+      let fuelDistribution = [];
+      if (!requestedFuels.length) {
+        const candidateDistribution = await fetchPublicFuelDistribution(request);
+        const requestedTotal = rows.reduce((total, row) => total + Number(row.vehicle_count ?? 0), 0);
+        const distributionTotal = candidateDistribution.reduce((total, item) => total + Number(item.count ?? 0), 0);
+        // The public fuel chart is year-scoped while the monthly endpoint can
+        // answer a narrower range.  Use its single-request breakdown only if
+        // it proves to cover precisely the requested month set.
+        if (requestedTotal === distributionTotal) {
+          fuelDistribution = candidateDistribution;
+        } else {
+          console.warn(`[auto-refresh] Withheld year-scoped fuel chart for ${group.year}; total ${distributionTotal} does not match requested total ${requestedTotal}.`);
+        }
+      }
       runs.push({
         year: group.year,
         months: group.months,
         success: true,
-        rows: extractScrapedRows(result.stdout),
-        fuelDistribution: extractFuelDistribution(result.stdout),
-        stdout: result.stdout,
-        stderr: result.stderr,
+        rows,
+        fuelDistribution,
       });
     } catch (error) {
       console.error(`[auto-scrape] Failed for ${group.year}/${group.months}: ${safeErrorMessage(error)}`);
@@ -4324,10 +4331,9 @@ async function runScraperForFilters(filters, missingMonths) {
         year: group.year,
         months: group.months,
         success: false,
-        rows: extractScrapedRows(error.stdout),
-        fuelDistribution: extractFuelDistribution(error.stdout),
+        rows: [],
+        fuelDistribution: [],
         error: publicOperationalError(error, "VAHAN refresh failed."),
-        stderr: error.stderr,
       });
     }
   }
