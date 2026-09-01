@@ -389,7 +389,7 @@ async function openDashboard(page) {
     waitUntil: "domcontentloaded",
     timeout: DEFAULT_TIMEOUT_MS,
   });
-  await page.waitForLoadState("networkidle", { timeout: DEFAULT_TIMEOUT_MS }).catch(() => {});
+  await page.locator("#stateCode").waitFor({ state: "attached", timeout: DEFAULT_TIMEOUT_MS });
 
   const status = response?.status();
   const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
@@ -1188,12 +1188,9 @@ async function scrapePublicFuelReport(page, reportItem) {
 }
 
 async function scrapePublicFuelDistribution(page, reportItem) {
-  await openDashboard(page);
   const stateCode = reportItem.state === "INDIA TOTAL" ? "" : await publicOptionValue(page, "#stateCode", publicStateLabel(reportItem.state));
   let rtoCode = "0";
   if (reportItem.rto) {
-    await page.locator("#stateCode").selectOption(stateCode);
-    await page.waitForTimeout(300);
     rtoCode = await publicRtoValue(page, reportItem.rto);
   }
   const vehicleSubCategories = await publicOptionValues(page, "#vehicleSubCategory", reportItem.vehicleCategories ?? []);
