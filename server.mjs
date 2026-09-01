@@ -4338,9 +4338,13 @@ async function runScraperForFilters(filters, missingMonths) {
 function hasRequestedSideFilterContext(filters = {}) {
   return Boolean(
     filters.fuelFilters?.length ||
+    filters.selectedFuelTypes?.length ||
     filters.vehicleCategories?.length ||
+    filters.selectedVehicleCategories?.length ||
     filters.norms?.length ||
-    filters.vehicleClasses?.length,
+    filters.selectedNorms?.length ||
+    filters.vehicleClasses?.length ||
+    filters.selectedVehicleClasses?.length,
   );
 }
 
@@ -5458,14 +5462,14 @@ export async function queryData(input, {
       : refreshMonthsForAnswer(filters, rows)
     : [];
   const savedSideFilterRowsRejected = await sideFilterScrapeLooksUnapplied(filters, immediateRows);
-  const sideFilterRowsNeedRefresh = hasRequestedSideFilterContext(filters) && loadedRefreshGroups.length > 0;
+  const sideFilterRowsNeedRefresh = hasRequestedSideFilterContext(filters);
   const rejectSavedSideFilterRows = savedSideFilterRowsRejected || sideFilterRowsNeedRefresh;
   const answerRows = rejectSavedSideFilterRows ? [] : immediateRows;
   const dataQualityWarnings = rejectSavedSideFilterRows
     ? [rejectedSideFilterWarning(sideFilterRowsNeedRefresh ? "refreshing" : "unapplied")]
     : [];
   const missingMonths = rejectSavedSideFilterRows ? requestedMonthGroups(filters) : loadedMissingMonths;
-  const candidateRefreshGroups = savedSideFilterRowsRejected && !LIVE_REFRESH_DISABLED
+  const candidateRefreshGroups = sideFilterRowsNeedRefresh && !LIVE_REFRESH_DISABLED
     ? requestedMonthGroups(filters)
     : loadedRefreshGroups;
   const refreshEligibility = publicDashboardRefreshEligibility(filters);
