@@ -393,17 +393,20 @@ async function openDashboard(page) {
 
   const status = response?.status();
   const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
+  const dashboardControlCount = await page.locator("#stateCode, #rtoCode, #vehicleSubCategory").count();
+  const hasCaptchaElement = (await page.locator('[id*="captcha" i], [class*="captcha" i], iframe[src*="captcha" i]').count()) > 0;
 
   if (status === 403 || /403\s+Forbidden/i.test(bodyText)) {
     throw new Error(
       "VAHAN dashboard returned 403 Forbidden from this machine. Retry with --headed, or use a network/browser session that can open the dashboard normally.",
     );
   }
-  if (/captcha|sign in|login|unauthori[sz]ed|access denied/i.test(bodyText)) {
+  if (hasCaptchaElement || (dashboardControlCount < 3 && /captcha|unauthori[sz]ed|access denied/i.test(bodyText))) {
     throw new Error(
       "VAHAN dashboard appears to require CAPTCHA, login, or private access from this session. Stop and verify manually in a normal browser.",
     );
   }
+  if (dashboardControlCount < 3) throw new Error("Public Dashboard loaded without the required registration controls.");
 
   return response;
 }
@@ -1079,6 +1082,10 @@ async function publicOptionValue(page, selector, wanted, { optional = false } = 
 }
 
 async function publicRtoValue(page, wanted) {
+  await page.waitForFunction(
+    () => (document.querySelector("#rtoCode")?.options.length ?? 0) > 1,
+    { timeout: DEFAULT_TIMEOUT_MS },
+  );
   const value = publicRtoOptionValue(await publicSelectOptions(page, "#rtoCode"), wanted);
   if (value) return value;
   throw new Error(`Could not find public-dashboard option "${wanted}" in #rtoCode.`);

@@ -81,6 +81,10 @@ assert.match(
   /const shouldRefreshSideFilters = hasRequestedSideFilters\([\s\S]*?if \(shouldRefreshSideFilters\) \{\s*await applySideFilters\(page\);/,
   "requested side filters must refresh VAHAN even when their checkboxes were already selected",
 );
+assert.match(source, /dashboardControlCount < 3 && \/captcha\|unauthori\[sz\]ed\|access denied\//,
+  "a normal dashboard Login navigation link must not be treated as an access block");
+assert.match(source, /waitForFunction\([\s\S]*?#rtoCode[\s\S]*?options\.length[\s\S]*?> 1/,
+  "RTO resolution must wait for the state-specific options rather than sleeping for a fixed interval");
 assert.match(
   source,
   /const replacementContexts = new Set\(reportItem\.items\.map\(\(item\) => keyForItem\(item\)\)\);[\s\S]*?replacementContexts\.has\(existingKey\)/,
