@@ -664,6 +664,18 @@ const VEHICLE_GROUP_ALIASES = [
   { aliases: ["three wheeler", "three wheelers", "3 wheeler", "3 wheelers", "3w"], value: "THREE WHEELER" },
 ];
 
+const BROAD_VEHICLE_CATEGORY_FILTERS = Object.freeze({
+  "TWO WHEELER": ["TWO WHEELER(NT)", "TWO WHEELER(T)"],
+  "THREE WHEELER": ["THREE WHEELER(NT)", "THREE WHEELER(T)"],
+});
+
+function broadVehicleCategoriesForGroups(groups = [], vocabulary) {
+  return exactVocabularyLabels(
+    groups.flatMap((group) => BROAD_VEHICLE_CATEGORY_FILTERS[group] ?? []),
+    vocabulary.vehicleCategories,
+  );
+}
+
 const NORMS_ALIASES = [
   { aliases: ["bs i", "bharat stage i"], value: "BHARAT STAGE I" },
   { aliases: ["bs ii", "bharat stage ii"], value: "BHARAT STAGE II" },
@@ -2245,11 +2257,15 @@ function semanticPlanFromRules(query, ruleFilters, vocabulary) {
   const positiveText = splitNegatedQuery(query).positiveText;
   const selectedFuelTypes = semanticFuelSelection(positiveText, vocabulary);
   const selectedVehicleClasses = semanticVehicleClassSelection(positiveText, ruleFilters, vocabulary);
-  const selectedVehicleCategories = exactVocabularyLabels(ruleFilters.vehicleCategories, vocabulary.vehicleCategories);
+  const detectedVehicleGroups = findVehicleGroups(positiveText, vocabulary);
+  const selectedVehicleCategories = exactVocabularyLabels([
+    ...ruleFilters.vehicleCategories,
+    ...broadVehicleCategoriesForGroups(detectedVehicleGroups, vocabulary),
+  ], vocabulary.vehicleCategories);
   const selectedNorms = exactVocabularyLabels(ruleFilters.norms, vocabulary.norms);
   const selectedVehicleGroups = selectedVehicleClasses.length || selectedVehicleCategories.length
     ? []
-    : findVehicleGroups(positiveText, vocabulary);
+    : detectedVehicleGroups;
   const selectedParts = [
     selectedFuelTypes.length ? `${selectedFuelTypes.join(", ")} fuel` : null,
     selectedVehicleGroups.length ? `${selectedVehicleGroups.join(", ")} group` : null,
@@ -2949,6 +2965,10 @@ export function combineSemanticPlan(query, ruleFilters, llmFilters, vocabulary) 
   const selectedVehicleCategories = withoutExcludedLabels(uniqueLabelValues([
     ...llmVehicleCategories,
     ...rulePlan.selectedVehicleCategories,
+    ...broadVehicleCategoriesForGroups([
+      ...(useLlm ? llmPlan.selectedVehicleGroups : []),
+      ...rulePlan.selectedVehicleGroups,
+    ], vocabulary),
   ]), excludedVehicleCategories);
   const selectedVehicleGroups = selectedVehicleClasses.length || selectedVehicleCategories.length
     ? []
