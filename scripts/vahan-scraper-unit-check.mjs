@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { hasRequestedSideFilters, parsePublicMonthlyRows, publicMonthlyQueryString, resolveMakerReportTotal } from "./vahan-scraper.mjs";
+import { hasRequestedSideFilters, parsePublicMonthlyRows, publicMonthlyQueryString, publicRtoOptionValue, resolveMakerReportTotal } from "./vahan-scraper.mjs";
 
 const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 
@@ -47,6 +47,14 @@ assert.match(multiSelectQuery, /vehicleEmissions%5B%5D=BHARAT\+STAGE\+VI/);
 assert.match(multiSelectQuery, /vehicleFuels%5B%5D=DIESEL/);
 assert.match(multiSelectQuery, /vehicleFuels%5B%5D=PETROL/);
 assert.doesNotMatch(multiSelectQuery, /vehicleCategoryGroup/);
+assert.equal(
+  publicRtoOptionValue([
+    { label: "Noida - UP16", value: "UP16" },
+    { label: "Ghaziabad - UP14", value: "UP14" },
+  ], "Noida - UP16 (13-NOV-2017)"),
+  "UP16",
+  "a legacy RTO label with a date suffix must resolve by its stable RTO code",
+);
 assert.throws(
   () => parsePublicMonthlyRows([{ yearAsString: "2023-January", registeredVehicleCount: 1 }], { year: 2024, label: "PURE EV" }),
   /no monthly values/i,

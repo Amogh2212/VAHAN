@@ -1020,19 +1020,49 @@ export function parsePublicMonthlyRows(rows, { year, label }) {
   return { label, counts };
 }
 
-async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
-  const options = await page.locator(selector).evaluate((select) =>
+async function publicSelectOptions(page, selector) {
+  return page.locator(selector).evaluate((select) =>
     [...select.options].map((option) => ({
       label: option.textContent.replace(/\s+/g, " ").trim(),
       value: option.value,
     })),
   ).catch(() => []);
+}
+
+function matchingPublicOption(options, wanted) {
   const desired = normalizeLookup(wanted);
-  const match = options.find((option) => normalizeLookup(option.label) === desired)
+  return options.find((option) => normalizeLookup(option.label) === desired)
     ?? options.find((option) => normalizeLookup(option.label).includes(desired));
+}
+
+function rtoCodes(value) {
+  return [...String(value ?? "").toUpperCase().matchAll(/\b([A-Z]{2})\s*-?\s*(\d{1,3})\b/g)]
+    .map((match) => `${match[1]}${match[2]}`);
+}
+
+export function publicRtoOptionValue(options = [], wanted = "") {
+  const direct = matchingPublicOption(options, wanted);
+  if (direct) return direct.value;
+
+  const wantedCodes = new Set(rtoCodes(wanted));
+  if (!wantedCodes.size) return "";
+  const byCode = options.find((option) =>
+    rtoCodes(`${option.label} ${option.value}`).some((code) => wantedCodes.has(code)));
+  return byCode?.value ?? "";
+}
+
+async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
+  const options = await publicSelectOptions(page, selector);
+  const match = matchingPublicOption(options, wanted);
   if (match) return match.value;
   if (optional) return "";
   throw new Error(`Could not find public-dashboard option "${wanted}" in ${selector}.`);
+}
+
+async function publicRtoValue(page, wanted) {
+  const value = publicRtoOptionValue(await publicSelectOptions(page, "#rtoCode"), wanted);
+  if (value) return value;
+  throw new Error(`Could not find public-dashboard option "${wanted}" in #rtoCode.`);
 }
 
 async function publicOptionValues(page, selector, wanted = []) {
@@ -1079,7 +1109,7 @@ async function scrapePublicFuelReport(page, reportItem) {
   if (reportItem.rto) {
     await page.locator("#stateCode").selectOption(stateCode);
     await page.waitForTimeout(300);
-    rtoCode = await publicOptionValue(page, "#rtoCode", reportItem.rto);
+    rtoCode = await publicRtoValue(page, reportItem.rto);
   }
   const vehicleSubCategories = await publicOptionValues(page, "#vehicleSubCategory", reportItem.vehicleCategories ?? []);
   const vehicleClasses = await publicOptionValues(page, "#vehicleClass", reportItem.vehicleClasses ?? []);
