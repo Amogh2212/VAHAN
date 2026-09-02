@@ -1080,7 +1080,20 @@ async function pollLiveRefresh(jobId, requestId, query) {
     const response = await fetch(`/api/query-refresh/${encodeURIComponent(jobId)}`, { cache: "no-store" });
     if (!response.ok) {
       if (requestId === activeQueryRequestId && activeRefreshJobId === jobId) {
-        renderWarnings([`Live refresh failed: ${response.status}`]);
+        const message = `Live refresh failed: ${response.status}`;
+        activeRefreshJobId = null;
+        if (latestData) {
+          render({
+            ...latestData,
+            dataStatus: "fetch_failed",
+            liveRefresh: latestData.liveRefresh
+              ? { ...latestData.liveRefresh, status: "failed", error: message }
+              : null,
+            warnings: [...(latestData.warnings ?? []), message],
+          }, query, requestId);
+        } else {
+          renderWarnings([message]);
+        }
       }
       return;
     }
@@ -1097,7 +1110,20 @@ async function pollLiveRefresh(jobId, requestId, query) {
   }
 
   if (requestId === activeQueryRequestId && activeRefreshJobId === jobId) {
-    renderWarnings(["Public Dashboard refresh is still running. Submit the query again in a few minutes for the latest data."]);
+    const message = "Public Dashboard refresh timed out. Submit the query again for the latest data.";
+    activeRefreshJobId = null;
+    if (latestData) {
+      render({
+        ...latestData,
+        dataStatus: "fetch_failed",
+        liveRefresh: latestData.liveRefresh
+          ? { ...latestData.liveRefresh, status: "failed", error: message }
+          : null,
+        warnings: [...(latestData.warnings ?? []), message],
+      }, query, requestId);
+    } else {
+      renderWarnings([message]);
+    }
   }
 }
 

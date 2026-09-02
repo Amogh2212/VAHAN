@@ -37,6 +37,7 @@ import {
   queryRegistrationRows,
   queryRtos,
   readRegistrationsCsv,
+  replaceRegistrationRows,
   upsertRegistrationRows,
 } from "./lib/registrations.mjs";
 import {
@@ -929,8 +930,11 @@ function fuelFiltersForQuery(text, matches, fuelType) {
 }
 
 function filterContext(filters = {}) {
+  const selectedFuelContext = filters.fuelFilters?.length
+    ? filters.fuelFilters
+    : filters.selectedFuelTypes ?? [];
   return {
-    fuel_filter: filterContextValue(filters.fuelFilters),
+    fuel_filter: filterContextValue(selectedFuelContext),
     vehicle_category_filter: filterContextValue(filters.vehicleCategories),
     norms_filter: filterContextValue(filters.norms),
     vehicle_class_filter: filterContextValue(filters.vehicleClasses),
@@ -1451,6 +1455,19 @@ async function loadCatalog(rows = []) {
   return rtoCatalogCache;
 }
 
+// User queries resolve labels and RTO names from the local metadata snapshot.
+// Neon is the persistence layer for the fresh result, not a gate before the
+// requested slice is fetched from the Public Dashboard.
+async function loadQueryMetadata() {
+  const rows = await readRegistrationsCsv(DATA_FILE);
+  const fileCatalog = await loadRtoCatalog(RTO_CATALOG_FILE);
+  const rowCatalog = buildRtoCatalogFromRows(rows);
+  return {
+    rows,
+    catalog: mergeRtoCatalogs(fileCatalog, rowCatalog),
+  };
+}
+
 function useDatabaseStorage() {
   return hasDatabaseUrl() && !databaseUnavailable;
 }
@@ -1478,7 +1495,7 @@ function mergeRtoCatalogs(primary, fallback) {
   };
 }
 
-async function persistScrapedRows(rows) {
+async function persistScrapedRows(rows, { replaceContexts = false } = {}) {
   if (!rows.length) return;
 
   const csvRows = mergeRegistrationRows(await readRegistrationsCsv(DATA_FILE), rows);
@@ -1487,7 +1504,8 @@ async function persistScrapedRows(rows) {
 
   if (hasDatabaseUrl()) {
     try {
-      await upsertRegistrationRows(rows);
+      const persist = replaceContexts ? replaceRegistrationRows : upsertRegistrationRows;
+      await persist(rows);
       databaseUnavailable = false;
     } catch (error) {
       databaseUnavailable = true;
@@ -4254,6 +4272,16 @@ export function requestedPublicFuelFilters(filters = {}) {
     : uniqueSorted(filters.selectedFuelTypes ?? []);
 }
 
+// A supported user query always refreshes the complete requested slice. The
+// saved dataset is metadata/fallback only; it does not decide which months
+// are sent to the Public Dashboard.
+function directQueryRefreshGroups(filters = {}) {
+  const requestedGroups = requestedMonthGroups(filters);
+  return answerFilterVariants(filters).flatMap((variant) =>
+    requestedGroups.map((group) => ({ ...group, filters: variant })),
+  );
+}
+
 function shouldAutoScrape(filters, resultRows, missingMonths) {
   if (!hasRequiredScrapeFilters(filters)) return false;
   if (filters.ambiguousRtos) return false;
@@ -5291,7 +5319,8 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
           const currentRows = await loadRows();
           dataCache = mergeRegistrationRows(currentRows, freshRows);
         }
-        job.persistenceStatus = persistScrapedRowsInBackground(freshRows);
+        const persistence = await queueScrapedRowsPersistence(freshRows, { replaceContexts: true });
+        job.persistenceStatus = persistence.skipped ? "skipped" : "saved";
       }
 
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);
@@ -5323,7 +5352,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         persistenceStatus: job.persistenceStatus,
         liveRefresh: liveRefreshInfo(job),
         preFiltered: false,
-        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
+        freshnessInfo: freshness(combinedRows),
         fuelBreakdownOverride,
       });
     } catch (error) {
@@ -5345,7 +5374,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         llmFilters,
         liveRefresh: liveRefreshInfo(job),
         preFiltered: false,
-        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
+        freshnessInfo: freshness(baseRows),
       });
       console.error(`[refresh:${id}] ${safeErrorMessage(error)}`);
     }
@@ -5371,10 +5400,10 @@ export async function queryData(input, {
     throw error;
   }
 
-  let rows = await loadRows();
-  const useDatabase = useDatabaseStorage();
+  const queryMetadata = await loadQueryMetadata();
+  const rows = queryMetadata.rows;
   const semanticVocabulary = buildSemanticVocabulary(rows);
-  const catalog = await loadCatalog(rows);
+  const catalog = queryMetadata.catalog;
   const deterministicInterpretation = interpretDashboardQuery(query, semanticVocabulary);
   const ruleFilters = deterministicInterpretation.filters;
   const routing = classifyDashboardQueryRouting(query, deterministicInterpretation);
@@ -5460,53 +5489,23 @@ export async function queryData(input, {
     error.statusCode = 400;
     throw error;
   }
-  let immediateRows = rows;
-  if (useDatabase && !filters.ambiguousRtos) {
-    try {
-      const variants = answerFilterVariants({ ...filters, state: filters.state ?? INDIA_TOTAL });
-      immediateRows = mergeRegistrationRows(
-        [],
-        (await Promise.all(variants.map((variant) => queryRegistrationRows(variant)))).flat(),
-      );
-    } catch (error) {
-      databaseUnavailable = true;
-      rows = await readRegistrationsCsv(DATA_FILE);
-      dataCache = rows;
-      immediateRows = rows;
-      console.warn(`[data] Neon query failed, using CSV rows: ${safeErrorMessage(error)}`);
-    }
-  }
-  const queryUsesDatabase = useDatabaseStorage();
-  const loadedMissingMonths = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? queryUsesDatabase
-      ? await findMissingAnswerMonthsFromDb(filters)
-      : findMissingAnswerMonths(filters, rows)
-    : [];
-  const loadedRefreshGroups = !LIVE_REFRESH_DISABLED && hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? queryUsesDatabase
-      ? await refreshMonthsForAnswerFromDb(filters)
-      : refreshMonthsForAnswer(filters, rows)
-    : [];
-  const savedSideFilterRowsRejected = await sideFilterScrapeLooksUnapplied(filters, immediateRows);
-  const sideFilterRowsNeedRefresh = hasRequestedSideFilterContext(filters);
-  const rejectSavedSideFilterRows = savedSideFilterRowsRejected || sideFilterRowsNeedRefresh;
-  const answerRows = rejectSavedSideFilterRows ? [] : immediateRows;
-  const dataQualityWarnings = rejectSavedSideFilterRows
-    ? [rejectedSideFilterWarning(sideFilterRowsNeedRefresh ? "refreshing" : "unapplied")]
-    : [];
-  const missingMonths = rejectSavedSideFilterRows ? requestedMonthGroups(filters) : loadedMissingMonths;
-  const candidateRefreshGroups = sideFilterRowsNeedRefresh && !LIVE_REFRESH_DISABLED
-    ? requestedMonthGroups(filters)
-    : loadedRefreshGroups;
   const refreshEligibility = publicDashboardRefreshEligibility(filters);
-  const refreshGroups = refreshEligibility.eligible ? candidateRefreshGroups : [];
-  if (candidateRefreshGroups.length && !refreshEligibility.eligible) {
+  const requestedMonths = requestedMonthGroups(filters);
+  const refreshGroups = !LIVE_REFRESH_DISABLED && refreshEligibility.eligible && !filters.ambiguousRtos && !filters.unresolvedLocation
+    ? directQueryRefreshGroups(filters)
+    : [];
+  const answerRows = [];
+  const missingMonths = requestedMonths;
+  const dataQualityWarnings = [];
+  if (requestedMonths.length && !refreshGroups.length && !refreshEligibility.eligible) {
     dataQualityWarnings.push(`Public-dashboard refresh was not started: ${refreshEligibility.reason}`);
   }
-  const requestedMonths = requestedMonthGroups(filters);
-  const canonicalKey = canonicalRefreshKey(filters, candidateRefreshGroups);
+  if (requestedMonths.length && LIVE_REFRESH_DISABLED) {
+    dataQualityWarnings.push("Public-dashboard refresh is disabled for this deployment.");
+  }
+  const canonicalKey = canonicalRefreshKey(filters, refreshGroups);
   const coverage = {
-    complete: missingMonths.length === 0 && !rejectSavedSideFilterRows,
+    complete: missingMonths.length === 0,
     missingMonths,
     refreshEligible: refreshEligibility.eligible,
     refreshReason: refreshEligibility.reason,
@@ -5520,7 +5519,12 @@ export async function queryData(input, {
   });
   const liveRefreshJob = refreshGroups.length
     ? startLiveRefreshJob({
-        filters, baseRows: answerRows, refreshGroups, llmFilters, auditId: audit.id, canonicalKey,
+        filters,
+        baseRows: [],
+        refreshGroups,
+        llmFilters,
+        auditId: audit.id,
+        canonicalKey,
       })
     : null;
   if (liveRefreshJob && audit.id) {
@@ -5528,8 +5532,11 @@ export async function queryData(input, {
       .catch((auditError) => console.warn(`[query-refresh] Audit update failed: ${safeErrorMessage(auditError)}`));
   }
   const refreshContext = {
-    canonicalFiltersJson: canonicalRefreshJson(filters), canonicalKey, auditId: audit.id,
-    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL, coverage,
+    canonicalFiltersJson: canonicalRefreshJson(filters),
+    canonicalKey,
+    auditId: audit.id,
+    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL,
+    coverage,
   };
 
   const payload = dashboardPayload({
@@ -5538,8 +5545,8 @@ export async function queryData(input, {
     missingMonths,
     llmFilters,
     liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
-    preFiltered: queryUsesDatabase && !hasSideFilterExclusions(filters),
-    freshnessInfo: queryUsesDatabase ? await freshnessFromDb().catch(() => null) : null,
+    preFiltered: false,
+    freshnessInfo: freshness(rows),
     dataQualityWarnings,
     refreshContext,
   });
