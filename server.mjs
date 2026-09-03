@@ -4431,11 +4431,14 @@ function totalsByComparisonKey(rows, keyFn) {
   return totals;
 }
 
-async function loadUnfilteredRowsForComparison(filters) {
-  const aggregateFilters = {
+export function unfilteredComparisonFilters(filters = {}) {
+  return {
     ...filters,
     state: filters.state ?? INDIA_TOTAL,
     fuelFilters: [],
+    selectedFuelTypes: [],
+    fuelSegment: null,
+    fuelType: null,
     vehicleCategories: [],
     norms: [],
     vehicleClasses: [],
@@ -4444,6 +4447,10 @@ async function loadUnfilteredRowsForComparison(filters) {
     selectedVehicleCategories: [],
     selectedNorms: [],
   };
+}
+
+async function loadUnfilteredRowsForComparison(filters) {
+  const aggregateFilters = unfilteredComparisonFilters(filters);
 
   if (hasDatabaseUrl()) {
     try {
