@@ -50,7 +50,6 @@ import {
 } from "./lib/query-refresh-audit.mjs";
 import {
   fetchPublicDashboardRows,
-  fetchPublicFuelDistribution,
 } from "./lib/public-dashboard-client.mjs";
 import {
   buildRtoCatalogFromRows,
@@ -4352,26 +4351,16 @@ async function runScraperForFilters(filters, missingMonths) {
         vehicleClasses: runFilters.vehicleClasses ?? [],
       };
       const rows = await fetchPublicDashboardRows(request);
-      let fuelDistribution = [];
-      if (!requestedFuels.length) {
-        const candidateDistribution = await fetchPublicFuelDistribution(request);
-        const requestedTotal = rows.reduce((total, row) => total + Number(row.vehicle_count ?? 0), 0);
-        const distributionTotal = candidateDistribution.reduce((total, item) => total + Number(item.count ?? 0), 0);
-        // The public fuel chart is year-scoped while the monthly endpoint can
-        // answer a narrower range.  Use its single-request breakdown only if
-        // it proves to cover precisely the requested month set.
-        if (requestedTotal === distributionTotal) {
-          fuelDistribution = candidateDistribution;
-        } else {
-          console.warn(`[auto-refresh] Withheld year-scoped fuel chart for ${group.year}; total ${distributionTotal} does not match requested total ${requestedTotal}.`);
-        }
-      }
+      // Query refresh is authoritative for monthly registration rows. The
+      // optional year-scoped fuel chart can return a non-chart payload for
+      // class/category-filtered requests, so it must not make this refresh
+      // fail after the monthly request succeeded.
       runs.push({
         year: group.year,
         months: group.months,
         success: true,
         rows,
-        fuelDistribution,
+        fuelDistribution: [],
       });
     } catch (error) {
       console.error(`[auto-scrape] Failed for ${group.year}/${group.months}: ${safeErrorMessage(error)}`);

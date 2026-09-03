@@ -26,6 +26,11 @@ assert.equal(
 assert.deepEqual(publicDashboardRefreshEligibility(first), { eligible: true, reason: null });
 assert.deepEqual(requestedPublicFuelFilters({ selectedFuelTypes: ["DIESEL", "PETROL"] }), ["DIESEL", "PETROL"]);
 assert.deepEqual(
+  requestedPublicFuelFilters({ vehicleClasses: ["MOTOR CAR"] }),
+  [],
+  "class-only refreshes must not synthesize a fuel request",
+);
+assert.deepEqual(
   publicDashboardRefreshEligibility({
     ...first,
     fuelFilters: ["DIESEL", "PETROL"],
