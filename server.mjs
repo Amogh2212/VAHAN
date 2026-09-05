@@ -4402,6 +4402,13 @@ function aggregateComparisonKey(row) {
   ].join("||");
 }
 
+export function sourceResponseComparisonKey(row) {
+  return [
+    aggregateComparisonKey(row),
+    ...FILTER_CONTEXT_FIELDS.map((field) => row[field] ?? ALL_FILTER),
+  ].join("||");
+}
+
 function monthTotalComparisonKey(row) {
   return [
     row.year,
@@ -4457,8 +4464,10 @@ async function sideFilterScrapeLooksUnapplied(filters, freshRows) {
   const aggregateRows = await loadUnfilteredRowsForComparison(filters);
   if (!aggregateRows.length) return false;
 
-  const aggregateCounts = new Map(aggregateRows.map((row) => [aggregateComparisonKey(row), row.vehicle_count]));
-  const rowsMatchAggregate = freshRows.every((row) => aggregateCounts.get(aggregateComparisonKey(row)) === row.vehicle_count);
+  const aggregateCounts = new Map(aggregateRows.map((row) => [sourceResponseComparisonKey(row), row.vehicle_count]));
+  const rowsMatchAggregate = freshRows.every((row) =>
+    aggregateCounts.get(sourceResponseComparisonKey(row)) === row.vehicle_count,
+  );
   if (rowsMatchAggregate) return true;
 
   const freshMonthTotals = totalsByComparisonKey(freshRows, monthTotalComparisonKey);

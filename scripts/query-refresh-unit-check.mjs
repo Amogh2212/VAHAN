@@ -5,7 +5,7 @@ import {
   publicDashboardRefreshEligibility,
 } from "../lib/query-refresh-audit.mjs";
 import { enforceRateLimit } from "../lib/http-security.mjs";
-const { requestedPublicFuelFilters } = await import("../server.mjs");
+const { requestedPublicFuelFilters, sourceResponseComparisonKey } = await import("../server.mjs");
 
 const first = {
   from: "2024-01", to: "2024-03", state: "Maharashtra",
@@ -25,6 +25,17 @@ assert.equal(
 );
 assert.deepEqual(publicDashboardRefreshEligibility(first), { eligible: true, reason: null });
 assert.deepEqual(requestedPublicFuelFilters({ selectedFuelTypes: ["DIESEL", "PETROL"] }), ["DIESEL", "PETROL"]);
+assert.notEqual(
+  sourceResponseComparisonKey({
+    year: 2024, month: 9, state: "West Bengal", rto: "All Vahan4 Running Office",
+    fuel_segment: "EV", fuel_type: "PURE EV", fuel_filter: "PURE EV",
+  }),
+  sourceResponseComparisonKey({
+    year: 2024, month: 9, state: "West Bengal", rto: "All Vahan4 Running Office",
+    fuel_segment: "EV", fuel_type: "PURE EV", fuel_filter: "ALL",
+  }),
+  "a filtered source row must not be mistaken for the same fuel inside an unfiltered breakdown",
+);
 assert.deepEqual(
   requestedPublicFuelFilters({ vehicleClasses: ["MOTOR CAR"] }),
   [],
