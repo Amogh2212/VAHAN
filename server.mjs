@@ -1454,16 +1454,14 @@ async function loadCatalog(rows = []) {
   return rtoCatalogCache;
 }
 
-// User queries resolve labels and RTO names from the local metadata snapshot.
-// Neon is the persistence layer for the fresh result, not a gate before the
-// requested slice is fetched from the Public Dashboard.
+// User queries resolve labels and RTO names from the catalog before reading
+// the requested persisted registration slice. The catalog is metadata only;
+// Neon remains the persistence layer for the result rows.
 async function loadQueryMetadata() {
   const rows = await readRegistrationsCsv(DATA_FILE);
-  const fileCatalog = await loadRtoCatalog(RTO_CATALOG_FILE);
-  const rowCatalog = buildRtoCatalogFromRows(rows);
   return {
     rows,
-    catalog: mergeRtoCatalogs(fileCatalog, rowCatalog),
+    catalog: await loadCatalog(rows),
   };
 }
 
