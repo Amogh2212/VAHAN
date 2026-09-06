@@ -11,6 +11,21 @@ import {
 
 assert.equal(publicStateCode("Uttar Pradesh", "Noida - UP16 (13-NOV-2017)"), "UP");
 assert.equal(publicStateCode("Maharashtra"), "MH");
+const officialStateCodes = new Map([
+  ["Andaman & Nicobar Island", "AN"], ["Andhra Pradesh", "AP"], ["Arunachal Pradesh", "AR"],
+  ["Assam", "AS"], ["Bihar", "BR"], ["Chandigarh", "CH"], ["Chhattisgarh", "CG"],
+  ["Delhi", "DL"], ["Goa", "GA"], ["Gujarat", "GJ"], ["Haryana", "HR"],
+  ["Himachal Pradesh", "HP"], ["Jammu & Kashmir", "JK"], ["Jharkhand", "JH"],
+  ["Karnataka", "KA"], ["Kerala", "KL"], ["Ladakh", "LA"], ["Lakshadweep", "LD"],
+  ["Madhya Pradesh", "MP"], ["Maharashtra", "MH"], ["Manipur", "MN"], ["Meghalaya", "ML"],
+  ["Mizoram", "MZ"], ["Nagaland", "NL"], ["Odisha", "OR"], ["Puducherry", "PY"],
+  ["Punjab", "PB"], ["Rajasthan", "RJ"], ["Sikkim", "SK"], ["Tamil Nadu", "TN"],
+  ["Telangana", "TG"], ["Tripura", "TR"], ["UT of DNH and DD", "DD"],
+  ["Uttar Pradesh", "UP"], ["Uttarakhand", "UK"], ["West Bengal", "WB"],
+]);
+for (const [state, code] of officialStateCodes) {
+  assert.equal(publicStateCode(state), code, `${state} should use the official Public Dashboard code`);
+}
 assert.equal(publicRtoCode("Noida - UP16 (13-NOV-2017)"), "16");
 assert.equal(publicRtoCode("All Vahan4 Running Office"), "0");
 assert.match(publicMonthlyQueryString({ vehicleSubCategories: ["LMV", "LPV"] }), /vehicleSubCategories%5B%5D=LMV.*vehicleSubCategories%5B%5D=LPV/);
