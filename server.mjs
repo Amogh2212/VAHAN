@@ -4360,6 +4360,7 @@ async function runScraperForFilters(filters, missingMonths) {
         months: group.months,
         success: true,
         rows,
+        usedArchivedFallback: rows.some((row) => row.archive_scope === "ACTIVE_AND_ARCHIVED"),
         fuelDistribution: [],
       });
     } catch (error) {
@@ -4776,7 +4777,9 @@ function summarizeScraperRuns(scraperRuns) {
       months: run.months,
       success: run.success,
       rowsScraped: run.rows?.length ?? 0,
+      usedArchivedFallback: Boolean(run.usedArchivedFallback),
     })),
+    usedArchivedFallback: scraperRuns.some((run) => run.usedArchivedFallback),
   };
 }
 
@@ -5238,6 +5241,9 @@ export function dashboardPayload({
       scraper.failedRuns.length
         ? "Public Dashboard fetch failed for this query. Results may be missing or stale."
         : null,
+      scraper.usedArchivedFallback
+        ? "No active-registration row was returned for this exact query, so this answer includes temporary and permanent archived registrations."
+        : null,
       persistenceStatus === "pending" ? "Fresh Public Dashboard data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
       dataReliabilityWarning(status, summary),
@@ -5317,15 +5323,19 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         throw new Error("VAHAN returned the same rows as the unfiltered report; side filters were not applied, so the scrape was rejected.");
       }
 
-      if (freshRows.length > 0) {
+      const activeRows = freshRows.filter((row) => row.archive_scope !== "ACTIVE_AND_ARCHIVED");
+      if (activeRows.length > 0) {
         if (hasDatabaseUrl()) {
           dataCache = null;
         } else {
           const currentRows = await loadRows();
-          dataCache = mergeRegistrationRows(currentRows, freshRows);
+          dataCache = mergeRegistrationRows(currentRows, activeRows);
         }
-        const persistence = await queueScrapedRowsPersistence(freshRows, { replaceContexts: true });
+        const persistence = await queueScrapedRowsPersistence(activeRows, { replaceContexts: true });
         job.persistenceStatus = persistence.skipped ? "skipped" : "saved";
+      }
+      if (freshRows.some((row) => row.archive_scope === "ACTIVE_AND_ARCHIVED")) {
+        job.persistenceStatus = activeRows.length ? "active rows saved; archived fallback not saved" : "archived fallback not saved";
       }
 
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);

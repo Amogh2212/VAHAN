@@ -99,6 +99,24 @@ const sourceZeroRows = await fetchPublicDashboardRows({
   fetchImpl: async () => new Response(JSON.stringify([{ yearAsString: "2026-August", registeredVehicleCount: 0 }]), { status: 200 }),
 });
 assert.equal(sourceZeroRows[0].vehicle_count, 0);
+assert.equal(sourceZeroRows[0].archive_scope, "ACTIVE_ONLY");
+
+let archiveRequest = 0;
+const archivedFallbackRows = await fetchPublicDashboardRows({
+  state: "Punjab",
+  year: 2025,
+  months: [6],
+  vehicleClasses: ["E-RICKSHAW(P)"],
+  fetchImpl: async (url) => {
+    archiveRequest += 1;
+    if (archiveRequest === 1) return new Response(JSON.stringify([]), { status: 200 });
+    assert.match(url, /archiveTypePA=PERMANENT_ARCHIVE/);
+    assert.match(url, /archiveTypeTA=TEMPORARY_ARCHIVE/);
+    return new Response(JSON.stringify([{ yearAsString: "2025-June", registeredVehicleCount: 965 }]), { status: 200 });
+  },
+});
+assert.equal(archivedFallbackRows[0].vehicle_count, 965);
+assert.equal(archivedFallbackRows[0].archive_scope, "ACTIVE_AND_ARCHIVED");
 
 const distribution = await fetchPublicFuelDistribution({
   state: "Uttar Pradesh",
