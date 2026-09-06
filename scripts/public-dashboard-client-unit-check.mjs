@@ -103,6 +103,20 @@ const sourceZeroRows = await fetchPublicDashboardRows({
 assert.equal(sourceZeroRows[0].vehicle_count, 0);
 assert.equal(sourceZeroRows[0].archive_scope, "ACTIVE_ONLY");
 
+const sparseZeroRows = await fetchPublicDashboardRows({
+  state: "Karnataka",
+  year: 2025,
+  months: [8],
+  fuels: ["PLUG-IN HYBRID EV"],
+  vehicleClasses: ["MOTOR CAR"],
+  fetchImpl: async () => new Response(JSON.stringify([
+    { yearAsString: "2025-May", registeredVehicleCount: 1 },
+    { yearAsString: "2025-April", registeredVehicleCount: 0 },
+  ]), { status: 200 }),
+});
+assert.equal(sparseZeroRows[0].vehicle_count, 0, "an omitted requested month in an otherwise valid year response is an explicit zero");
+assert.equal(sparseZeroRows[0].explicit_zero, true);
+
 let archiveRequest = 0;
 const archivedFallbackRows = await fetchPublicDashboardRows({
   state: "Punjab",
