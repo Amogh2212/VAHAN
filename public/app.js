@@ -248,7 +248,10 @@ function setExportButtonsEnabled(enabled) {
 
 function animateCounter(el, target) {
   const start = parseInt(el.textContent.replace(/[^\d]/g, "")) || 0;
-  if (start === target) return;
+  if (start === target) {
+    el.textContent = fmt.format(target);
+    return;
+  }
   const duration = 600;
   const startTime = performance.now();
   function tick(now) {
