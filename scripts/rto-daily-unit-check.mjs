@@ -191,6 +191,14 @@ const resolvedDl01 = resolveRtoWithCatalog({ state: "Delhi", rtoSearch: "DL-01",
 });
 assert.equal(resolvedDl01.rto, "MALL ROAD - DL1", "DL-01 should match the exact RTO code, not DL-10 or DL-11");
 assert.equal(resolvedDl01.ambiguousRtos, null, "an exact RTO code should not be reported as ambiguous");
+const resolvedMh12WithDuplicateCatalogLabel = resolveRtoWithCatalog({ state: "Maharashtra", rtoSearch: "MH-12", locationText: "MH-12" }, {
+  states: [{ state: "Maharashtra", rtos: [
+    toCatalogRto("PUNE - MH12"),
+    toCatalogRto("Pune Regional Transport Office MH12"),
+  ] }],
+});
+assert.equal(resolvedMh12WithDuplicateCatalogLabel.rtoResolution.status, "resolved", "an exact code should resolve even if the catalog contains duplicate labels");
+assert.equal(resolvedMh12WithDuplicateCatalogLabel.ambiguousRtos, null, "duplicate labels for one exact code must not produce an ambiguity prompt");
 
 assert.equal(validateRtoDailyReport({
   status: "success",
