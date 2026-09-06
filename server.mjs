@@ -5504,13 +5504,35 @@ export async function queryData(input, {
     error.statusCode = 400;
     throw error;
   }
+  // Render can run cache-first with live refresh disabled. Read persisted rows
+  // before marking a requested month missing so saved exact slices still answer.
+  const queryUsesDatabase = useDatabaseStorage();
+  let immediateRows = queryUsesDatabase ? [] : filterRows(rows, filters);
+  if (queryUsesDatabase && !filters.ambiguousRtos) {
+    try {
+      const variants = answerFilterVariants({ ...filters, state: filters.state ?? INDIA_TOTAL });
+      immediateRows = mergeRegistrationRows(
+        [],
+        (await Promise.all(variants.map((variant) => queryRegistrationRows(variant)))).flat(),
+      );
+    } catch (error) {
+      databaseUnavailable = true;
+      immediateRows = filterRows(rows, filters);
+      console.warn(`[data] Neon query failed, using CSV rows: ${safeErrorMessage(error)}`);
+    }
+  }
   const refreshEligibility = publicDashboardRefreshEligibility(filters);
   const requestedMonths = requestedMonthGroups(filters);
   const refreshGroups = !LIVE_REFRESH_DISABLED && refreshEligibility.eligible && !filters.ambiguousRtos && !filters.unresolvedLocation
     ? directQueryRefreshGroups(filters)
     : [];
-  const answerRows = [];
-  const missingMonths = requestedMonths;
+  const loadedMissingMonths = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
+    ? useDatabaseStorage()
+      ? await findMissingAnswerMonthsFromDb(filters)
+      : findMissingAnswerMonths(filters, rows)
+    : [];
+  const answerRows = immediateRows;
+  const missingMonths = loadedMissingMonths;
   const dataQualityWarnings = [];
   if (requestedMonths.length && !refreshGroups.length && !refreshEligibility.eligible) {
     dataQualityWarnings.push(`Public-dashboard refresh was not started: ${refreshEligibility.reason}`);
