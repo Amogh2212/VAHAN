@@ -28,8 +28,8 @@ tokens after sign-in.
 
 ## Production prerequisites
 
-- Keep `VAHAN_DISABLE_LIVE_REFRESH=1`; production HTTP requests cannot launch a
-  live browser scraper.
+- Set `PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH=1` only when Public Dashboard
+  background refreshes must be paused.
 - Use an HTTPS `APP_BASE_URL`, a secret-manager `CSRF_SECRET` of at least 32
   random characters, and verified `ADMIN_EMAILS`.
 - Use `RATE_LIMIT_STORE=database`; in-memory limiting is intended only for

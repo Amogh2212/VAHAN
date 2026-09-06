@@ -37,8 +37,20 @@ import {
   queryRegistrationRows,
   queryRtos,
   readRegistrationsCsv,
+  replaceRegistrationRows,
   upsertRegistrationRows,
 } from "./lib/registrations.mjs";
+import {
+  PUBLIC_DASHBOARD_SOURCE_URL,
+  canonicalRefreshJson,
+  canonicalRefreshKey,
+  createQueryRefreshAudit,
+  publicDashboardRefreshEligibility,
+  updateQueryRefreshAudit,
+} from "./lib/query-refresh-audit.mjs";
+import {
+  fetchPublicDashboardRows,
+} from "./lib/public-dashboard-client.mjs";
 import {
   buildRtoCatalogFromRows,
   loadRtoCatalog,
@@ -130,18 +142,24 @@ const MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_maker_month
 const LEGACY_MAKER_DATA_FILE = path.join(__dirname, "data", "vahan", "vahan_state_maker_fuel.csv");
 const RTO_CATALOG_FILE = path.join(__dirname, "data", "vahan", "rto_catalog.json");
 const PUBLIC_DIR = path.join(__dirname, "public");
-const SOURCE_LABEL = "VAHAN public dashboard aggregate data";
+const SOURCE_LABEL = "Parivahan Public Dashboard aggregate data";
 const SCRAPED_ROWS_MARKER = "VAHAN_SCRAPED_ROWS_JSON:";
+const FUEL_DISTRIBUTION_MARKER = "VAHAN_FUEL_DISTRIBUTION_JSON:";
 const execFileAsync = promisify(execFile);
 const ALL_RTO = "All Vahan4 Running Office";
 const ALL_FILTER = "ALL";
 const INDIA_TOTAL = "INDIA TOTAL";
 const ALL_STATES = "All Vahan4 Running States";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-// Missing supported queries are collected asynchronously.  Set this only for
-// maintenance windows; production requests are protected by the database rate
-// limiter and the shared VAHAN scrape lock rather than being silently abandoned.
-const LIVE_REFRESH_DISABLED = envFlag("VAHAN_DISABLE_LIVE_REFRESH", false);
+// Missing supported queries are collected asynchronously. Set this only for
+// maintenance windows; rate limits and the shared scraper lock protect the
+// upstream rather than silently abandoning supported missing queries.
+// VAHAN_DISABLE_LIVE_REFRESH is canonical; retain the older public-dashboard
+// name as a compatibility fallback for deployments that have not renamed it.
+const LIVE_REFRESH_DISABLED = envFlag(
+  "VAHAN_DISABLE_LIVE_REFRESH",
+  envFlag("PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH", false),
+);
 const TELEGRAM_ENABLE_POLLING = envFlag("TELEGRAM_ENABLE_POLLING", !IS_PRODUCTION);
 const TELEGRAM_ALERT_THRESHOLD_POINTS = envNumber("TELEGRAM_ALERT_THRESHOLD_POINTS", 2);
 const TELEGRAM_SUMMARY_FETCH_MISSING = envFlag("TELEGRAM_SUMMARY_FETCH_MISSING", !IS_PRODUCTION);
@@ -159,6 +177,9 @@ const PUBLIC_RATE_LIMIT_GLOBAL_MAX = envNumber("PUBLIC_RATE_LIMIT_GLOBAL_MAX", 6
 const EXPENSIVE_RATE_LIMIT_WINDOW_MS = envNumber("EXPENSIVE_RATE_LIMIT_WINDOW_MS", 60_000);
 const EXPENSIVE_RATE_LIMIT_MAX = envNumber("EXPENSIVE_RATE_LIMIT_MAX", 20);
 const EXPENSIVE_RATE_LIMIT_GLOBAL_MAX = envNumber("EXPENSIVE_RATE_LIMIT_GLOBAL_MAX", 1_000);
+const DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS = envNumber("DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS", 60_000);
+const DASHBOARD_QUERY_RATE_LIMIT_MAX = envNumber("DASHBOARD_QUERY_RATE_LIMIT_MAX", 10);
+const DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX = envNumber("DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX", 500);
 const REFRESH_JOB_TTL_MS = envNumber("REFRESH_JOB_TTL_MS", 30 * 60_000);
 const MAP_REFRESH_JOB_TTL_MS = envNumber("MAP_REFRESH_JOB_TTL_MS", 60 * 60_000);
 const REQUEST_TIMEOUT_MS = Math.max(5_000, envNumber("REQUEST_TIMEOUT_MS", 30_000));
@@ -772,6 +793,8 @@ let databaseUnavailable = false;
 let persistenceQueue = Promise.resolve();
 let nextRefreshJobId = 1;
 const refreshJobs = new Map();
+const refreshJobsByCanonicalKey = new Map();
+let publicDashboardRefreshTail = Promise.resolve();
 const mapRefreshJobs = new Map();
 const MAX_MAP_FETCH_MONTHS = 12;
 
@@ -780,7 +803,13 @@ function securityHeaders(headers = {}) {
 }
 
 async function enforceRateLimit(request, group, userId = null) {
-  const config = group === "expensive"
+  const config = group === "dashboard-query"
+    ? {
+        max: DASHBOARD_QUERY_RATE_LIMIT_MAX,
+        windowMs: DASHBOARD_QUERY_RATE_LIMIT_WINDOW_MS,
+        globalMax: DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX,
+      }
+    : group === "expensive"
     ? {
         max: EXPENSIVE_RATE_LIMIT_MAX,
         windowMs: EXPENSIVE_RATE_LIMIT_WINDOW_MS,
@@ -816,6 +845,18 @@ async function withExpensiveSlot(callback) {
   }
 }
 
+async function withPublicDashboardRefreshSlot(callback) {
+  const previous = publicDashboardRefreshTail;
+  let release;
+  publicDashboardRefreshTail = new Promise((resolve) => { release = resolve; });
+  await previous;
+  try {
+    return await callback();
+  } finally {
+    release();
+  }
+}
+
 function cleanupJobMap(map, ttlMs) {
   if (ttlMs <= 0) return;
   const now = Date.now();
@@ -828,6 +869,9 @@ function cleanupJobMap(map, ttlMs) {
 
 function cleanupRefreshJobs() {
   cleanupJobMap(refreshJobs, REFRESH_JOB_TTL_MS);
+  for (const [key, jobId] of refreshJobsByCanonicalKey.entries()) {
+    if (!refreshJobs.has(jobId)) refreshJobsByCanonicalKey.delete(key);
+  }
   cleanupJobMap(mapRefreshJobs, MAP_REFRESH_JOB_TTL_MS);
 }
 
@@ -890,8 +934,11 @@ function fuelFiltersForQuery(text, matches, fuelType) {
 }
 
 function filterContext(filters = {}) {
+  const selectedFuelContext = filters.fuelFilters?.length
+    ? filters.fuelFilters
+    : filters.selectedFuelTypes ?? [];
   return {
-    fuel_filter: filterContextValue(filters.fuelFilters),
+    fuel_filter: filterContextValue(selectedFuelContext),
     vehicle_category_filter: filterContextValue(filters.vehicleCategories),
     norms_filter: filterContextValue(filters.norms),
     vehicle_class_filter: filterContextValue(filters.vehicleClasses),
@@ -1265,6 +1312,15 @@ function rowIdentity(row) {
 function mergeRegistrationRows(existingRows, freshRows) {
   const merged = new Map();
   for (const row of existingRows) merged.set(rowIdentity(row), row);
+  const aggregateContexts = new Set(freshRows
+    .filter((row) => String(row.fuel_type ?? "") === ALL_FILTER)
+    .map((row) => [row.year, row.month, row.state, row.rto, row.fuel_filter ?? ALL_FILTER, row.vehicle_category_filter ?? ALL_FILTER, row.norms_filter ?? ALL_FILTER, row.vehicle_class_filter ?? ALL_FILTER].join("||")));
+  if (aggregateContexts.size) {
+    for (const [key, row] of merged) {
+      const context = [row.year, row.month, row.state, row.rto, row.fuel_filter ?? ALL_FILTER, row.vehicle_category_filter ?? ALL_FILTER, row.norms_filter ?? ALL_FILTER, row.vehicle_class_filter ?? ALL_FILTER].join("||");
+      if (aggregateContexts.has(context)) merged.delete(key);
+    }
+  }
   for (const row of freshRows) merged.set(rowIdentity(row), row);
   return [...merged.values()].sort((a, b) =>
     a.year - b.year ||
@@ -1403,6 +1459,19 @@ async function loadCatalog(rows = []) {
   return rtoCatalogCache;
 }
 
+// User queries resolve labels and RTO names from the local metadata snapshot.
+// Neon is the persistence layer for the fresh result, not a gate before the
+// requested slice is fetched from the Public Dashboard.
+async function loadQueryMetadata() {
+  const rows = await readRegistrationsCsv(DATA_FILE);
+  const fileCatalog = await loadRtoCatalog(RTO_CATALOG_FILE);
+  const rowCatalog = buildRtoCatalogFromRows(rows);
+  return {
+    rows,
+    catalog: mergeRtoCatalogs(fileCatalog, rowCatalog),
+  };
+}
+
 function useDatabaseStorage() {
   return hasDatabaseUrl() && !databaseUnavailable;
 }
@@ -1430,7 +1499,7 @@ function mergeRtoCatalogs(primary, fallback) {
   };
 }
 
-async function persistScrapedRows(rows) {
+async function persistScrapedRows(rows, { replaceContexts = false } = {}) {
   if (!rows.length) return;
 
   const csvRows = mergeRegistrationRows(await readRegistrationsCsv(DATA_FILE), rows);
@@ -1439,7 +1508,8 @@ async function persistScrapedRows(rows) {
 
   if (hasDatabaseUrl()) {
     try {
-      await upsertRegistrationRows(rows);
+      const persist = replaceContexts ? replaceRegistrationRows : upsertRegistrationRows;
+      await persist(rows);
       databaseUnavailable = false;
     } catch (error) {
       databaseUnavailable = true;
@@ -4200,6 +4270,22 @@ function hasRequiredScrapeFilters(filters) {
   );
 }
 
+export function requestedPublicFuelFilters(filters = {}) {
+  return filters.fuelFilters?.length
+    ? uniqueSorted(filters.fuelFilters)
+    : uniqueSorted(filters.selectedFuelTypes ?? []);
+}
+
+// A supported user query always refreshes the complete requested slice. The
+// saved dataset is metadata/fallback only; it does not decide which months
+// are sent to the Public Dashboard.
+function directQueryRefreshGroups(filters = {}) {
+  const requestedGroups = requestedMonthGroups(filters);
+  return answerFilterVariants(filters).flatMap((variant) =>
+    requestedGroups.map((group) => ({ ...group, filters: variant })),
+  );
+}
+
 function shouldAutoScrape(filters, resultRows, missingMonths) {
   if (!hasRequiredScrapeFilters(filters)) return false;
   if (filters.ambiguousRtos) return false;
@@ -4226,6 +4312,26 @@ function extractScrapedRows(stdout = "") {
   }
 }
 
+function extractFuelDistribution(stdout = "") {
+  const line = stdout.split(/\r?\n/).find((entry) => entry.startsWith(FUEL_DISTRIBUTION_MARKER));
+  if (!line) return [];
+  try {
+    const reports = JSON.parse(line.slice(FUEL_DISTRIBUTION_MARKER.length));
+    const totals = new Map();
+    for (const report of Array.isArray(reports) ? reports : []) {
+      for (const item of Array.isArray(report?.distribution) ? report.distribution : []) {
+        const fuelType = String(item?.fuelType ?? "").trim();
+        const count = Number(item?.count);
+        if (fuelType && Number.isFinite(count)) totals.set(fuelType, (totals.get(fuelType) ?? 0) + count);
+      }
+    }
+    return [...totals.entries()].map(([fuelType, count]) => ({ fuelType, count })).sort((a, b) => b.count - a.count);
+  } catch (error) {
+    console.warn(`[auto-scrape] Could not parse fuel distribution: ${safeErrorMessage(error)}`);
+    return [];
+  }
+}
+
 async function runScraperForFilters(filters, missingMonths) {
   const state = filters.state ?? INDIA_TOTAL;
   const rto = filters.rtoSearch ?? filters.rto ?? filters.locationText;
@@ -4236,34 +4342,31 @@ async function runScraperForFilters(filters, missingMonths) {
   const runs = [];
   for (const group of groups) {
     const runFilters = group.filters ?? filters;
-    const args = [
-      "scripts/vahan-scraper.mjs",
-      "--mode", "scrape",
-      "--no-persist",
-      "--emit-rows-json",
-      "--states", state,
-      "--years", String(group.year),
-      "--months", group.months.join(","),
-    ];
-    if (rto) args.push("--rtos", rto);
-    if (runFilters.fuelFilters?.length) args.push("--fuels", runFilters.fuelFilters.join(","));
-    if (runFilters.vehicleCategories?.length) args.push("--vehicle-categories", runFilters.vehicleCategories.join(","));
-    if (runFilters.norms?.length) args.push("--norms", runFilters.norms.join(","));
-    if (runFilters.vehicleClasses?.length) args.push("--vehicle-classes", runFilters.vehicleClasses.join(","));
-    console.log(`[auto-scrape] ${state} / ${rto} / ${group.year} months=${group.months.join(",")}`);
+    const requestedFuels = requestedPublicFuelFilters(runFilters);
+    console.log(`[auto-refresh] direct public API ${state} / ${rto} / ${group.year} months=${group.months.join(",")}`);
     try {
-      const result = await execFileAsync(process.execPath, args, {
-        cwd: __dirname,
-        timeout: 300_000,
-        maxBuffer: 1024 * 1024 * 10,
-      });
+      const request = {
+        state,
+        rto,
+        year: group.year,
+        months: group.months,
+        fuels: requestedFuels,
+        vehicleCategories: runFilters.vehicleCategories ?? [],
+        norms: runFilters.norms ?? [],
+        vehicleClasses: runFilters.vehicleClasses ?? [],
+      };
+      const rows = await fetchPublicDashboardRows(request);
+      // Query refresh is authoritative for monthly registration rows. The
+      // optional year-scoped fuel chart can return a non-chart payload for
+      // class/category-filtered requests, so it must not make this refresh
+      // fail after the monthly request succeeded.
       runs.push({
         year: group.year,
         months: group.months,
         success: true,
-        rows: extractScrapedRows(result.stdout),
-        stdout: result.stdout,
-        stderr: result.stderr,
+        rows,
+        usedArchivedFallback: rows.some((row) => row.archive_scope === "ACTIVE_AND_ARCHIVED"),
+        fuelDistribution: [],
       });
     } catch (error) {
       console.error(`[auto-scrape] Failed for ${group.year}/${group.months}: ${safeErrorMessage(error)}`);
@@ -4271,9 +4374,9 @@ async function runScraperForFilters(filters, missingMonths) {
         year: group.year,
         months: group.months,
         success: false,
-        rows: extractScrapedRows(error.stdout),
+        rows: [],
+        fuelDistribution: [],
         error: publicOperationalError(error, "VAHAN refresh failed."),
-        stderr: error.stderr,
       });
     }
   }
@@ -4284,9 +4387,13 @@ async function runScraperForFilters(filters, missingMonths) {
 function hasRequestedSideFilterContext(filters = {}) {
   return Boolean(
     filters.fuelFilters?.length ||
+    filters.selectedFuelTypes?.length ||
     filters.vehicleCategories?.length ||
+    filters.selectedVehicleCategories?.length ||
     filters.norms?.length ||
-    filters.vehicleClasses?.length,
+    filters.selectedNorms?.length ||
+    filters.vehicleClasses?.length ||
+    filters.selectedVehicleClasses?.length,
   );
 }
 
@@ -4298,6 +4405,13 @@ function aggregateComparisonKey(row) {
     row.rto,
     row.fuel_segment,
     row.fuel_type,
+  ].join("||");
+}
+
+export function sourceResponseComparisonKey(row) {
+  return [
+    aggregateComparisonKey(row),
+    ...FILTER_CONTEXT_FIELDS.map((field) => row[field] ?? ALL_FILTER),
   ].join("||");
 }
 
@@ -4319,11 +4433,14 @@ function totalsByComparisonKey(rows, keyFn) {
   return totals;
 }
 
-async function loadUnfilteredRowsForComparison(filters) {
-  const aggregateFilters = {
+export function unfilteredComparisonFilters(filters = {}) {
+  return {
     ...filters,
     state: filters.state ?? INDIA_TOTAL,
     fuelFilters: [],
+    selectedFuelTypes: [],
+    fuelSegment: null,
+    fuelType: null,
     vehicleCategories: [],
     norms: [],
     vehicleClasses: [],
@@ -4332,6 +4449,10 @@ async function loadUnfilteredRowsForComparison(filters) {
     selectedVehicleCategories: [],
     selectedNorms: [],
   };
+}
+
+async function loadUnfilteredRowsForComparison(filters) {
+  const aggregateFilters = unfilteredComparisonFilters(filters);
 
   if (hasDatabaseUrl()) {
     try {
@@ -4349,8 +4470,10 @@ async function sideFilterScrapeLooksUnapplied(filters, freshRows) {
   const aggregateRows = await loadUnfilteredRowsForComparison(filters);
   if (!aggregateRows.length) return false;
 
-  const aggregateCounts = new Map(aggregateRows.map((row) => [aggregateComparisonKey(row), row.vehicle_count]));
-  const rowsMatchAggregate = freshRows.every((row) => aggregateCounts.get(aggregateComparisonKey(row)) === row.vehicle_count);
+  const aggregateCounts = new Map(aggregateRows.map((row) => [sourceResponseComparisonKey(row), row.vehicle_count]));
+  const rowsMatchAggregate = freshRows.every((row) =>
+    aggregateCounts.get(sourceResponseComparisonKey(row)) === row.vehicle_count,
+  );
   if (rowsMatchAggregate) return true;
 
   const freshMonthTotals = totalsByComparisonKey(freshRows, monthTotalComparisonKey);
@@ -4659,7 +4782,9 @@ function summarizeScraperRuns(scraperRuns) {
       months: run.months,
       success: run.success,
       rowsScraped: run.rows?.length ?? 0,
+      usedArchivedFallback: Boolean(run.usedArchivedFallback),
     })),
+    usedArchivedFallback: scraperRuns.some((run) => run.usedArchivedFallback),
   };
 }
 
@@ -5075,7 +5200,7 @@ async function freshnessFromDb() {
   return { latestMonth: stats.latestMonth, source: SOURCE_LABEL, rowCount: stats.rowCount };
 }
 
-function dashboardPayload({
+export function dashboardPayload({
   filters,
   rows,
   scraperRuns = [],
@@ -5086,6 +5211,8 @@ function dashboardPayload({
   preFiltered = false,
   freshnessInfo = null,
   dataQualityWarnings = [],
+  fuelBreakdownOverride = null,
+  refreshContext = null,
 }) {
   const scraper = summarizeScraperRuns(scraperRuns);
   const resultRows = filters.ambiguousRtos ? [] : preFiltered ? rows : filterRows(rows, filters);
@@ -5105,20 +5232,24 @@ function dashboardPayload({
       peakMonthCount: summary.peakMonthCount,
     },
     trend: summary.trend,
-    fuelBreakdown: summary.fuelBreakdown,
+    fuelBreakdown: fuelBreakdownOverride?.length ? fuelBreakdownOverride : summary.fuelBreakdown,
     rows: resultRows,
     freshness: freshnessInfo ?? freshness(rows),
     scraper,
     liveRefresh,
+    refreshContext,
     warnings: [
       ...dataQualityWarnings,
       llmFilters?.decodeWarning,
-      liveRefresh?.status === "pending" ? `Fetching ${liveRefresh.requiredMonths.length} missing/latest month${liveRefresh.requiredMonths.length === 1 ? "" : "s"} from VAHAN. Saved data is shown now and will update automatically.` : null,
-      liveRefresh?.status === "failed" ? "Live VAHAN refresh failed. Results may still be incomplete." : null,
+      liveRefresh?.status === "pending" ? `Fetching ${liveRefresh.requiredMonths.length} missing/latest month${liveRefresh.requiredMonths.length === 1 ? "" : "s"} from the Public Dashboard. Saved data is shown now and will update automatically.` : null,
+      liveRefresh?.status === "failed" ? "Public Dashboard refresh did not complete. Results may still be incomplete." : null,
       scraper.failedRuns.length
-        ? "Live VAHAN fetch failed for this query. Results may be missing or stale."
+        ? "Public Dashboard fetch failed for this query. Results may be missing or stale."
         : null,
-      persistenceStatus === "pending" ? "Fresh VAHAN data is displayed now and is being saved in the background." : null,
+      scraper.usedArchivedFallback
+        ? "No active-registration row was returned for this exact query, so this answer includes temporary and permanent archived registrations."
+        : null,
+      persistenceStatus === "pending" ? "Fresh Public Dashboard data is displayed now and is being saved in the background." : null,
       status === "stale" ? "Showing last known matching local data because the live fetch failed." : null,
       dataReliabilityWarning(status, summary),
       status === "partial" ? "Some requested months are missing from local data." : null,
@@ -5145,12 +5276,24 @@ function liveRefreshInfo(job) {
     jobId: job.id,
     status: job.status,
     requiredMonths: job.requiredMonths,
+    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL,
+    auditId: job.auditId ?? null,
     error: job.error ?? null,
   };
 }
 
-function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
+function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, auditId = null, canonicalKey }) {
   cleanupRefreshJobs();
+  const existingId = refreshJobsByCanonicalKey.get(canonicalKey);
+  const existing = existingId ? refreshJobs.get(existingId) : null;
+  if (existing?.status === "pending") {
+    if (auditId && !existing.auditIds.includes(auditId)) {
+      existing.auditIds.push(auditId);
+      void updateQueryRefreshAudit(auditId, { outcome: "fetching", refreshJobId: existing.id })
+        .catch((auditError) => console.warn(`[refresh:${existing.id}] Audit update failed: ${safeErrorMessage(auditError)}`));
+    }
+    return existing;
+  }
   const id = String(nextRefreshJobId++);
   const job = {
     id,
@@ -5163,16 +5306,21 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
     scraperRuns: [],
     freshRows: [],
     persistenceStatus: "saved",
+    auditId,
+    auditIds: auditId ? [auditId] : [],
+    canonicalKey,
     error: null,
     payload: null,
     createdAt: Date.now(),
   };
   refreshJobs.set(id, job);
+  refreshJobsByCanonicalKey.set(canonicalKey, id);
 
   job.promise = (async () => {
     try {
-      const runs = await runScraperForFilters(filters, refreshGroups);
+      const runs = await withPublicDashboardRefreshSlot(() => runScraperForFilters(filters, refreshGroups));
       const freshRows = runs.flatMap((run) => run.rows ?? []);
+      const fuelBreakdownOverride = runs.flatMap((run) => run.fuelDistribution ?? []);
       job.scraperRuns = runs;
       job.freshRows = freshRows;
 
@@ -5180,24 +5328,39 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         throw new Error("VAHAN returned the same rows as the unfiltered report; side filters were not applied, so the scrape was rejected.");
       }
 
-      if (freshRows.length > 0) {
+      const activeRows = freshRows.filter((row) => row.archive_scope !== "ACTIVE_AND_ARCHIVED");
+      if (activeRows.length > 0) {
         if (hasDatabaseUrl()) {
           dataCache = null;
         } else {
           const currentRows = await loadRows();
-          dataCache = mergeRegistrationRows(currentRows, freshRows);
+          dataCache = mergeRegistrationRows(currentRows, activeRows);
         }
-        job.persistenceStatus = persistScrapedRowsInBackground(freshRows);
+        const persistence = await queueScrapedRowsPersistence(activeRows, { replaceContexts: true });
+        job.persistenceStatus = persistence.skipped ? "skipped" : "saved";
+      }
+      if (freshRows.some((row) => row.archive_scope === "ACTIVE_AND_ARCHIVED")) {
+        job.persistenceStatus = activeRows.length ? "active rows saved; archived fallback not saved" : "archived fallback not saved";
       }
 
       const combinedRows = mergeRegistrationRows(baseRows, freshRows);
       const missingMonths = findMissingAnswerMonths(filters, combinedRows);
-      job.status = runs.some((run) => !run.success) ? "failed" : "complete";
+      job.status = runs.some((run) => !run.success) || missingMonths.length > 0 ? "failed" : "complete";
+      job.error = job.status === "failed"
+        ? runs.find((run) => !run.success)?.error
+          ?? (missingMonths.length > 0 ? "Public dashboard did not return every requested month." : "Public dashboard refresh failed.")
+        : null;
+      void Promise.all(job.auditIds.map((entryId) => updateQueryRefreshAudit(entryId, {
+        outcome: missingMonths.length > 0 ? "incomplete" : job.status,
+        refreshJobId: job.id,
+        error: job.error,
+        coverage: { complete: missingMonths.length === 0, missingMonths },
+      }))).catch((auditError) => console.warn(`[refresh:${id}] Audit update failed: ${safeErrorMessage(auditError)}`));
       if (job.status === "failed") {
         notifyTelegramAlert([
           "Query refresh failed.",
           `Scope: ${describeFilters(filters)}`,
-          runs.find((run) => !run.success)?.error ?? "One or more VAHAN scraper runs failed.",
+          job.error,
         ].join("\n"));
       }
       job.payload = dashboardPayload({
@@ -5209,11 +5372,15 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         persistenceStatus: job.persistenceStatus,
         liveRefresh: liveRefreshInfo(job),
         preFiltered: false,
-        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
+        freshnessInfo: freshness(combinedRows),
+        fuelBreakdownOverride,
       });
     } catch (error) {
       job.status = "failed";
       job.error = error.message;
+      void Promise.all(job.auditIds.map((entryId) => updateQueryRefreshAudit(entryId, {
+        outcome: "failed", refreshJobId: job.id, error: error.message,
+      }))).catch((auditError) => console.warn(`[refresh:${id}] Audit update failed: ${safeErrorMessage(auditError)}`));
       notifyTelegramAlert([
         "Query refresh failed.",
         `Scope: ${describeFilters(filters)}`,
@@ -5227,7 +5394,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters }) {
         llmFilters,
         liveRefresh: liveRefreshInfo(job),
         preFiltered: false,
-        freshnessInfo: hasDatabaseUrl() ? await freshnessFromDb().catch(() => null) : null,
+        freshnessInfo: freshness(baseRows),
       });
       console.error(`[refresh:${id}] ${safeErrorMessage(error)}`);
     }
@@ -5253,10 +5420,10 @@ export async function queryData(input, {
     throw error;
   }
 
-  let rows = await loadRows();
-  const useDatabase = useDatabaseStorage();
+  const queryMetadata = await loadQueryMetadata();
+  const rows = queryMetadata.rows;
   const semanticVocabulary = buildSemanticVocabulary(rows);
-  const catalog = await loadCatalog(rows);
+  const catalog = queryMetadata.catalog;
   const deterministicInterpretation = interpretDashboardQuery(query, semanticVocabulary);
   const ruleFilters = deterministicInterpretation.filters;
   const routing = classifyDashboardQueryRouting(query, deterministicInterpretation);
@@ -5342,45 +5509,55 @@ export async function queryData(input, {
     error.statusCode = 400;
     throw error;
   }
-  let immediateRows = rows;
-  if (useDatabase && !filters.ambiguousRtos) {
-    try {
-      const variants = answerFilterVariants({ ...filters, state: filters.state ?? INDIA_TOTAL });
-      immediateRows = mergeRegistrationRows(
-        [],
-        (await Promise.all(variants.map((variant) => queryRegistrationRows(variant)))).flat(),
-      );
-    } catch (error) {
-      databaseUnavailable = true;
-      rows = await readRegistrationsCsv(DATA_FILE);
-      dataCache = rows;
-      immediateRows = rows;
-      console.warn(`[data] Neon query failed, using CSV rows: ${safeErrorMessage(error)}`);
-    }
+  const refreshEligibility = publicDashboardRefreshEligibility(filters);
+  const requestedMonths = requestedMonthGroups(filters);
+  const refreshGroups = !LIVE_REFRESH_DISABLED && refreshEligibility.eligible && !filters.ambiguousRtos && !filters.unresolvedLocation
+    ? directQueryRefreshGroups(filters)
+    : [];
+  const answerRows = [];
+  const missingMonths = requestedMonths;
+  const dataQualityWarnings = [];
+  if (requestedMonths.length && !refreshGroups.length && !refreshEligibility.eligible) {
+    dataQualityWarnings.push(`Public-dashboard refresh was not started: ${refreshEligibility.reason}`);
   }
-  const queryUsesDatabase = useDatabaseStorage();
-  const loadedMissingMonths = hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? queryUsesDatabase
-      ? await findMissingAnswerMonthsFromDb(filters)
-      : findMissingAnswerMonths(filters, rows)
-    : [];
-  const loadedRefreshGroups = !LIVE_REFRESH_DISABLED && hasRequiredScrapeFilters(filters) && !filters.ambiguousRtos && !filters.unresolvedLocation
-    ? queryUsesDatabase
-      ? await refreshMonthsForAnswerFromDb(filters)
-      : refreshMonthsForAnswer(filters, rows)
-    : [];
-  const savedSideFilterRowsRejected = await sideFilterScrapeLooksUnapplied(filters, immediateRows);
-  const sideFilterRowsNeedRefresh = hasRequestedSideFilterContext(filters) && loadedRefreshGroups.length > 0;
-  const rejectSavedSideFilterRows = savedSideFilterRowsRejected || sideFilterRowsNeedRefresh;
-  const answerRows = rejectSavedSideFilterRows ? [] : immediateRows;
-  const dataQualityWarnings = rejectSavedSideFilterRows
-    ? [rejectedSideFilterWarning(sideFilterRowsNeedRefresh ? "refreshing" : "unapplied")]
-    : [];
-  const missingMonths = rejectSavedSideFilterRows ? requestedMonthGroups(filters) : loadedMissingMonths;
-  const refreshGroups = savedSideFilterRowsRejected && !LIVE_REFRESH_DISABLED ? requestedMonthGroups(filters) : loadedRefreshGroups;
+  if (requestedMonths.length && LIVE_REFRESH_DISABLED) {
+    dataQualityWarnings.push("Public-dashboard refresh is disabled for this deployment.");
+  }
+  const canonicalKey = canonicalRefreshKey(filters, refreshGroups);
+  const coverage = {
+    complete: missingMonths.length === 0,
+    missingMonths,
+    refreshEligible: refreshEligibility.eligible,
+    refreshReason: refreshEligibility.reason,
+  };
+  const auditOutcome = refreshGroups.length ? "fetching" : coverage.complete ? "cached" : "incomplete";
+  const audit = await createQueryRefreshAudit({
+    canonicalKey, filters, requestedMonths, coverage, outcome: auditOutcome,
+  }).catch((auditError) => {
+    console.warn(`[query-refresh] Audit insert failed: ${safeErrorMessage(auditError)}`);
+    return { skipped: true, id: null };
+  });
   const liveRefreshJob = refreshGroups.length
-    ? startLiveRefreshJob({ filters, baseRows: answerRows, refreshGroups, llmFilters })
+    ? startLiveRefreshJob({
+        filters,
+        baseRows: [],
+        refreshGroups,
+        llmFilters,
+        auditId: audit.id,
+        canonicalKey,
+      })
     : null;
+  if (liveRefreshJob && audit.id) {
+    void updateQueryRefreshAudit(audit.id, { outcome: "fetching", refreshJobId: liveRefreshJob.id })
+      .catch((auditError) => console.warn(`[query-refresh] Audit update failed: ${safeErrorMessage(auditError)}`));
+  }
+  const refreshContext = {
+    canonicalFiltersJson: canonicalRefreshJson(filters),
+    canonicalKey,
+    auditId: audit.id,
+    sourceUrl: PUBLIC_DASHBOARD_SOURCE_URL,
+    coverage,
+  };
 
   const payload = dashboardPayload({
     filters,
@@ -5388,9 +5565,10 @@ export async function queryData(input, {
     missingMonths,
     llmFilters,
     liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
-    preFiltered: queryUsesDatabase && !hasSideFilterExclusions(filters),
-    freshnessInfo: queryUsesDatabase ? await freshnessFromDb().catch(() => null) : null,
+    preFiltered: false,
+    freshnessInfo: freshness(rows),
     dataQualityWarnings,
+    refreshContext,
   });
   if (routing.state === "local") recordDashboardLocalSuccess(routing);
   if (routing.state === "repair" && repairProviderName === "groq") {
@@ -6826,7 +7004,8 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "POST" && url.pathname === "/api/query") {
-      await enforceRateLimit(request, "expensive");
+      const user = await currentUser(request);
+      await enforceRateLimit(request, "dashboard-query", user?.id ?? null);
       const body = await readBody(request);
       sendJson(response, 200, await withExpensiveSlot(() => queryData(body)));
       return;

@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { hasRequestedSideFilters, matchPublicRto, parsePublicMonthlyRows, publicDirectMonthlyQueryString, publicMonthlyQueryString, resolveMakerReportTotal } from "./vahan-scraper.mjs";
+import { hasRequestedSideFilters, matchPublicRto, parsePublicFuelDistribution, parsePublicMonthlyRows, publicChartQueryString, publicDirectMonthlyQueryString, publicMonthlyQueryString, publicRtoOptionValue, resolveMakerReportTotal } from "./vahan-scraper.mjs";
 
 const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 
 assert.equal(hasRequestedSideFilters(), false, "an unfiltered report should not trigger the side-filter refresh");
 assert.equal(hasRequestedSideFilters({ vehicleCategories: ["LIGHT MOTOR VEHICLE"] }), true, "an LMV filter must trigger the side-filter refresh even when already checked");
 assert.equal(hasRequestedSideFilters({ fuels: ["PETROL"], norms: ["BHARAT STAGE VI"] }), true, "any requested side filter must trigger the side-filter refresh");
+assert.deepEqual(
+  parsePublicMonthlyRows([], { year: 2026, label: "ALL" }),
+  { label: "ALL", counts: {}, explicitZero: true },
+  "an explicit empty official table is a verified zero-registration result, not a scrape failure",
+);
 assert.equal(
   matchPublicRto([{ rtoName: "Noida - UP16", rtoCode: 16 }], "Noida - UP16( 13-NOV-2017 )")?.rtoCode,
   16,
@@ -85,6 +90,50 @@ assert.equal(
   1200,
   "a larger VAHAN metric total should still be preserved",
 );
+assert.deepEqual(
+  parsePublicMonthlyRows([
+    { yearAsString: "2024-March", registeredVehicleCount: 154 },
+    { yearAsString: "2024-April", registeredVehicleCount: "355" },
+  ], { year: 2024, label: "PURE EV" }),
+  { label: "PURE EV", counts: { 3: 154, 4: 355 } },
+  "public dashboard calendar-month rows must retain their original month keys",
+);
+const multiSelectQuery = publicMonthlyQueryString({
+  vehicleSubCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"],
+  vehicleClasses: ["Motor Car", "Motor Caravan"],
+  vehicleEmissions: ["BHARAT STAGE IV", "BHARAT STAGE VI"],
+  vehicleFuels: ["DIESEL", "PETROL"],
+});
+assert.match(multiSelectQuery, /vehicleSubCategories%5B%5D=LIGHT\+MOTOR\+VEHICLE/);
+assert.match(multiSelectQuery, /vehicleSubCategories%5B%5D=LIGHT\+PASSENGER\+VEHICLE/);
+assert.match(multiSelectQuery, /vehicleClasses%5B%5D=Motor\+Car/);
+assert.match(multiSelectQuery, /vehicleEmissions%5B%5D=BHARAT\+STAGE\+VI/);
+assert.match(multiSelectQuery, /vehicleFuels%5B%5D=DIESEL/);
+assert.match(multiSelectQuery, /vehicleFuels%5B%5D=PETROL/);
+assert.doesNotMatch(multiSelectQuery, /vehicleCategoryGroup/);
+assert.equal(
+  publicChartQueryString({ vehicleSubCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"] }),
+  "vehicleSubCategories=LIGHT+MOTOR+VEHICLE%2CLIGHT+PASSENGER+VEHICLE",
+  "the Public Dashboard fuel chart expects a single comma-separated multi-select value",
+);
+assert.deepEqual(
+  parsePublicFuelDistribution({ labels: ["PETROL", "PURE EV"], data: [120, "34"] }),
+  [{ fuelType: "PETROL", count: 120 }, { fuelType: "PURE EV", count: 34 }],
+  "one fuel chart response must preserve every raw fuel bucket",
+);
+assert.equal(
+  publicRtoOptionValue([
+    { label: "Noida - UP16", value: "UP16" },
+    { label: "Ghaziabad - UP14", value: "UP14" },
+  ], "Noida - UP16 (13-NOV-2017)"),
+  "UP16",
+  "a legacy RTO label with a date suffix must resolve by its stable RTO code",
+);
+assert.throws(
+  () => parsePublicMonthlyRows([{ yearAsString: "2023-January", registeredVehicleCount: 1 }], { year: 2024, label: "PURE EV" }),
+  /no monthly values/i,
+  "a response outside the requested year must never be persisted under that year",
+);
 assert.equal(
   resolveMakerReportTotal({ metricTotal: 44, rows: [{ maker: "A", vehicle_count: 5 }], explicitZero: true }),
   0,
@@ -96,6 +145,10 @@ assert.match(
   /const shouldRefreshSideFilters = hasRequestedSideFilters\([\s\S]*?if \(shouldRefreshSideFilters\) \{\s*await applySideFilters\(page\);/,
   "requested side filters must refresh VAHAN even when their checkboxes were already selected",
 );
+assert.match(source, /dashboardControlCount < 3 && \/captcha\|unauthori\[sz\]ed\|access denied\//,
+  "a normal dashboard Login navigation link must not be treated as an access block");
+assert.match(source, /waitForFunction\([\s\S]*?#rtoCode[\s\S]*?options\.length[\s\S]*?> 1/,
+  "RTO resolution must wait for the state-specific options rather than sleeping for a fixed interval");
 assert.match(
   source,
   /const replacementContexts = new Set\(reportItem\.items\.map\(\(item\) => keyForItem\(item\)\)\);[\s\S]*?replacementContexts\.has\(existingKey\)/,

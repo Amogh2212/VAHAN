@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 process.env.DATABASE_URL = "";
-process.env.VAHAN_DISABLE_LIVE_REFRESH = "1";
+process.env.PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH = "1";
 process.env.NODE_ENV = "test";
 process.env.TEST_CURRENT_MONTH = "2026-06";
 process.env.AI_QUERY_PROVIDER = "none";

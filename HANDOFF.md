@@ -35,10 +35,10 @@ Product rules:
 
 ### Data source and scraper
 
-- The working VAHAN source is:
+- The working source is the Parivahan Public Dashboard:
 
 ```text
-https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en
 ```
 
 - The scraper reads monthly fuel-wise aggregate registration data.

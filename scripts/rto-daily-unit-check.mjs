@@ -13,7 +13,7 @@ import {
   targetMonthForDate,
   validateRtoDailyReport,
 } from "../lib/rto-daily-snapshots.mjs";
-import { searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
+import { resolveRtoWithCatalog, searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
 import { createTerminalProgress, formatRtoDailyProgress } from "../lib/terminal-progress.mjs";
 import { createAdaptiveController } from "./run-rto-daily-snapshots.mjs";
 
@@ -182,6 +182,15 @@ assert.equal(searchRtoCatalog(catalog, "UP-16")[0]?.state, "Uttar Pradesh", "off
 assert.equal(searchRtoCatalog(catalog, "UP16")[0]?.state, "Uttar Pradesh", "compact RTO codes should be searchable");
 assert.equal(searchRtoCatalog(catalog, "UK08")[0]?.state, "Uttarakhand", "zero-padded RTO codes should be searchable");
 assert.equal(searchRtoCatalog(catalog, "hari")[0]?.state, "Uttarakhand", "canonical label prefixes should outrank short aliases from unrelated RTOs");
+const resolvedDl01 = resolveRtoWithCatalog({ state: "Delhi", rtoSearch: "DL-01", locationText: "DL-01" }, {
+  states: [{ state: "Delhi", rtos: [
+    toCatalogRto("MALL ROAD - DL1"),
+    toCatalogRto("RAJOURI GARDEN - DL10"),
+    toCatalogRto("ROHINI - DL11"),
+  ] }],
+});
+assert.equal(resolvedDl01.rto, "MALL ROAD - DL1", "DL-01 should match the exact RTO code, not DL-10 or DL-11");
+assert.equal(resolvedDl01.ambiguousRtos, null, "an exact RTO code should not be reported as ambiguous");
 
 assert.equal(validateRtoDailyReport({
   status: "success",

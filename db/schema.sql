@@ -151,6 +151,26 @@ create table if not exists request_rate_limits (
 create index if not exists request_rate_limits_reset_idx
   on request_rate_limits (reset_at);
 
+create table if not exists query_refresh_audits (
+  id bigserial primary key,
+  canonical_key text not null,
+  filters_json jsonb not null,
+  requested_months_json jsonb not null default '[]'::jsonb,
+  coverage_json jsonb not null default '{}'::jsonb,
+  refresh_job_id text,
+  source_url text not null,
+  outcome text not null check (outcome in ('cached', 'fetching', 'complete', 'failed', 'incomplete')),
+  error_message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists query_refresh_audits_canonical_idx
+  on query_refresh_audits (canonical_key, created_at desc);
+
+create index if not exists query_refresh_audits_outcome_idx
+  on query_refresh_audits (outcome, updated_at desc);
+
 create table if not exists telegram_link_codes (
   code text primary key,
   user_id bigint not null references users(id) on delete cascade,

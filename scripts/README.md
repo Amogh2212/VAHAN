@@ -2,7 +2,7 @@
 
 This scraper targets the official VAHAN public dashboard:
 
-https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml
+https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en
 
 It only collects public aggregate registration counts. It does not fetch owner
 details, RC records, phone numbers, addresses, or individual vehicle records.
