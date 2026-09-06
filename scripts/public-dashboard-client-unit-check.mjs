@@ -7,6 +7,7 @@ import {
   publicMonthlyQueryString,
   publicRtoCode,
   publicStateCode,
+  publicVehicleClassValue,
 } from "../lib/public-dashboard-client.mjs";
 
 assert.equal(publicStateCode("Uttar Pradesh", "Noida - UP16 (13-NOV-2017)"), "UP");
@@ -30,7 +31,13 @@ assert.equal(publicRtoCode("Noida - UP16 (13-NOV-2017)"), "16");
 assert.equal(publicRtoCode("All Vahan4 Running Office"), "0");
 assert.match(publicMonthlyQueryString({ vehicleSubCategories: ["LMV", "LPV"] }), /vehicleSubCategories%5B%5D=LMV.*vehicleSubCategories%5B%5D=LPV/);
 assert.match(publicMonthlyQueryString({ vehicleFuels: ["PURE EV"] }), /vehicleFuels%5B%5D=PURE\+EV/);
+assert.match(publicMonthlyQueryString({ vehicleType: "", archiveTypePA: "" }), /vehicleType=&archiveTypePA=/);
 assert.match(publicChartQueryString({ vehicleSubCategories: ["LMV", "LPV"] }), /vehicleSubCategories=LMV%2CLPV/);
+assert.equal(publicVehicleClassValue("MOTOR CAR"), "Motor Car");
+assert.equal(publicVehicleClassValue("BUS"), "Bus");
+assert.equal(publicVehicleClassValue("GOODS CARRIER"), "Goods Carrier");
+assert.equal(publicVehicleClassValue("E-RICKSHAW(P)"), "e-Rickshaw(P)");
+assert.equal(publicVehicleClassValue("M-CYCLE/SCOOTER"), "M-Cycle/Scooter");
 
 const monthlyResponse = [
   { yearAsString: "2026-August", registeredVehicleCount: 3329 },
@@ -54,6 +61,7 @@ const rows = await fetchPublicDashboardRows({
   months: [8],
   fuels: ["PURE EV"],
   vehicleCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"],
+  vehicleClasses: ["MOTOR CAR"],
   fetchImpl,
 });
 assert.equal(rows.length, 1);
@@ -62,23 +70,35 @@ assert.equal(rows[0].vehicle_category_filter, "LIGHT MOTOR VEHICLE|LIGHT PASSENG
 assert.match(requests[0].url, /stateCode=UP/);
 assert.match(requests[0].url, /rtoCode=16/);
 assert.match(requests[0].url, /vehicleSubCategories%5B%5D=LIGHT\+MOTOR\+VEHICLE/);
+assert.match(requests[0].url, /vehicleClasses%5B%5D=Motor\+Car/);
 assert.match(requests[0].url, /vehicleFuels%5B%5D=PURE\+EV/);
 assert.match(requests[0].url, /calendarType=3/);
+assert.match(requests[0].url, /vehicleType=&/);
+assert.match(requests[0].url, /archiveTypePA=&archiveTypeTA=&archiveTypeNA=/);
 assert.deepEqual(requests[0].options.headers, {
   accept: "*/*",
   "x-requested-with": "XMLHttpRequest",
   referer: "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
 });
 
-const zeroRows = await fetchPublicDashboardRows({
+await assert.rejects(fetchPublicDashboardRows({
   state: "Uttar Pradesh",
   rto: "Noida - UP16 (13-NOV-2017)",
   year: 2026,
   months: [8],
   fuels: ["PLUG-IN HYBRID EV"],
   fetchImpl: async () => new Response(JSON.stringify([]), { status: 200 }),
+}), /no requested monthly values/);
+
+const sourceZeroRows = await fetchPublicDashboardRows({
+  state: "Uttar Pradesh",
+  rto: "Noida - UP16 (13-NOV-2017)",
+  year: 2026,
+  months: [8],
+  fuels: ["PLUG-IN HYBRID EV"],
+  fetchImpl: async () => new Response(JSON.stringify([{ yearAsString: "2026-August", registeredVehicleCount: 0 }]), { status: 200 }),
 });
-assert.equal(zeroRows[0].vehicle_count, 0);
+assert.equal(sourceZeroRows[0].vehicle_count, 0);
 
 const distribution = await fetchPublicFuelDistribution({
   state: "Uttar Pradesh",
