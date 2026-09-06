@@ -1445,7 +1445,6 @@ async function loadCatalog(rows = []) {
       try {
         rowCatalog = buildRtoCatalogFromRows((await queryRtos()).map((item) => ({ state: item.state, rto: item.rto })));
       } catch (error) {
-        databaseUnavailable = true;
         console.warn(`[data] Neon RTO catalog read failed, using CSV catalog: ${safeErrorMessage(error)}`);
       }
     }
