@@ -6565,6 +6565,7 @@ async function postgresHealthPayload() {
   databaseUnavailable = false;
   return {
     status: "ok",
+    buildCommit: process.env.RENDER_GIT_COMMIT ?? process.env.COMMIT_SHA ?? null,
     storage: "postgres",
     rowCount: dbFreshness.rowCount,
     latestMonth: dbFreshness.latestMonth,
@@ -6579,6 +6580,7 @@ async function csvHealthPayload(databaseStatus = null) {
   const rows = await loadRows();
   return {
     status: "ok",
+    buildCommit: process.env.RENDER_GIT_COMMIT ?? process.env.COMMIT_SHA ?? null,
     storage: "csv",
     rowCount: rows.length,
     ...freshness(rows),

@@ -1702,7 +1702,10 @@ async function scrape(args) {
 
         for (const item of reportItem.items) {
           for (const reportRow of reportRows) {
-            if (!reportRow.label || /total/i.test(reportRow.label)) continue;
+            // Keep an explicit empty official table as a zero row. The
+            // server needs a persisted-shaped row to distinguish verified
+            // zero registrations from a failed transport.
+            if (!reportRow.label || (/total/i.test(reportRow.label) && !reportRow.explicitZero)) continue;
             const vehicleCount = reportRow.counts[item.month];
             if ((vehicleCount === undefined || vehicleCount === null) && !reportRow.explicitZero) {
               throw new Error(`Could not find month ${item.month} for ${args.dimension} "${reportRow.label}"`);
