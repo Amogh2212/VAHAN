@@ -773,7 +773,7 @@ async function extractRtoOptions(page) {
 async function buildRtoCatalog(args) {
   await ensureDir(args.outputDir);
   const outputFile = path.join(args.outputDir, "rto_catalog.json");
-  const states = args.states.length ? args.states : STATE_NAMES;
+  const requestedStates = args.states.length ? new Set(args.states.map((state) => normalizeLookup(publicStateLabel(state)))) : null;
 
   const browser = await launchBrowser(args);
   const context = await browser.newContext({
@@ -785,19 +785,32 @@ async function buildRtoCatalog(args) {
 
   try {
     await openDashboard(page);
+    const stateOptions = (await publicSelectOptions(page, "#stateCode"))
+      .filter((option) => option.value && option.label)
+      .filter((option) => !/^select|^all india|^india total/i.test(option.label));
+    const states = requestedStates
+      ? stateOptions.filter((option) => requestedStates.has(normalizeLookup(option.label)))
+      : stateOptions;
+    if (!states.length) throw new Error("Public Dashboard returned no matching states for the RTO catalog.");
     const catalogStates = [];
-    for (const [index, state] of states.entries()) {
-      console.log(`[${index + 1}/${states.length}] Reading RTOs for ${state}`);
-      await selectStateForCatalog(page, state);
-      const labels = await extractRtoOptions(page);
+    for (const [index, stateOption] of states.entries()) {
+      console.log(`[${index + 1}/${states.length}] Reading RTOs for ${stateOption.label}`);
+      await page.locator("#stateCode").selectOption(stateOption.value);
+      await page.waitForTimeout(300);
+      const labels = (await publicSelectOptions(page, "#rtoCode")).map((option) => option.label);
       const rtos = labels
         .filter((label) => !/^All Vahan4 Running Office/i.test(label))
         .map(toCatalogRto)
         .sort((a, b) => a.label.localeCompare(b.label));
-      catalogStates.push({ state, rtos });
+      if (!rtos.length) throw new Error(`Public Dashboard returned no RTOs for ${stateOption.label}.`);
+      catalogStates.push({ state: stateOption.label, rtos });
       await sleep(args.delayMs);
     }
 
+    const totalRtos = catalogStates.reduce((count, group) => count + group.rtos.length, 0);
+    if (catalogStates.length < 20 || totalRtos < 1000) {
+      throw new Error(`Refusing to replace the RTO catalog with incomplete coverage: states=${catalogStates.length}, rtos=${totalRtos}.`);
+    }
     const catalog = {
       source_url: SOURCE_URL,
       updated_at: new Date().toISOString(),
@@ -809,7 +822,7 @@ async function buildRtoCatalog(args) {
       enabled: true,
       priority: index + 100,
     })));
-    const database = process.env.DATABASE_URL
+    const database = process.env.DATABASE_URL && process.env.RTO_CATALOG_SKIP_DATABASE !== "1"
       ? await upsertRtoDailyConfigs(configs, {
           refreshedAt: catalog.updated_at,
           reconcileMissing: args.states.length === 0,
@@ -1015,6 +1028,7 @@ function publicMonthFromLabel(value) {
 
 export function parsePublicMonthlyRows(rows, { year, label }) {
   if (!Array.isArray(rows)) throw new Error("Public dashboard returned an invalid monthly response.");
+  if (rows.length === 0) return { label, counts: {}, explicitZero: true };
   const counts = {};
   for (const row of rows) {
     const period = publicMonthFromLabel(row?.yearAsString);
@@ -1690,7 +1704,7 @@ async function scrape(args) {
           for (const reportRow of reportRows) {
             if (!reportRow.label || /total/i.test(reportRow.label)) continue;
             const vehicleCount = reportRow.counts[item.month];
-            if (vehicleCount === undefined || vehicleCount === null) {
+            if ((vehicleCount === undefined || vehicleCount === null) && !reportRow.explicitZero) {
               throw new Error(`Could not find month ${item.month} for ${args.dimension} "${reportRow.label}"`);
             }
             const common = {
@@ -1702,7 +1716,7 @@ async function scrape(args) {
               vehicle_category_filter: reportItem.vehicle_category_filter,
               norms_filter: reportItem.norms_filter,
               vehicle_class_filter: reportItem.vehicle_class_filter,
-              vehicle_count: vehicleCount,
+              vehicle_count: reportRow.explicitZero ? 0 : vehicleCount,
               scraped_at: new Date().toISOString(),
               source_url: SOURCE_URL,
             };
@@ -1913,13 +1927,13 @@ async function main() {
         await releaseLock?.();
       }
     } else if (args.mode === "rto-catalog") {
-      const releaseLock = await acquireVahanScrapeLock("rto-catalog", {
+      const releaseLock = process.env.RTO_CATALOG_SKIP_DATABASE === "1" ? null : await acquireVahanScrapeLock("rto-catalog", {
         waitMs: Number(process.env.RTO_CATALOG_LOCK_WAIT_MS ?? 30 * 60_000),
       });
       try {
         await buildRtoCatalog(args);
       } finally {
-        await releaseLock();
+        await releaseLock?.();
       }
     } else {
       throw new Error(`Unsupported mode: ${args.mode}`);

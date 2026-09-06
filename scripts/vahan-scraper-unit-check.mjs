@@ -7,6 +7,11 @@ const source = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), 
 assert.equal(hasRequestedSideFilters(), false, "an unfiltered report should not trigger the side-filter refresh");
 assert.equal(hasRequestedSideFilters({ vehicleCategories: ["LIGHT MOTOR VEHICLE"] }), true, "an LMV filter must trigger the side-filter refresh even when already checked");
 assert.equal(hasRequestedSideFilters({ fuels: ["PETROL"], norms: ["BHARAT STAGE VI"] }), true, "any requested side filter must trigger the side-filter refresh");
+assert.deepEqual(
+  parsePublicMonthlyRows([], { year: 2026, label: "ALL" }),
+  { label: "ALL", counts: {}, explicitZero: true },
+  "an explicit empty official table is a verified zero-registration result, not a scrape failure",
+);
 assert.equal(
   resolveMakerReportTotal({
     metricTotal: 998,
