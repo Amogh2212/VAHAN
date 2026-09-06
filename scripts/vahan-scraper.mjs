@@ -3,21 +3,27 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
-import { closePool } from "../lib/db.mjs";
+import { closePool, hasDatabaseUrl } from "../lib/db.mjs";
 import { replaceMakerRegistrationRows } from "../lib/maker-registrations.mjs";
 import { replaceRegistrationRows } from "../lib/registrations.mjs";
 import { upsertRtoDailyConfigs } from "../lib/rto-daily-snapshots.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 
+// The legacy Vahan4Dashboard was retired.  The public dashboard exposes the
+// same aggregate registration data through its own filter contract, including
+// a calendar-month table.  Keep every saved row traceable to that contract.
 const SOURCE_URL =
-  "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml";
+  "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en";
+const PUBLIC_MONTHLY_TABLE_ENDPOINT =
+  "/analytics/publicdashboard/vahandashboard/durationWiseRegistrationTable";
 
 const DEFAULT_OUTPUT_DIR = "data/vahan";
 const DEFAULT_DELAY_MS = 1200;
 const DEFAULT_TIMEOUT_MS = 45_000;
 const CONTROL_TIMEOUT_MS = 20_000;
 const MAX_SCRAPE_ATTEMPTS = 3;
+const ALL_RTO_LABEL = "All Vahan4 Running Office";
 
 const STATE_NAMES = [
   "Andaman & Nicobar Island",
@@ -123,7 +129,6 @@ const MONTH_LABELS = new Map([
 
 const FUEL_ALIASES = new Map([
   ["ELECTRIC", "PURE EV"],
-  ["ELECTRIC(BOV)", "PURE EV"],
 ]);
 
 const FILTER_CONTEXT_KEYS = [
@@ -761,54 +766,58 @@ async function extractRtoOptions(page) {
 async function buildRtoCatalog(args) {
   await ensureDir(args.outputDir);
   const outputFile = path.join(args.outputDir, "rto_catalog.json");
-  const states = args.states.length ? args.states : STATE_NAMES;
+  const client = new PublicDashboardHttpClient();
+  const html = await client.page();
+  const stateOptions = publicHtmlSelectOptions(html, "stateCode")
+    .filter((option) => option.value && option.label)
+    .filter((option) => !/^select|^all india|^india total/i.test(option.label));
+  const requested = args.states.length
+    ? new Set(args.states.map((state) => normalizeLookup(publicStateLabel(state))))
+    : null;
+  const states = requested
+    ? stateOptions.filter((option) => requested.has(normalizeLookup(option.label)))
+    : stateOptions;
+  if (!states.length) throw new Error("Public Dashboard returned no matching states for the RTO catalog.");
 
-  const browser = await launchBrowser(args);
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 1000 },
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-  });
-  const page = await context.newPage();
-
-  try {
-    await openDashboard(page);
-    const catalogStates = [];
-    for (const [index, state] of states.entries()) {
-      console.log(`[${index + 1}/${states.length}] Reading RTOs for ${state}`);
-      await selectStateForCatalog(page, state);
-      const labels = await extractRtoOptions(page);
-      const rtos = labels
-        .filter((label) => !/^All Vahan4 Running Office/i.test(label))
-        .map(toCatalogRto)
-        .sort((a, b) => a.label.localeCompare(b.label));
-      catalogStates.push({ state, rtos });
-      await sleep(args.delayMs);
-    }
-
-    const catalog = {
-      source_url: SOURCE_URL,
-      updated_at: new Date().toISOString(),
-      states: catalogStates,
-    };
-    const configs = catalogStates.flatMap((group) => group.rtos.map((rto, index) => ({
-      state: group.state,
-      rto: rto.label ?? rto,
-      enabled: true,
-      priority: index + 100,
-    })));
-    const database = process.env.DATABASE_URL
-      ? await upsertRtoDailyConfigs(configs, {
-          refreshedAt: catalog.updated_at,
-          reconcileMissing: args.states.length === 0,
-        })
-      : { skipped: true };
-    await writeFileWithRetry(outputFile, JSON.stringify(catalog, null, 2));
-    console.log(`Wrote ${outputFile}`);
-    console.log(JSON.stringify({ rtoCatalog: { states: catalogStates.length, rtos: configs.length, database } }, null, 2));
-  } finally {
-    await browser.close();
+  const catalogStates = [];
+  for (const [index, stateOption] of states.entries()) {
+    console.log(`[${index + 1}/${states.length}] Reading RTOs for ${stateOption.label}`);
+    const rtos = await client.json(`/analytics/json_rtos?stateCode=${encodeURIComponent(stateOption.value)}`);
+    if (!Array.isArray(rtos)) throw new Error(`Public Dashboard returned an invalid RTO list for ${stateOption.label}.`);
+    const normalizedRtos = rtos
+      .map((item) => item?.rtoName ?? item?.label ?? "")
+      .filter((label) => label && !/^All Vahan4 Running Office/i.test(label))
+      .map(toCatalogRto)
+      .sort((a, b) => a.label.localeCompare(b.label));
+    if (!normalizedRtos.length) throw new Error(`Public Dashboard returned no RTOs for ${stateOption.label}.`);
+    catalogStates.push({ state: stateOption.label, rtos: normalizedRtos });
+    await sleep(args.delayMs);
   }
+
+  const totalRtos = catalogStates.reduce((count, group) => count + group.rtos.length, 0);
+  if (catalogStates.length < 20 || totalRtos < 1000) {
+    throw new Error(`Refusing to replace the RTO catalog with incomplete coverage: states=${catalogStates.length}, rtos=${totalRtos}.`);
+  }
+  const catalog = {
+    source_url: SOURCE_URL,
+    updated_at: new Date().toISOString(),
+    states: catalogStates,
+  };
+  const configs = catalogStates.flatMap((group) => group.rtos.map((rto, index) => ({
+    state: group.state,
+    rto: rto.label ?? rto,
+    enabled: true,
+    priority: index + 100,
+  })));
+  const database = process.env.DATABASE_URL && process.env.RTO_CATALOG_SKIP_DATABASE !== "1"
+    ? await upsertRtoDailyConfigs(configs, {
+        refreshedAt: catalog.updated_at,
+        reconcileMissing: args.states.length === 0,
+      })
+    : { skipped: true };
+  await writeFileWithRetry(outputFile, JSON.stringify(catalog, null, 2));
+  console.log(`Wrote ${outputFile}`);
+  console.log(JSON.stringify({ rtoCatalog: { states: catalogStates.length, rtos: configs.length, database } }, null, 2));
 }
 
 export function hasRequestedSideFilters({ fuels = [], vehicleCategories = [], norms = [], vehicleClasses = [] } = {}) {
@@ -991,11 +1000,390 @@ async function extractReportRows(page, reportItem = {}) {
   return [...rowsByLabel.values()];
 }
 
+function publicStateLabel(state) {
+  return state === "Jammu and Kashmir" ? "Jammu & Kashmir" : state;
+}
+
+function publicMonthFromLabel(value) {
+  const match = String(value ?? "").match(/(\d{4})[-\s]+([A-Za-z]+)/);
+  if (!match) return null;
+  return { year: Number(match[1]), month: monthFromHeader(match[2]) };
+}
+
+export function parsePublicMonthlyRows(rows, { year, label }) {
+  if (!Array.isArray(rows)) throw new Error("Public dashboard returned an invalid monthly response.");
+  // A successful Public Dashboard query can legitimately return an empty
+  // table when the selected filter had no registrations (for example, a
+  // retired emission norm in a later year).  This is evidence of zero, not a
+  // transport or scraper failure.  Keep it distinct from a non-empty response
+  // that contains no rows for the requested year, which is still unsafe.
+  if (rows.length === 0) return { label, counts: {}, explicitZero: true };
+  const counts = {};
+  for (const row of rows) {
+    const period = publicMonthFromLabel(row?.yearAsString);
+    const count = normalizeCount(row?.registeredVehicleCount);
+    if (!period?.month || period.year !== Number(year) || count === null) continue;
+    counts[period.month] = count;
+  }
+  if (!Object.keys(counts).length) {
+    throw new Error(`Public dashboard returned no monthly values for ${label}.`);
+  }
+  return { label, counts };
+}
+
+async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
+  const options = await page.locator(selector).evaluate((select) =>
+    [...select.options].map((option) => ({
+      label: option.textContent.replace(/\s+/g, " ").trim(),
+      value: option.value,
+    })),
+  ).catch(() => []);
+  const desired = normalizeLookup(wanted);
+  const match = options.find((option) => normalizeLookup(option.label) === desired)
+    ?? options.find((option) => normalizeLookup(option.label).includes(desired));
+  if (match) return match.value;
+  if (optional) return "";
+  throw new Error(`Could not find public-dashboard option "${wanted}" in ${selector}.`);
+}
+
+async function publicOptionValues(page, selector, wanted = []) {
+  return Promise.all(wanted.map((label) => publicOptionValue(page, selector, label)));
+}
+
+async function publicFuelOptionValue(page, wanted, { optional = false } = {}) {
+  const candidates = [...new Set([normalizeText(wanted).toUpperCase(), normalizeFuelName(wanted)])];
+  for (const candidate of candidates) {
+    const value = await publicOptionValue(page, "#vehicleFuel", candidate, { optional: true });
+    if (value) return value;
+  }
+  if (optional) return "";
+  throw new Error(`Could not find public-dashboard fuel option "${wanted}".`);
+}
+
+export function publicMonthlyQueryString(params = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== null && item !== undefined && String(item) !== "") query.append(`${key}[]`, String(item));
+      }
+    } else if (value !== null && value !== undefined && String(value) !== "") {
+      query.append(key, String(value));
+    }
+  }
+  return query.toString();
+}
+
+// The Public Dashboard JavaScript sends array fields as repeated query
+// parameters without the [] suffix. Keep this separate from the legacy
+// browser-context serializer until both contracts have been verified.
+export function publicDirectMonthlyQueryString(params = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== null && item !== undefined && String(item) !== "") query.append(key, String(item));
+      }
+    } else if (value !== null && value !== undefined && String(value) !== "") {
+      query.append(key, String(value));
+    }
+  }
+  return query.toString();
+}
+
+function decodeHtml(value) {
+  return String(value ?? "")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)));
+}
+
+function htmlAttribute(attributes, name) {
+  const match = String(attributes ?? "").match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(["'])(.*?)\\1`, "i"));
+  return match ? decodeHtml(match[2]) : "";
+}
+
+function publicHtmlSelectOptions(html, id) {
+  const select = [...String(html).matchAll(/<select\b([^>]*)>([\s\S]*?)<\/select>/gi)]
+    .find((match) => htmlAttribute(match[1], "id") === id);
+  if (!select) return [];
+  return [...select[2].matchAll(/<option\b([^>]*)>([\s\S]*?)<\/option>/gi)]
+    .map((match) => ({
+      value: htmlAttribute(match[1], "value"),
+      label: decodeHtml(match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()),
+    }))
+    .filter((option) => option.label || option.value);
+}
+
+function publicDirectOptionValue(options, wanted, { optional = false } = {}) {
+  const desired = normalizeLookup(wanted);
+  const match = options.find((option) => normalizeLookup(option.label) === desired)
+    ?? options.find((option) => normalizeLookup(option.label).includes(desired));
+  if (match) return match.value;
+  if (optional) return "";
+  throw new Error(`Could not find public-dashboard option "${wanted}" in the direct HTML response.`);
+}
+
+export function matchPublicRto(rtos, wanted) {
+  const desired = normalizeLookup(wanted);
+  const withoutDateSuffix = desired.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  return rtos.find((item) => {
+    const actual = normalizeLookup(item?.rtoName);
+    return actual === desired || actual === withoutDateSuffix;
+  }) ?? rtos.find((item) => {
+    const actual = normalizeLookup(item?.rtoName);
+    return actual.includes(withoutDateSuffix) || withoutDateSuffix.includes(actual);
+  });
+}
+
+function isAllRtoScope(rto) {
+  return String(rto ?? "").trim().toLowerCase() === ALL_RTO_LABEL.toLowerCase();
+}
+
+function publicDirectFuelOptionValue(options, wanted, { optional = false } = {}) {
+  const candidates = [...new Set([normalizeText(wanted).toUpperCase(), normalizeFuelName(wanted)])];
+  for (const candidate of candidates) {
+    const value = publicDirectOptionValue(options, candidate, { optional: true });
+    if (value) return value;
+  }
+  if (optional) return "";
+  throw new Error(`Could not find public-dashboard fuel option "${wanted}" in the direct HTML response.`);
+}
+
+class PublicDashboardHttpClient {
+  constructor() {
+    this.cookies = new Map();
+  }
+
+  cookieHeader() {
+    return [...this.cookies.entries()].map(([name, value]) => `${name}=${value}`).join("; ");
+  }
+
+  updateCookies(response) {
+    for (const value of response.headers.getSetCookie?.() ?? []) {
+      const [pair] = value.split(";", 1);
+      const separator = pair.indexOf("=");
+      if (separator > 0) this.cookies.set(pair.slice(0, separator), pair.slice(separator + 1));
+    }
+  }
+
+  async request(pathname, { accept = "application/json" } = {}) {
+    const response = await fetch(new URL(pathname, SOURCE_URL), {
+      headers: {
+        accept,
+        "user-agent": "vahan-ey-public-dashboard-fetch/1.0",
+        ...(this.cookies.size ? { cookie: this.cookieHeader() } : {}),
+      },
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+    this.updateCookies(response);
+    return response;
+  }
+
+  async page() {
+    const response = await this.request("/analytics/publicdashboard/vahan?lang=en", { accept: "text/html" });
+    const text = await response.text();
+    if (!response.ok) throw new Error(`Public dashboard page returned HTTP ${response.status}.`);
+    return text;
+  }
+
+  async json(pathname) {
+    const response = await this.request(pathname);
+    const text = await response.text();
+    if (!response.ok) throw new Error(`Public dashboard endpoint returned HTTP ${response.status}.`);
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("Public dashboard endpoint did not return JSON.");
+    }
+  }
+}
+
+async function fetchPublicMonthlyTableDirect(client, params) {
+  const query = publicDirectMonthlyQueryString(params);
+  return client.json(`${PUBLIC_MONTHLY_TABLE_ENDPOINT}?${query}`);
+}
+
+async function scrapePublicFuelReportDirect(reportItem) {
+  const client = new PublicDashboardHttpClient();
+  const html = await client.page();
+  const stateCode = reportItem.state === "INDIA TOTAL"
+    ? ""
+    : publicDirectOptionValue(publicHtmlSelectOptions(html, "stateCode"), publicStateLabel(reportItem.state));
+  let rtoCode = "0";
+  // The aggregate RTO label is a UI sentinel, not a member of a state's RTO
+  // catalog. Its public-dashboard request must retain rtoCode=0.
+  if (reportItem.rto && !isAllRtoScope(reportItem.rto)) {
+    const rtos = await client.json(`/analytics/json_rtos?stateCode=${encodeURIComponent(stateCode)}`);
+    if (!Array.isArray(rtos)) throw new Error("Public dashboard returned an invalid RTO catalog.");
+    const match = matchPublicRto(rtos, reportItem.rto);
+    if (!match) throw new Error(`Could not find public-dashboard RTO "${reportItem.rto}".`);
+    rtoCode = String(match.rtoCode);
+  }
+
+  const vehicleSubCategories = (reportItem.vehicleCategories ?? []).map((wanted) =>
+    publicDirectOptionValue(publicHtmlSelectOptions(html, "vehicleSubCategory"), wanted));
+  const vehicleClasses = (reportItem.vehicleClasses ?? []).map((wanted) =>
+    publicDirectOptionValue(publicHtmlSelectOptions(html, "vehicleClass"), wanted));
+  const vehicleEmissions = (reportItem.norms ?? []).map((wanted) =>
+    publicDirectOptionValue(publicHtmlSelectOptions(html, "vehicleEmission"), wanted));
+  const monthlyParams = {
+    stateCode,
+    rtoCode,
+    fromYear: String(reportItem.year),
+    toYear: String(reportItem.year),
+    vehicleClasses,
+    vehicleMakers: [],
+    vehicleSubCategories,
+    vehicleEmissions,
+    timePeriod: "0",
+    calendarType: "3",
+    vehicleCategoryGroup: [],
+    evType: [],
+    vehicleStatus: [],
+    vehicleOwnerType: [],
+    fitnessCheck: "0",
+    vehicleType: "",
+    archiveTypeAC: "ACTIVE_COMPLIANT",
+    archiveTypeANC: "ACTIVE_NON_COMPLIANT",
+    archiveTypePA: "",
+    archiveTypeTA: "",
+    archiveTypeNA: "",
+  };
+  // An aggregate query must remain an aggregate request. Summing every fuel
+  // makes a valid total depend on rare fuels exposing monthly rows, which is
+  // neither required nor guaranteed by the Public Dashboard.
+  if (!reportItem.fuels?.length) {
+    const response = await fetchPublicMonthlyTableDirect(client, monthlyParams);
+    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL" })];
+  }
+  const fuelOptions = publicHtmlSelectOptions(html, "vehicleFuel");
+  const rows = [];
+  for (const fuel of reportItem.fuels) {
+    const vehicleFuel = publicDirectFuelOptionValue(fuelOptions, fuel, { optional: true });
+    if (!vehicleFuel) {
+      throw new Error(`Public dashboard does not expose the requested fuel filter "${fuel}".`);
+    }
+    const response = await fetchPublicMonthlyTableDirect(client, {
+      ...monthlyParams,
+      vehicleFuels: [vehicleFuel],
+    });
+    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
+  }
+  if (!rows.length) throw new Error("Public dashboard returned no matching fuel filters.");
+  return rows;
+}
+
+async function scrapeDirectReportWithRetries(outputDir, reportItem) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
+    try {
+      return {
+        reportRows: await scrapePublicFuelReportDirect(reportItem),
+        attempts: attempt,
+      };
+    } catch (error) {
+      lastError = error;
+      console.error(
+        `[scraper] direct attempt ${attempt}/${MAX_SCRAPE_ATTEMPTS} failed for ${reportItem.year} ${reportItem.state} ${reportItem.rto || "All RTOs"}: ${error.message}`,
+      );
+      if (/Could not find public-dashboard (?:RTO|fuel option)|does not expose the requested fuel|returned no matching fuel filters/i.test(error.message)) {
+        break;
+      }
+      if (attempt < MAX_SCRAPE_ATTEMPTS) await sleep(1000);
+    }
+  }
+  throw lastError;
+}
+
+async function fetchPublicMonthlyTable(page, params) {
+  const query = publicMonthlyQueryString(params);
+  const result = await page.evaluate(async (url) => {
+    const response = await fetch(url, { method: "GET", credentials: "same-origin" });
+    const text = await response.text();
+    return { status: response.status, text };
+  }, `${PUBLIC_MONTHLY_TABLE_ENDPOINT}?${query}`);
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Public dashboard monthly endpoint returned HTTP ${result.status}.`);
+  }
+  try {
+    return JSON.parse(result.text);
+  } catch {
+    throw new Error("Public dashboard monthly endpoint did not return JSON.");
+  }
+}
+
+async function scrapePublicFuelReport(page, reportItem) {
+  await openDashboard(page);
+  const stateCode = reportItem.state === "INDIA TOTAL"
+    ? ""
+    : await publicOptionValue(page, "#stateCode", publicStateLabel(reportItem.state));
+  let rtoCode = "0";
+  if (reportItem.rto && !isAllRtoScope(reportItem.rto)) {
+    // Selecting the state populates the current public RTO catalog in the DOM.
+    await page.locator("#stateCode").selectOption(stateCode);
+    await page.waitForTimeout(300);
+    rtoCode = await publicOptionValue(page, "#rtoCode", reportItem.rto);
+  }
+  // The public dashboard submits every selected multi-select control as an
+  // array (for example, vehicleSubCategories[]=LMV&...[]=LPV).  A 4W query is
+  // therefore one verified request with both LMV and LPV selected—not a
+  // request that silently keeps only the first category.
+  const vehicleSubCategories = await publicOptionValues(page, "#vehicleSubCategory", reportItem.vehicleCategories ?? []);
+  const vehicleClasses = await publicOptionValues(page, "#vehicleClass", reportItem.vehicleClasses ?? []);
+  const vehicleEmissions = await publicOptionValues(page, "#vehicleEmission", reportItem.norms ?? []);
+  const monthlyParams = {
+    stateCode,
+    rtoCode,
+    fromYear: String(reportItem.year),
+    toYear: String(reportItem.year),
+    vehicleClasses,
+    vehicleMakers: [],
+    vehicleSubCategories,
+    vehicleEmissions,
+    timePeriod: "0",
+    calendarType: "3",
+    vehicleCategoryGroup: [],
+    evType: [],
+    vehicleStatus: [],
+    vehicleOwnerType: [],
+    fitnessCheck: "0",
+    vehicleType: "",
+    archiveTypeAC: "ACTIVE_COMPLIANT",
+    archiveTypeANC: "ACTIVE_NON_COMPLIANT",
+    archiveTypePA: "",
+    archiveTypeTA: "",
+    archiveTypeNA: "",
+  };
+  if (!reportItem.fuels?.length) {
+    const response = await fetchPublicMonthlyTable(page, monthlyParams);
+    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL" })];
+  }
+  const rows = [];
+  for (const fuel of reportItem.fuels) {
+    const vehicleFuels = await publicFuelOptionValue(page, fuel, { optional: true });
+    if (!vehicleFuels) {
+      throw new Error(`Public dashboard does not expose the requested fuel filter "${fuel}".`);
+    }
+    const response = await fetchPublicMonthlyTable(page, {
+      ...monthlyParams,
+      vehicleFuels: [vehicleFuels],
+    });
+    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
+  }
+  if (!rows.length) throw new Error("Public dashboard returned no matching fuel filters.");
+  return rows;
+}
+
 async function scrapeReport(page, reportItem) {
-  await configureReport(page, reportItem);
-  await refreshReport(page);
-  await applyReportSideFilters(page, reportItem);
-  return extractReportRows(page, reportItem);
+  if (reportItem.dimension !== "fuel") {
+    throw new Error("The public dashboard adapter currently supports fuel-month ingestion only; maker collection remains separately gated until a complete monthly maker contract is verified.");
+  }
+  return scrapePublicFuelReport(page, reportItem);
 }
 
 async function captureFailureArtifacts(page, outputDir, reportItem, attempt, error) {
@@ -1462,8 +1850,10 @@ async function scrape(args) {
       const label = `${reportItem.year} ${reportItem.state} ${reportItem.rto || "All RTOs"}`;
       try {
         console.log(`[${index + 1}/${reportItems.length}] ${label}`);
-        const scrapeResult = await scrapeReportWithRetries(context, page, args.outputDir, reportItem);
-        page = scrapeResult.page;
+        const scrapeResult = args.dimension === "fuel"
+          ? await scrapeDirectReportWithRetries(args.outputDir, reportItem)
+          : await scrapeReportWithRetries(context, page, args.outputDir, reportItem);
+        if (scrapeResult.page) page = scrapeResult.page;
         const reportRows = scrapeResult.reportRows;
         const newRows = [];
 
@@ -1471,7 +1861,7 @@ async function scrape(args) {
           for (const reportRow of reportRows) {
             if (!reportRow.label || /total/i.test(reportRow.label)) continue;
             const vehicleCount = reportRow.counts[item.month];
-            if (vehicleCount === undefined || vehicleCount === null) {
+            if ((vehicleCount === undefined || vehicleCount === null) && !reportRow.explicitZero) {
               throw new Error(`Could not find month ${item.month} for ${args.dimension} "${reportRow.label}"`);
             }
             const common = {
@@ -1483,7 +1873,7 @@ async function scrape(args) {
               vehicle_category_filter: reportItem.vehicle_category_filter,
               norms_filter: reportItem.norms_filter,
               vehicle_class_filter: reportItem.vehicle_class_filter,
-              vehicle_count: vehicleCount,
+              vehicle_count: reportRow.explicitZero ? 0 : vehicleCount,
               scraped_at: new Date().toISOString(),
               source_url: SOURCE_URL,
             };
@@ -1557,7 +1947,7 @@ async function scrape(args) {
       throw new Error(`${failed} scrape item(s) failed. See ${errorFile}`);
     }
   } finally {
-    await browser.close();
+    await browser?.close();
     await closePool();
   }
 
@@ -1579,13 +1969,21 @@ export async function createVahanMakerSession(options = {}) {
     channel: options.channel ?? "",
   };
   await ensureDir(args.outputDir);
-  const browser = await launchBrowser(args);
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 1000 },
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
-  });
-  let page = await context.newPage();
+  // Fuel reports use the official Public Dashboard JSON endpoints directly.
+  // Maker reports still use the browser flow because that endpoint has not
+  // been replaced by a verified direct adapter yet.
+  let browser = null;
+  let context = null;
+  let page = null;
+  if (args.dimension === "maker") {
+    browser = await launchBrowser(args);
+    context = await browser.newContext({
+      viewport: { width: 1440, height: 1000 },
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+    });
+    page = await context.newPage();
+  }
   let closed = false;
 
   return {
@@ -1680,15 +2078,29 @@ async function main() {
       const page = await context.newPage();
       await discoverDashboard(page, args.outputDir);
     } else if (args.mode === "scrape") {
-      await scrape(args);
+      // Query refreshes run this scraper with --no-persist and are already
+      // serialized by server.mjs. Do not make a read/fetch child wait on the
+      // Neon scraper lock used by persistent scheduled runs.
+      const releaseLock = hasDatabaseUrl() && args.persist
+        ? await acquireVahanScrapeLock("public-dashboard-scrape", {
+            waitMs: Number(process.env.PUBLIC_DASHBOARD_LOCK_WAIT_MS ?? 30 * 60_000),
+          })
+        : null;
+      try {
+        await scrape(args);
+      } finally {
+        await releaseLock?.();
+      }
     } else if (args.mode === "rto-catalog") {
-      const releaseLock = await acquireVahanScrapeLock("rto-catalog", {
-        waitMs: Number(process.env.RTO_CATALOG_LOCK_WAIT_MS ?? 30 * 60_000),
-      });
+      const releaseLock = process.env.RTO_CATALOG_SKIP_DATABASE === "1"
+        ? null
+        : await acquireVahanScrapeLock("rto-catalog", {
+            waitMs: Number(process.env.RTO_CATALOG_LOCK_WAIT_MS ?? 30 * 60_000),
+          });
       try {
         await buildRtoCatalog(args);
       } finally {
-        await releaseLock();
+        await releaseLock?.();
       }
     } else {
       throw new Error(`Unsupported mode: ${args.mode}`);
