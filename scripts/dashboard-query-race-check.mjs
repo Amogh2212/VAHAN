@@ -68,6 +68,7 @@ try {
   assert.equal(await page.locator("#queryInput").inputValue(), DELHI_QUERY);
   assert.match(await page.locator("#answerHeading").innerText(), /EV registrations in Delhi in Jan 2026/);
   assert.equal(await page.locator("#total").textContent(), "222");
+  await page.locator('.scope-detail summary').click();
   assert.match(await page.locator("#filters").innerText(), /Delhi/);
 
   const downloadPromise = page.waitForEvent("download");

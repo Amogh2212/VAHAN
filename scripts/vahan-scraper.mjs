@@ -10,15 +10,13 @@ import { upsertRtoDailyConfigs } from "../lib/rto-daily-snapshots.mjs";
 import { toCatalogRto } from "../lib/rto-resolver.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 
-// The legacy Vahan4Dashboard was retired. The public dashboard exposes the
-// aggregate registration data through its own monthly filter contract,
-// including a calendar-month table and fuel-distribution chart.
+// The legacy Vahan4Dashboard was retired.  The public dashboard exposes the
+// same aggregate registration data through its own filter contract, including
+// a calendar-month table.  Keep every saved row traceable to that contract.
 const SOURCE_URL =
   "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en";
 const PUBLIC_MONTHLY_TABLE_ENDPOINT =
   "/analytics/publicdashboard/vahandashboard/durationWiseRegistrationTable";
-const PUBLIC_FUEL_DISTRIBUTION_ENDPOINT =
-  "/analytics/publicdashboard/vahandashboard/fueltypedonutchart";
 
 const DEFAULT_OUTPUT_DIR = "data/vahan";
 const DEFAULT_DELAY_MS = 1200;
@@ -26,6 +24,7 @@ const DEFAULT_TIMEOUT_MS = 45_000;
 const CONTROL_TIMEOUT_MS = 20_000;
 const MAX_SCRAPE_ATTEMPTS = 3;
 const ALL_RTO_LABEL = "All Vahan4 Running Office";
+const APPLICATION_TIME_ZONE = "Asia/Calcutta";
 
 const STATE_NAMES = [
   "Andaman & Nicobar Island",
@@ -150,7 +149,6 @@ function parseArgs(argv) {
     resume: true,
     persist: true,
     emitRowsJson: false,
-    emitFuelDistributionJson: false,
     dryRun: false,
     limit: null,
     states: [],
@@ -175,8 +173,6 @@ function parseArgs(argv) {
       args.persist = false;
     } else if (token === "--emit-rows-json") {
       args.emitRowsJson = true;
-    } else if (token === "--emit-fuel-distribution-json") {
-      args.emitFuelDistributionJson = true;
     } else if (token === "--dry-run") {
       args.dryRun = true;
     } else if (token.startsWith("--")) {
@@ -390,24 +386,21 @@ async function openDashboard(page) {
     waitUntil: "domcontentloaded",
     timeout: DEFAULT_TIMEOUT_MS,
   });
-  await page.locator("#stateCode").waitFor({ state: "attached", timeout: DEFAULT_TIMEOUT_MS });
+  await page.waitForLoadState("networkidle", { timeout: DEFAULT_TIMEOUT_MS }).catch(() => {});
 
   const status = response?.status();
   const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
-  const dashboardControlCount = await page.locator("#stateCode, #rtoCode, #vehicleSubCategory").count();
-  const hasCaptchaElement = (await page.locator('[id*="captcha" i], [class*="captcha" i], iframe[src*="captcha" i]').count()) > 0;
 
   if (status === 403 || /403\s+Forbidden/i.test(bodyText)) {
     throw new Error(
       "VAHAN dashboard returned 403 Forbidden from this machine. Retry with --headed, or use a network/browser session that can open the dashboard normally.",
     );
   }
-  if (hasCaptchaElement || (dashboardControlCount < 3 && /captcha|unauthori[sz]ed|access denied/i.test(bodyText))) {
+  if (/captcha|sign in|login|unauthori[sz]ed|access denied/i.test(bodyText)) {
     throw new Error(
       "VAHAN dashboard appears to require CAPTCHA, login, or private access from this session. Stop and verify manually in a normal browser.",
     );
   }
-  if (dashboardControlCount < 3) throw new Error("Public Dashboard loaded without the required registration controls.");
 
   return response;
 }
@@ -581,6 +574,19 @@ async function selectPrimeOption(page, controlConfig, value) {
   await page.locator(".ui-blockui.ui-widget-overlay:visible").first().waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(1500);
   return control;
+}
+
+export function monthsAvailableForYears(years, requestedMonths, now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: APPLICATION_TIME_ZONE,
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(now);
+  const currentYear = Number(parts.find((part) => part.type === "year")?.value);
+  const currentMonth = Number(parts.find((part) => part.type === "month")?.value);
+  return requestedMonths.filter((month) => years.some((year) => (
+    year < currentYear || (year === currentYear && month <= currentMonth)
+  )));
 }
 
 async function readPrimeCheckboxGroup(page, tableId, wantedLabels) {
@@ -1039,54 +1045,16 @@ export function parsePublicMonthlyRows(rows, { year, label }) {
   return { label, counts };
 }
 
-export function parsePublicFuelDistribution(response) {
-  const labels = Array.isArray(response?.labels) ? response.labels : [];
-  const values = Array.isArray(response?.data) ? response.data : [];
-  if (labels.length !== values.length || !labels.length) {
-    throw new Error("Public dashboard returned an invalid fuel-distribution response.");
-  }
-  const distribution = labels.map((label, index) => ({
-    fuelType: String(label ?? "").replace(/\s+/g, " ").trim(),
-    count: normalizeCount(values[index]),
-  })).filter((item) => item.fuelType && item.count !== null);
-  if (!distribution.length) throw new Error("Public dashboard returned no fuel-distribution values.");
-  return distribution;
-}
-
-async function publicSelectOptions(page, selector) {
-  return page.locator(selector).evaluate((select) =>
+async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
+  const options = await page.locator(selector).evaluate((select) =>
     [...select.options].map((option) => ({
       label: option.textContent.replace(/\s+/g, " ").trim(),
       value: option.value,
     })),
   ).catch(() => []);
-}
-
-function matchingPublicOption(options, wanted) {
   const desired = normalizeLookup(wanted);
-  return options.find((option) => normalizeLookup(option.label) === desired)
+  const match = options.find((option) => normalizeLookup(option.label) === desired)
     ?? options.find((option) => normalizeLookup(option.label).includes(desired));
-}
-
-function rtoCodes(value) {
-  return [...String(value ?? "").toUpperCase().matchAll(/\b([A-Z]{2})\s*-?\s*(\d{1,3})\b/g)]
-    .map((match) => `${match[1]}${match[2]}`);
-}
-
-export function publicRtoOptionValue(options = [], wanted = "") {
-  const direct = matchingPublicOption(options, wanted);
-  if (direct) return direct.value;
-
-  const wantedCodes = new Set(rtoCodes(wanted));
-  if (!wantedCodes.size) return "";
-  const byCode = options.find((option) =>
-    rtoCodes(`${option.label} ${option.value}`).some((code) => wantedCodes.has(code)));
-  return byCode?.value ?? "";
-}
-
-async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
-  const options = await publicSelectOptions(page, selector);
-  const match = matchingPublicOption(options, wanted);
   if (match) return match.value;
   if (optional) return "";
   throw new Error(`Could not find public-dashboard option "${wanted}" in ${selector}.`);
@@ -1094,16 +1062,6 @@ async function publicOptionValue(page, selector, wanted, { optional = false } = 
 
 async function publicOptionValues(page, selector, wanted = []) {
   return Promise.all(wanted.map((label) => publicOptionValue(page, selector, label)));
-}
-
-async function publicRtoValue(page, wanted) {
-  await page.waitForFunction(
-    () => (document.querySelector("#rtoCode")?.options.length ?? 0) > 1,
-    { timeout: DEFAULT_TIMEOUT_MS },
-  );
-  const value = publicRtoOptionValue(await publicSelectOptions(page, "#rtoCode"), wanted);
-  if (value) return value;
-  throw new Error(`Could not find public-dashboard option "${wanted}" in #rtoCode.`);
 }
 
 async function publicFuelOptionValue(page, wanted, { optional = false } = {}) {
@@ -1143,15 +1101,6 @@ export function publicDirectMonthlyQueryString(params = {}) {
     } else if (value !== null && value !== undefined && String(value) !== "") {
       query.append(key, String(value));
     }
-  }
-  return query.toString();
-}
-
-export function publicChartQueryString(params = {}) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    const normalized = Array.isArray(value) ? value.filter(Boolean).join(",") : value;
-    if (normalized !== null && normalized !== undefined && String(normalized) !== "") query.append(key, String(normalized));
   }
   return query.toString();
 }
@@ -1382,21 +1331,6 @@ async function fetchPublicMonthlyTable(page, params) {
   }
 }
 
-async function fetchPublicJson(page, endpoint, query, description) {
-  const result = await page.evaluate(async ({ url }) => {
-    const response = await fetch(url, { method: "GET", credentials: "same-origin" });
-    return { status: response.status, text: await response.text() };
-  }, { url: `${endpoint}?${query}` });
-  if (result.status < 200 || result.status >= 300) {
-    throw new Error(`Public dashboard ${description} endpoint returned HTTP ${result.status}.`);
-  }
-  try {
-    return JSON.parse(result.text);
-  } catch {
-    throw new Error(`Public dashboard ${description} endpoint did not return JSON.`);
-  }
-}
-
 async function scrapePublicFuelReport(page, reportItem) {
   await openDashboard(page);
   const stateCode = reportItem.state === "INDIA TOTAL"
@@ -1459,71 +1393,9 @@ async function scrapePublicFuelReport(page, reportItem) {
   return rows;
 }
 
-async function scrapePublicFuelDistribution(page, reportItem) {
-  const stateCode = reportItem.state === "INDIA TOTAL" ? "" : await publicOptionValue(page, "#stateCode", publicStateLabel(reportItem.state));
-  let rtoCode = "0";
-  if (reportItem.rto && !isAllRtoScope(reportItem.rto)) {
-    await page.locator("#stateCode").selectOption(stateCode);
-    await page.waitForTimeout(300);
-    rtoCode = await publicRtoValue(page, reportItem.rto);
-  }
-  const vehicleSubCategories = await publicOptionValues(page, "#vehicleSubCategory", reportItem.vehicleCategories ?? []);
-  const vehicleClasses = await publicOptionValues(page, "#vehicleClass", reportItem.vehicleClasses ?? []);
-  const vehicleEmissions = await publicOptionValues(page, "#vehicleEmission", reportItem.norms ?? []);
-  const response = await fetchPublicJson(page, PUBLIC_FUEL_DISTRIBUTION_ENDPOINT, publicChartQueryString({
-    stateCode, rtoCode, fromYear: String(reportItem.year), toYear: String(reportItem.year),
-    vehicleClasses, vehicleMakers: [], vehicleSubCategories, vehicleEmissions, vehicleFuels: [],
-    timePeriod: "0", vehicleCategoryGroup: [], evType: [], vehicleStatus: [], vehicleOwnerType: [],
-    fitnessCheck: "0", vehicleType: "", archiveTypeAC: "ACTIVE_COMPLIANT", archiveTypeANC: "ACTIVE_NON_COMPLIANT",
-    archiveTypePA: "", archiveTypeTA: "", archiveTypeNA: "",
-  }), "fuel-distribution");
-  return parsePublicFuelDistribution(response);
-}
-
-async function scrapePublicFuelDistributionDirect(reportItem) {
-  const client = new PublicDashboardHttpClient();
-  const html = await client.page();
-  const stateCode = reportItem.state === "INDIA TOTAL"
-    ? ""
-    : publicDirectOptionValue(publicHtmlSelectOptions(html, "stateCode"), publicStateLabel(reportItem.state));
-  let rtoCode = "0";
-  if (reportItem.rto && !isAllRtoScope(reportItem.rto)) {
-    const rtos = await client.json(`/analytics/json_rtos?stateCode=${encodeURIComponent(stateCode)}`);
-    if (!Array.isArray(rtos)) throw new Error("Public dashboard returned an invalid RTO catalog.");
-    const match = matchPublicRto(rtos, reportItem.rto);
-    if (!match) throw new Error(`Could not find public-dashboard RTO "${reportItem.rto}".`);
-    rtoCode = String(match.rtoCode);
-  }
-  const optionValue = (id, wanted) => publicDirectOptionValue(publicHtmlSelectOptions(html, id), wanted);
-  const response = await client.json(`${PUBLIC_FUEL_DISTRIBUTION_ENDPOINT}?${publicChartQueryString({
-    stateCode,
-    rtoCode,
-    fromYear: String(reportItem.year),
-    toYear: String(reportItem.year),
-    vehicleClasses: (reportItem.vehicleClasses ?? []).map((wanted) => optionValue("vehicleClass", wanted)),
-    vehicleMakers: [],
-    vehicleSubCategories: (reportItem.vehicleCategories ?? []).map((wanted) => optionValue("vehicleSubCategory", wanted)),
-    vehicleEmissions: (reportItem.norms ?? []).map((wanted) => optionValue("vehicleEmission", wanted)),
-    vehicleFuels: [],
-    timePeriod: "0",
-    vehicleCategoryGroup: [],
-    evType: [],
-    vehicleStatus: [],
-    vehicleOwnerType: [],
-    fitnessCheck: "0",
-    vehicleType: "",
-    archiveTypeAC: "ACTIVE_COMPLIANT",
-    archiveTypeANC: "ACTIVE_NON_COMPLIANT",
-    archiveTypePA: "",
-    archiveTypeTA: "",
-    archiveTypeNA: "",
-  })}`);
-  return parsePublicFuelDistribution(response);
-}
-
 async function scrapeReport(page, reportItem) {
   if (reportItem.dimension !== "fuel") {
-    throw new Error("The public dashboard adapter currently supports fuel-month ingestion only; maker collection remains disabled until a complete monthly maker contract is verified.");
+    throw new Error("The public dashboard adapter currently supports fuel-month ingestion only; maker collection remains separately gated until a complete monthly maker contract is verified.");
   }
   return scrapePublicFuelReport(page, reportItem);
 }
@@ -1824,7 +1696,12 @@ function buildWorkItems(args) {
 
   const items = [];
   for (const year of args.years) {
-    for (const month of args.months) {
+    const months = monthsAvailableForYears([year], args.months);
+    if (months.length !== args.months.length) {
+      const skipped = args.months.filter((month) => !months.includes(month));
+      console.log(`Skipping future months for ${year}: ${skipped.join(", ")}`);
+    }
+    for (const month of months) {
       for (const state of states) {
         for (const rto of rtos) {
           items.push({
@@ -1943,7 +1820,6 @@ async function scrape(args) {
   const summaryFile = path.join(args.outputDir, `${outputBase}_summary.json`);
   const rows = args.resume && args.persist ? await readExistingRows(outputFile) : [];
   const scrapedRows = [];
-  const fuelDistributions = [];
   const done = new Set(
     rows.map((row) =>
       keyForItem({
@@ -1998,17 +1874,14 @@ async function scrape(args) {
           : await scrapeReportWithRetries(context, page, args.outputDir, reportItem);
         if (scrapeResult.page) page = scrapeResult.page;
         const reportRows = scrapeResult.reportRows;
-        if (args.emitFuelDistributionJson) {
-          const distribution = args.dimension === "fuel"
-            ? await scrapePublicFuelDistributionDirect(reportItem)
-            : await scrapePublicFuelDistribution(page, reportItem);
-          fuelDistributions.push({ year: reportItem.year, distribution });
-        }
         const newRows = [];
 
         for (const item of reportItem.items) {
           for (const reportRow of reportRows) {
-            if (!reportRow.label || /total/i.test(reportRow.label)) continue;
+            // Keep an explicit empty official table as a zero row. The
+            // server needs a persisted-shaped row to distinguish verified
+            // zero registrations from a failed transport.
+            if (!reportRow.label || (/total/i.test(reportRow.label) && !reportRow.explicitZero)) continue;
             const vehicleCount = reportRow.counts[item.month];
             if ((vehicleCount === undefined || vehicleCount === null) && !reportRow.explicitZero) {
               throw new Error(`Could not find month ${item.month} for ${args.dimension} "${reportRow.label}"`);
@@ -2091,9 +1964,6 @@ async function scrape(args) {
     }
     if (args.emitRowsJson) {
       console.log(`VAHAN_SCRAPED_ROWS_JSON:${JSON.stringify(scrapedRows)}`);
-    }
-    if (args.emitFuelDistributionJson) {
-      console.log(`VAHAN_FUEL_DISTRIBUTION_JSON:${JSON.stringify(fuelDistributions)}`);
     }
     if (failed > 0) {
       throw new Error(`${failed} scrape item(s) failed. See ${errorFile}`);

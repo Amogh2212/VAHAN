@@ -171,6 +171,32 @@ create index if not exists query_refresh_audits_canonical_idx
 create index if not exists query_refresh_audits_outcome_idx
   on query_refresh_audits (outcome, updated_at desc);
 
+create table if not exists query_agent_shadow_events (
+  id bigserial primary key,
+  status text not null check (status in ('queued', 'processing', 'complete', 'skipped')),
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  completed_at timestamptz,
+  expires_at timestamptz not null,
+  query_digest text not null,
+  query_text text not null check (char_length(query_text) <= 500),
+  deterministic_route jsonb not null default '{}'::jsonb,
+  deterministic_plan jsonb not null default '{}'::jsonb,
+  candidate_route text,
+  candidate_plan jsonb,
+  validation_outcome text,
+  comparison_category text,
+  latency_ms integer check (latency_ms >= 0),
+  model text,
+  prompt_version text not null
+);
+
+create index if not exists query_agent_shadow_events_queue_idx
+  on query_agent_shadow_events (status, expires_at, id);
+
+create index if not exists query_agent_shadow_events_expiry_idx
+  on query_agent_shadow_events (expires_at);
+
 create table if not exists telegram_link_codes (
   code text primary key,
   user_id bigint not null references users(id) on delete cascade,

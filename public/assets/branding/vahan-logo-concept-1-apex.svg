@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f4f5f9"/>
+    </linearGradient>
+    <linearGradient id="inkStem" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182139"/>
+      <stop offset="100%" stop-color="#2c3452"/>
+    </linearGradient>
+    <linearGradient id="violet1" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3c349e"/>
+      <stop offset="100%" stop-color="#4f46b8"/>
+    </linearGradient>
+    <linearGradient id="violet2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4f46b8"/>
+      <stop offset="100%" stop-color="#6f65ec"/>
+    </linearGradient>
+    <linearGradient id="apricotPeak" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f27d52"/>
+      <stop offset="100%" stop-color="#f6bea5"/>
+    </linearGradient>
+    <filter id="subtleDrop" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#182139" flood-opacity="0.08" />
+    </filter>
+  </defs>
+
+  <!-- Canvas Container with soft rounded boundary -->
+  <rect width="512" height="512" rx="112" fill="url(#bg1)"/>
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="#e3e6ed" stroke-width="2"/>
+
+  <!-- Logo Mark Graphic -->
+  <g filter="url(#subtleDrop)">
+    <!-- Grounded Left Stem: Robust data foundation -->
+    <path d="M 124 138 
+             L 194 138 
+             L 242 292 
+             L 218 368 
+             L 174 368 Z" 
+          fill="url(#inkStem)"/>
+
+    <!-- Left stem bevel highlight -->
+    <path d="M 194 138 
+             L 242 292 
+             L 230 330 
+             L 182 176 Z" 
+          fill="#353e5e" opacity="0.35"/>
+
+    <!-- Dynamic Right Wing: 3 ascending analytical speed bars -->
+    <!-- Tier 1: Base Violet bar -->
+    <path d="M 234 368 
+             L 260 286 
+             L 302 286 
+             L 276 368 Z" 
+          fill="url(#violet1)"/>
+
+    <!-- Tier 2: Mid Violet acceleration bar -->
+    <path d="M 272 248 
+             L 310 126 
+             L 352 126 
+             L 314 248 Z" 
+          fill="url(#violet2)"/>
+
+    <!-- Tier 3: Apricot Peak Bar (Breakthrough insight / peak metric) -->
+    <path d="M 324 88 
+             L 356 88 
+             C 368 88 376 96 373 108 
+             L 366 130 
+             L 326 130 Z" 
+          fill="url(#apricotPeak)"/>
+
+    <!-- Center Apex Momentum Arrow (Negative & Accent Geometry) -->
+    <path d="M 248 240 
+             L 268 180 
+             L 288 240 
+             L 268 226 Z" 
+          fill="#f6bea5" opacity="0.9"/>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+[
+  {
+    "key": "A",
+    "path": "C:/Users/amogh/.codex/generated_images/01a076ae-ba23-7402-8371-4d13a47a83af/exec-090b839e-eca5-400c-a8c4-843d5023c164.png",
+    "prompt": "Edit this second-pass design minimally, preserving the composition, all typography and all registration values. In Fuel mix on the right REMOVE the misleading horizontal bars and REMOVE every percentage annotation. Replace with small equal-size colored square swatches by the six existing source fuel labels and neatly aligned exact counts only. This is a categorical legend/list, not proportional graphic. Keep labels and exact counts. Remove duplicate Export button from the very top global masthead; preserve the main Export button beside date. Replace small Source: VAHAN orange chip with 'Saved preview'. Keep footer historical note. Everything else unchanged."
+  },
+  {
+    "key": "B",
+    "path": "C:/Users/amogh/.codex/generated_images/01a076ae-ba23-7402-8371-4d13a47a83af/exec-8907574d-0aa1-4738-8ac2-b928dfe56433.png",
+    "prompt": "Polish this second-pass design with only this bounded correction: bottom action row has redundant exports. Remove the separate 'Export CSV' and 'Export PDF' buttons, retain ONE 'Export comparison' dropdown that implies both formats, and retain the Monthly reports button. Preserve charts, all exact numbers, table, scope, navigation and spacing otherwise. Make empty space of removed controls unobtrusive. No new labels or facts."
+  },
+  {
+    "key": "C",
+    "path": "C:/Users/amogh/.codex/generated_images/01a076ae-ba23-7402-8371-4d13a47a83af/exec-4ecdfa3d-76fd-4df5-99ec-5a19e8147da9.png",
+    "prompt": "Correct only scope and provenance labels in this second-pass UI, keeping the excellent overall composition intact. In right refinement panel RTO value must say 'All loaded RTOs', NOT just All. Keep other fields Category Two-wheelers, Class All, Norms All, Fuel All distinct. Add one discreet bottom-left footer 'Saved project preview · live coverage not checked' beneath View underlying monthly rows, with sufficient room and no overlap. Preserve every registration value and existing layout. No new statuses or fictional data. Remove duplicate top-right Ask Vahan input in masthead because main query is already clearly visible; retain top Filters control."
+  },
+  {
+    "key": "D",
+    "path": "C:/Users/amogh/.codex/generated_images/01a076ae-ba23-7402-8371-4d13a47a83af/exec-98eeb168-8842-419a-8f4c-df070da550de.png",
+    "prompt": "Correct the fuel summary beneath the monthly chart only, preserving all other composition, typography, graph and numeric labels. The existing colorful stacked bar has misleading proportions. REMOVE the horizontal stacked bar entirely. Replace that space with whitespace so the four grouped textual fuel statistics below remain a clean open summary row with colored small swatches, not a chart. Correct exact percentage text in the four summary groups: PETROL17,74,110 (86.48%); ELECTRIC(BOV)1,28,983 (6.29%); PURE EV81,190 (3.96%); Other source labels67,146 (3.27%). Keep the detailed other fuel labels and counts below and inspect all labels link. No other edits."
+  },
+  {
+    "key": "E",
+    "path": "C:/Users/amogh/.codex/generated_images/01a076ae-ba23-7402-8371-4d13a47a83af/exec-2430f5a5-6856-4265-970c-c0aadb3ec0b1.png",
+    "prompt": "Make exactly one small text correction to this second-pass UI and preserve EVERYTHING else including composition, figures, charts, label spacing, typography and color. In lower-left fuel list ETHANOL(E100) row, count52 is correct but its share should display '<0.1%' instead of '0.0%'. Do not change any other numbers or controls."
+  }
+]

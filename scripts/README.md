@@ -1,6 +1,6 @@
 # VAHAN Scraper
 
-This scraper targets the official VAHAN public dashboard:
+This scraper targets the official VAHAN Public Dashboard monthly-data endpoint:
 
 https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en
 
@@ -50,6 +50,38 @@ node scripts/vahan-scraper.mjs --mode discover --headed --channel chrome
 ```powershell
 npm run scrape:vahan:sample
 ```
+
+## Final Vahan EY visual comparison
+
+For final internship evidence, this command opens two separate Playwright
+browser windows: your deployed Vahan EY dashboard and the official Parivahan
+Public Dashboard. It enters one query in Vahan EY, applies the resolved State,
+RTO, year, fuel, sub-category, class, emission, and category-group filters to
+the official dashboard, saves both full-page screenshots, and writes the
+recorded totals and filter mapping to a JSON summary.
+
+```powershell
+npm.cmd run compare:vahan:final -- --deployed-url "https://your-deployed-vahan-ey.example" --query "Show BS VI diesel motor car registrations in Maharashtra in February 2026"
+```
+
+Artifacts are created under:
+
+```text
+output/playwright/final-check/<safe-query-name>/
+  vahan-ey.png
+  vahan-public-dashboard.png
+  comparison.json
+```
+
+Repeated runs of the same query receive a timestamp suffix, so earlier evidence
+is never overwritten. The command first checks that the deployment reports
+`liveRefreshDisabled=true`; otherwise it stops before submitting the query, so
+it cannot start a VAHAN refresh or write data. Use `--allow-live-refresh` only
+when an uncached query is intentionally allowed to collect and wait for fresh
+data. The comparison stops honestly when a filter cannot be mapped exactly,
+VAHAN requires CAPTCHA/login/access approval, or the application answer is
+incomplete. Use `--headless` only for diagnostics, or `--keep-open` to review
+both browser windows before they close.
 
 ## RTO Catalog
 

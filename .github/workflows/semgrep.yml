@@ -1,0 +1,76 @@
+name: Semgrep CE
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  schedule:
+    - cron: "37 2 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semgrep-ce-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisory:
+    name: semgrep-ce-advisory
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The initial audit baseline is informational until findings are triaged.
+    continue-on-error: true
+    container:
+      image: semgrep/semgrep:1.172.0
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate repository rules
+        run: semgrep --validate --config audit/semgrep.yml
+
+      - name: Test repository rules
+        run: python3 scripts/audit-semgrep-fixtures.test.py
+
+      - name: Test artifact sanitizer
+        run: python3 scripts/audit-sanitize-semgrep.test.py
+
+      - name: Run Semgrep CE
+        run: |
+          mkdir -p audit-output/semgrep
+          semgrep --version > audit-output/semgrep/version.txt
+          semgrep scan \
+            --config auto \
+            --config audit/semgrep.yml \
+            --oss-only \
+            --strict \
+            --json \
+            --output audit-output/semgrep/raw.json \
+            .
+
+      - name: Sanitize Semgrep output
+        if: always()
+        run: |
+          python3 scripts/audit-sanitize-semgrep.py \
+            --input audit-output/semgrep/raw.json \
+            --output audit-output/semgrep/findings.sanitized.json \
+            --summary audit-output/semgrep/summary.md
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-ce-${{ github.run_id }}
+          path: |
+            audit-output/semgrep/version.txt
+            audit-output/semgrep/findings.sanitized.json
+            audit-output/semgrep/summary.md
+          if-no-files-found: error
+          retention-days: 14

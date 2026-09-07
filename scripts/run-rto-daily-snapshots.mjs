@@ -59,6 +59,7 @@ function parseArgs(argv) {
     rto: null,
     retryFailed: false,
     workQueue: false,
+    neon: false,
     timeBudgetMinutes: null,
     dateExplicit: false,
   };
@@ -68,6 +69,7 @@ function parseArgs(argv) {
     else if (arg === "--bootstrap-configs") args.bootstrapConfigs = true;
     else if (arg === "--retry-failed") args.retryFailed = true;
     else if (arg === "--work-queue") args.workQueue = true;
+    else if (arg === "--neon") args.neon = true;
     else if (arg === "--workers") args.workers = argv[++index];
     else if (arg.startsWith("--workers=")) args.workers = arg.slice("--workers=".length);
     else if (arg === "--retention-days") args.retentionDays = argv[++index];
@@ -116,6 +118,7 @@ function usage() {
     "  --bootstrap-configs    Legacy bootstrap from data/vahan/rto_catalog.json.",
     "  --retry-failed         Requeue terminal failures in the selected cycle/scope.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
+    "  --neon                 Require the configured DATABASE_URL to point to Neon.",
     "  --time-budget-minutes N Stop claiming new RTOs after N minutes (work-queue default 10).",
     "  --workers N            Persistent browser workers (1-4, default 2).",
     "  --max-job-attempts N   Maximum claims per RTO before terminal failure (default 3).",
@@ -292,6 +295,7 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) return console.log(usage());
+  if (args.neon) assertNeonDatabaseUrl();
 
   if (args.bootstrapConfigs) {
     const configs = await readCatalogConfigs({ state: args.state });
@@ -300,7 +304,7 @@ async function main() {
   }
   if (args.dryRun) {
     const preview = await previewRtoDailyCycle({ state: args.state, limit: 20 });
-    console.log(JSON.stringify({ dryRun: true, snapshotDate: args.date, targetMonth: args.targetMonth, workers: args.workers, maxJobs: args.maxJobs, ...preview }, null, 2));
+    console.log(JSON.stringify({ dryRun: true, storage: args.neon ? "neon" : "configured database", snapshotDate: args.date, targetMonth: args.targetMonth, workers: args.workers, maxJobs: args.maxJobs, ...preview }, null, 2));
     return;
   }
 
@@ -326,7 +330,7 @@ async function main() {
       rto: args.rto,
       maxJobs: args.maxJobs,
     });
-    console.log(JSON.stringify({ cycle: run }, null, 2));
+    console.log(JSON.stringify({ cycle: run, storage: args.neon ? "neon" : "configured database" }, null, 2));
     if (args.retryFailed) {
       console.log(JSON.stringify({
         requeued: await requeueFailedRtoDailyJobs({ runId: run.id, state: args.state, rto: args.rto }),
@@ -380,6 +384,20 @@ async function main() {
     if (finalized.complete && finalized.summary.failed) process.exitCode = 1;
   } finally {
     await releaseLock();
+  }
+}
+
+function assertNeonDatabaseUrl() {
+  const value = process.env.DATABASE_URL;
+  if (!value) throw new Error("Neon mode requires DATABASE_URL. Configure .env.neon or pass a Neon DATABASE_URL.");
+  let host = "";
+  try {
+    host = new URL(value).hostname;
+  } catch {
+    throw new Error("Neon mode requires a valid PostgreSQL DATABASE_URL.");
+  }
+  if (!/\.neon\.tech$/i.test(host)) {
+    throw new Error(`Neon mode refuses non-Neon database host: ${host || "unknown"}.`);
   }
 }
 

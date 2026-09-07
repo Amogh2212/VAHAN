@@ -488,9 +488,12 @@ async function reviewExplanation({ explanationId, decision }) {
   const reviewDecision = decision === "approved" && changed ? "edited_and_approved" : decision;
   let note = "";
   if (["needs_more_data", "rejected"].includes(reviewDecision)) {
-    note = window.prompt("Review reason (required):", "")?.trim() ?? "";
+    note = window.prompt(
+      reviewDecision === "rejected" ? "Why reject this explanation?" : "What data is missing?",
+      "",
+    )?.trim() ?? "";
     if (!note) {
-      window.alert("A review reason is required.");
+      window.alert("Enter a reason to continue.");
       return;
     }
   }
@@ -508,7 +511,7 @@ async function reviewExplanation({ explanationId, decision }) {
     });
     await selectReport(state.report.id);
   } catch (error) {
-    window.alert(error.message);
+    window.alert(`Review failed: ${error.message || "Please try again."}`);
   }
 }
 

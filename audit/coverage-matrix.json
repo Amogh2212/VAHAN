@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0.0",
+  "domains": [
+    {
+      "domain": "inventory",
+      "sourceAreas": ["all included source"],
+      "checks": ["manifest"],
+      "notes": "Automated source classification, hashing, dirty-state and tool inventory."
+    },
+    {
+      "domain": "architecture",
+      "sourceAreas": ["server.mjs", "lib", "routes", "scripts", "graphify-out"],
+      "checks": ["graphify-freshness", "graphify-query"],
+      "notes": "Graphify evidence plus manual reconciliation."
+    },
+    {
+      "domain": "security",
+      "sourceAreas": ["server.mjs", "lib/http-security.mjs", "routes", ".github/workflows"],
+      "checks": ["security-unit", "secret-scan", "semgrep", "codeql"],
+      "notes": "Static and hosted data-flow analysis."
+    },
+    {
+      "domain": "dependencies",
+      "sourceAreas": ["package.json", "package-lock.json"],
+      "checks": ["npm-audit"],
+      "notes": "Production dependency vulnerability inventory."
+    },
+    {
+      "domain": "data_correctness",
+      "sourceAreas": ["lib/query-*", "lib/rto-*", "scripts/*unit-check.mjs", "db/schema.sql"],
+      "checks": ["query-contract", "rto-daily-unit", "rto-reports-unit", "daily-ev-report-unit"],
+      "notes": "Deterministic totals, filter semantics, partial-run and report invariants."
+    },
+    {
+      "domain": "data_trust",
+      "sourceAreas": ["lib/rto-factor-*", "lib/rto-report-context.mjs"],
+      "checks": ["rto-factor-agent", "rto-factor-validation", "rto-factor-narrative"],
+      "notes": "Evidence and approval boundaries."
+    },
+    {
+      "domain": "runtime_safety",
+      "sourceAreas": ["scripts/vahan-scraper.mjs", "scripts/run-rto-daily-snapshots.mjs", "lib/rto-daily-snapshots.mjs"],
+      "checks": ["vahan-scraper-unit", "rto-daily-unit", "runtime-readonly"],
+      "notes": "No live VAHAN or database writes are permitted."
+    },
+    {
+      "domain": "runtime_readonly",
+      "sourceAreas": ["db/schema.sql", "deployment configuration"],
+      "checks": ["runtime-readonly"],
+      "notes": "Optional BEGIN READ ONLY database fingerprint and schema/data sanity."
+    },
+    {
+      "domain": "browser",
+      "sourceAreas": ["public", "server.mjs", "routes"],
+      "checks": ["browser-controlled"],
+      "notes": "Controlled loopback browser with outbound requests blocked."
+    },
+    {
+      "domain": "operations",
+      "sourceAreas": [".github/workflows", "scripts/register-*", "scripts/run-*"],
+      "checks": ["workflow-inventory", "manual-review"],
+      "notes": "Configuration review only; scheduled jobs are never invoked."
+    },
+    {
+      "domain": "advisory_review",
+      "sourceAreas": ["all included source"],
+      "checks": ["ponytail-manual"],
+      "notes": "Optional advisory pass after deterministic evidence; never a CI gate."
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+Frozen oracle: C:\Users\amogh\Desktop\BHAIYA\Vahan EY\data\query-audits\random-filter-oracle-2026-07-30.csv (0f3b1865d0579a70dabce11b919b618fd5225034ba06a7af32813292e5fa1d5c)
+[rules] 1/50 Q001 checkpoint
+[rules] 2/50 Q002 checkpoint
+[rules] 3/50 Q003 checkpoint
+[rules] 4/50 Q004 checkpoint
+[rules] 5/50 Q005 checkpoint
+[rules] 6/50 Q006 checkpoint
+[rules] 7/50 Q007 checkpoint
+[rules] 8/50 Q008 checkpoint
+[rules] 9/50 Q009 checkpoint
+[rules] 10/50 Q010 checkpoint
+[rules] 11/50 Q011 checkpoint
+[rules] 12/50 Q012 checkpoint
+[rules] 13/50 Q013 checkpoint
+[rules] 14/50 Q014 checkpoint
+[rules] 15/50 Q015 checkpoint
+[rules] 16/50 Q016 checkpoint
+[rules] 17/50 Q017 checkpoint
+[rules] 18/50 Q018 checkpoint
+[rules] 19/50 Q019 checkpoint
+[rules] 20/50 Q020 checkpoint
+[rules] 21/50 Q021 checkpoint
+[rules] 22/50 Q022 checkpoint
+[rules] 23/50 Q023 checkpoint
+[rules] 24/50 Q024 checkpoint
+[rules] 25/50 Q025 checkpoint
+[rules] 26/50 Q026 checkpoint
+[rules] 27/50 Q027 checkpoint
+[rules] 28/50 Q028 checkpoint
+[rules] 29/50 Q029 checkpoint
+[rules] 30/50 Q030 checkpoint
+[rules] 31/50 Q031 checkpoint
+[rules] 32/50 Q032 checkpoint
+[rules] 33/50 Q033 checkpoint
+[rules] 34/50 Q034 checkpoint
+[rules] 35/50 Q035 checkpoint
+[rules] 36/50 Q036 checkpoint
+[rules] 37/50 Q037 checkpoint
+[rules] 38/50 Q038 checkpoint
+[rules] 39/50 Q039 checkpoint
+[rules] 40/50 Q040 checkpoint
+[rules] 41/50 Q041 checkpoint
+[rules] 42/50 Q042 checkpoint
+[rules] 43/50 Q043 checkpoint
+[rules] 44/50 Q044 checkpoint
+[rules] 45/50 Q045 checkpoint
+[rules] 46/50 Q046 checkpoint
+[rules] 47/50 Q047 checkpoint
+[rules] 48/50 Q048 checkpoint
+[rules] 49/50 Q049 checkpoint
+[rules] 50/50 Q050 checkpoint
+[groq] 1/50 Q001 running
+[groq] Q001 pass
+[groq] 2/50 Q002 running
+[groq] Q002 provider_inconclusive
+{
+  "oracle": "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\query-audits\\random-filter-oracle-2026-07-30.csv",
+  "reports": [
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.csv",
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.json",
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.md"
+  ],
+  "classifications": {
+    "rules:pass": 38,
+    "rules:filter_mismatch": 12,
+    "groq:pass": 1,
+    "groq:provider_inconclusive": 49
+  },
+  "groqAttemptCount": 2,
+  "groqQuotaStopped": true,
+  "database": "verified",
+  "dataFilesUnchanged": true
+}

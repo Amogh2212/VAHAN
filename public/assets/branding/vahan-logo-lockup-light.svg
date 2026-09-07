@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 240" width="880" height="240">
+  <defs>
+    <linearGradient id="hlInkStem_light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182139"/>
+      <stop offset="100%" stop-color="#2b344d"/>
+    </linearGradient>
+    <linearGradient id="hlViolet1_light" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4037a8"/>
+      <stop offset="100%" stop-color="#554cc4"/>
+    </linearGradient>
+    <linearGradient id="hlViolet2_light" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5b52c9"/>
+      <stop offset="100%" stop-color="#7b71f0"/>
+    </linearGradient>
+    <linearGradient id="hlApricot_light" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ea6535"/>
+      <stop offset="100%" stop-color="#f6bea5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Container -->
+  <rect width="880" height="240" rx="24" fill="#ffffff"/>
+  <rect width="878" height="238" x="1" y="1" rx="23" fill="none" stroke="#e6e9f0" stroke-width="2"/>
+
+  <!-- Logo Mark (Left) -->
+  <g transform="translate(64, 40)">
+    <!-- Background squircle -->
+    <rect width="160" height="160" rx="36" fill="#f4f6fa"/>
+    
+    <!-- Left anchor stem -->
+    <path d="M 40 44 L 64 44 L 80 96 L 72 122 L 56 122 Z" fill="url(#hlInkStem_light)"/>
+    <path d="M 64 44 L 80 96 L 76 108 L 60 56 Z" fill="#394463" opacity="0.3"/>
+
+    <!-- Right ascending velocity fins -->
+    <path d="M 78 122 L 87 96 L 100 96 L 91 122 Z" fill="url(#hlViolet1_light)"/>
+    <path d="M 91 84 L 102 46 L 115 46 L 104 84 Z" fill="url(#hlViolet2_light)"/>
+    <path d="M 107 34 L 119 34 C 123 34 125 36 124 40 L 121 44 L 109 44 Z" fill="url(#hlApricot_light)"/>
+
+    <!-- Apex arrow node -->
+    <path d="M 83 82 L 89 62 L 95 82 L 89 78 Z" fill="#f6bea5"/>
+  </g>
+
+  <!-- Brand Typography (Right) -->
+  <g transform="translate(260, 0)">
+    <!-- Product Name -->
+    <text x="0" y="112" 
+          font-family="Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+          font-size="52" 
+          font-weight="800" 
+          letter-spacing="-0.03em" 
+          fill="#182139">
+      VAHAN
+      <tspan dx="14" font-weight="400" fill="#4f46b8">ANALYST</tspan>
+    </text>
+
+    <!-- Subtitle / Positioning Tagline -->
+    <text x="3" y="152" 
+          font-family="Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+          font-size="14" 
+          font-weight="700" 
+          letter-spacing="0.22em" 
+          fill="#586174">
+      INDIAN MOBILITY INTELLIGENCE
+    </text>
+
+    <!-- Refined publication rule / divider -->
+    <line x1="3" y1="172" x2="480" y2="172" stroke="#e6e9f0" stroke-width="1.5"/>
+
+    <!-- Context metadata chips -->
+    <text x="3" y="196" 
+          font-family="Segoe UI, sans-serif" 
+          font-size="12" 
+          font-weight="500" 
+          letter-spacing="0.05em" 
+          fill="#8891a5">
+      PUBLIC REGISTRATION ARCHIVE  •  RTO TRENDS  •  PREDICTIVE VELOCITY
+    </text>
+  </g>
+</svg>

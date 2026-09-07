@@ -1,127 +1,20 @@
 <!doctype html>
-<!--
-THESIS: A registration answer should read like a concise statistical brief, not a dark command-centre wall of equal cards.
-OWN-WORLD: Cool paper, transport-ink blue, signal marigold and evidence teal; square-edged fields, fine rules, tabular figures and a persistent atlas index.
-STORY: Ask a plain-language question, verify what was interpreted and how fresh it is, read the movement, then inspect or export the evidence.
-FIRST VIEWPORT: A fixed route index frames a compact masthead, the query occupies the coloured work surface, and a ruled evidence strip leads directly into the trend.
-FORM: User-pinned public-data atlas direction for Operate with Read support, informed by OWID, India Policy Insights and CEEW; seed key user-pinned.
--->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Query and explore VAHAN vehicle registration data across Indian states and RTOs. Powered by live scraping of the VAHAN public dashboard." />
     <title>VAHAN Registration Dashboard - Vehicle Registration Intelligence</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230f172a'/><text x='50' y='64' text-anchor='middle' font-size='52' font-family='Arial' fill='%23f8fafc'>V</text></svg>" />
+    <link rel="icon" href="/assets/branding/vahan-favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/atlas.css" />
   </head>
   <body class="editorial-home" data-atlas-route="dashboard">
     <a class="skip-link" href="#queryInput">Skip to registration query</a>
     <div class="app-frame">
-      <aside class="feature-sidebar" id="featureSidebar" aria-label="Dashboard features">
-        <div class="sidebar-brand">
-          <span class="sidebar-mark brand-mark">V</span>
-          <div>
-            <strong>VAHAN Analyst</strong>
-            <small>India mobility intelligence</small>
-          </div>
-        </div>
-        <nav class="feature-nav" aria-label="Feature navigation">
-          <a class="feature-link active" href="/" aria-current="page">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />
-              </svg>
-            </span>
-            <span>Dashboard</span>
-          </a>
-          <a class="feature-link" href="/compare.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" />
-              </svg>
-            </span>
-            <span>Compare data</span>
-          </a>
-          <a class="feature-link" href="/map.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z" />
-                <path d="M9 3v15M15 6v15" />
-              </svg>
-            </span>
-            <span>Map view</span>
-          </a>
-          <a class="feature-link" href="/rto-trends.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M4 19V5" />
-                <path d="M4 19h16" />
-                <path d="m7 15 3-4 3 2 4-7" />
-              </svg>
-            </span>
-            <span>RTO daily trends</span>
-          </a>
-          <a class="feature-link" href="/rto-reports.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M5 4h14v16H5z" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </svg>
-            </span>
-            <span>RTO reports</span>
-          </a>
-          <a class="feature-link" href="/rto-insights.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M4 19h16M4 19V5" />
-                <circle cx="8" cy="14" r="2" />
-                <circle cx="13" cy="10" r="2" />
-                <circle cx="18" cy="7" r="2" />
-              </svg>
-            </span>
-            <span>RTO insights</span>
-          </a>
-          <a class="feature-link" href="/reports/monthly-sales.html">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M5 4h14v18H5z" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </svg>
-            </span>
-            <span>Monthly reports</span>
-          </a>
-          <a class="feature-link telegram-link" href="https://t.me/Vahan_bot" target="_blank" rel="noopener noreferrer">
-            <span class="feature-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="m21 4-7.5 16-3.2-7.1L3 9.6 21 4Z" />
-                <path d="m10.3 12.9 4.8-4.8" />
-              </svg>
-            </span>
-            <span>Telegram bot</span>
-          </a>
-        </nav>
-      </aside>
-    <main class="shell" id="app">
-      <section class="query-panel" id="queryPanel">
-        <div class="dashboard-toolbar">
-          <div class="hero-title-row">
-            <div class="sidebar-shell" id="sidebarShell">
-              <button type="button" class="sidebar-trigger" id="sidebarTrigger" aria-label="Open feature menu">
-                <span class="sidebar-mark trigger-mark">V</span>
-              </button>
-            </div>
-          <div class="query-panel-head">
-            <p class="eyebrow">India vehicle registration intelligence</p>
-              <h1>Ask the registration data.</h1>
-              <p class="query-deck">
-                Explore vehicle registrations by place, period, fuel and vehicle type—with the interpreted filters and data reliability kept beside the answer.
-              </p>
-            </div>
-          </div>
-          <div class="dashboard-actions">
-            <a class="secondary-action" href="/reports/monthly-sales.html">Read monthly reports</a>
-            <div class="download-menu">
+      <header class="system-header" id="systemHeader"><a href="/">Vahan Analyst</a></header>
+    <main class="shell overview-shell" id="app">
+  <section class="dashboard-toolbar"><div><p class="eyebrow">India mobility intelligence</p><h1>Registration overview</h1><p class="query-deck">Your scope. The trend. The evidence behind it.</p></div><div class="dashboard-actions"><div class="download-menu">
               <button type="button" class="download-trigger" id="downloadMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Export current answer">
                 <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
                   <path d="M12 3v10m0 0 4-4m-4 4-4-4M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
@@ -132,63 +25,18 @@ FORM: User-pinned public-data atlas direction for Operate with Read support, inf
                 <button type="button" class="secondary-action" id="downloadCsvBtn" role="menuitem" disabled>Download CSV</button>
                 <button type="button" class="secondary-action" id="downloadPdfBtn" role="menuitem" disabled>Download PDF</button>
               </div>
-            </div>
-          </div>
-        </div>
-        <div class="query-workbench">
-          <label class="query-label" for="queryInput">
-            <span>Registration query</span>
-            <small>State your geography, vehicle context and period in one sentence.</small>
-          </label>
-          <form id="queryForm" class="query-form" autocomplete="off">
-            <input
-              id="queryInput"
-              name="query"
-              aria-label="Registration query"
-              placeholder="light motor vehicle registrations in Maharashtra in 2026"
-              value=""
-            />
-            <button type="submit" id="submitBtn">
-              <span class="btn-text">Show registrations</span>
-            </button>
-          </form>
-          <div class="query-underbar">
-            <div class="query-shortcuts" aria-label="Example analyst queries">
-              <span>Try:</span>
-              <button type="button" data-query="EV registrations in Noida from May 2024 to May 2025">Noida EV trend</button>
-              <button type="button" data-query="how many ev cars were registered in haridwar between 2024-2025">Haridwar EV</button>
-              <button type="button" data-query="light motor vehicle registrations in Maharashtra in 2026">Maharashtra LMV</button>
-            </div>
-            <p id="freshness" class="freshness"></p>
-          </div>
-        </div>
-      </section>
-
-      <section id="warnings" class="warnings" hidden></section>
-
-      <section class="result-intro" aria-labelledby="answerHeading">
-        <div>
-          <p class="eyebrow">Current answer</p>
-          <h2 id="answerHeading">Registration evidence</h2>
-        </div>
-        <p>Every figure below follows the same interpreted query. Review the filter and source panels before using the result in a report.</p>
-        <div class="mode-toggle dashboard-mode-toggle" role="group" aria-label="Answer detail level">
-          <button type="button" class="active" data-dashboard-mode="command" aria-pressed="true">Overview</button>
-          <button type="button" data-dashboard-mode="analyst" aria-pressed="false">Detail</button>
-          <button type="button" data-dashboard-mode="executive" aria-pressed="false">Brief</button>
-        </div>
-      </section>
-
-      <section class="dashboard-layout" id="dashboardLayout" data-mode="command">
-        <div class="dashboard-main">
-          <section class="cards" id="summaryCards">
+            </div></div></section>
+  <section class="scope-bar" aria-label="Applied query scope"><div id="scopeSummary">Choose a scope or ask your first question.</div><button type="button" id="openFilters" class="secondary-action">Filters <span aria-hidden="true">↗</span></button></section>
+  <section id="warnings" class="warnings" aria-live="polite" hidden></section>
+  <section class="result-intro"><h2 id="answerHeading">Explore vehicle registrations</h2><div class="mode-toggle dashboard-mode-toggle" role="group" aria-label="Answer detail level"><button type="button" class="active" data-dashboard-mode="command" aria-pressed="true">Overview</button><button type="button" data-dashboard-mode="analyst" aria-pressed="false">Detail</button><button type="button" data-dashboard-mode="executive" aria-pressed="false">Brief</button></div></section>
+  <section id="dashboardLayout" class="dashboard-layout" data-mode="command"><div class="overview-metrics"><section class="cards" id="summaryCards">
             <article id="card-total">
               <span>Total registrations</span>
-              <strong id="total">0</strong>
+              <strong id="total">—</strong>
             </article>
             <article id="card-average">
               <span>Monthly average</span>
-              <strong id="average">0</strong>
+              <strong id="average">—</strong>
             </article>
             <article id="card-peak">
               <span>Peak month</span>
@@ -198,21 +46,7 @@ FORM: User-pinned public-data atlas direction for Operate with Read support, inf
               <span>Data status</span>
               <strong id="sourceStatusPill">Waiting</strong>
             </article>
-          </section>
-
-          <section class="grid">
-            <article class="panel" id="filtersPanel">
-              <div class="panel-head">
-                <div>
-                  <p class="section-label">Query scope</p>
-                  <h2>What this answer uses</h2>
-                </div>
-                <span class="status-pill" id="filterConfidence">Parsed</span>
-              </div>
-              <dl id="filters" class="filters"></dl>
-            </article>
-
-            <article class="panel" id="trendPanel">
+          </section><section class="panel" id="fuelPanel"><div class="panel-head"><h2>Fuel composition</h2><button class="text-action" type="button" id="resetFuelSelection">All months</button></div><p id="fuelMixSelection" class="panel-kicker">All months</p><div id="fuelBreakdown" class="fuel-list"><p class="result-empty">Fuel labels appear with your answer.</p></div><p id="fuelLeader" class="panel-kicker"></p></section></div><div class="overview-evidence"><article class="panel" id="trendPanel">
               <div class="panel-head">
                 <div>
                   <p class="section-label">Time series</p>
@@ -221,51 +55,43 @@ FORM: User-pinned public-data atlas direction for Operate with Read support, inf
                 <span class="panel-kicker" id="trendRange">Waiting for data</span>
               </div>
               <div id="trend" class="bars"></div>
-            </article>
-          </section>
-
-          <section class="panel" id="fuelPanel">
-            <div class="panel-head">
-              <div>
-                <p class="section-label">Composition</p>
-                <h2>Registration mix by fuel</h2>
-              </div>
-              <span class="panel-kicker" id="fuelLeader">No leader yet</span>
-            </div>
-            <div class="fuel-panel-content">
-              <div>
-                <div class="fuel-subsection-head">
-                  <p class="subsection-label">Fuel mix</p>
-                  <span class="fuel-selection-note" id="fuelMixSelection">All months</span>
-                </div>
-                <div id="fuelBreakdown" class="fuel-list"></div>
-              </div>
-              <div class="monthly-distribution">
-                <div class="subsection-head">
-                  <p class="subsection-label">Monthly distribution</p>
-                  <span class="panel-kicker" id="monthlyDistributionRange">Waiting for data</span>
-                </div>
-                <div id="monthlyDistribution" class="monthly-distribution-list"></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel" id="tablePanel">
+            </article><section class="panel" id="tablePanel">
             <div class="panel-head">
               <div>
                 <p class="section-label">Underlying detail</p>
                 <h2>Monthly evidence</h2>
               </div>
-              <span class="panel-kicker">Grouped by month and fuel</span>
+              <button type="button" class="text-action" id="toggleEvidence" aria-expanded="false">View all months</button>
             </div>
             <div id="rowChart" class="row-chart">
               <p class="result-empty">Run a query to review results grouped by month.</p>
             </div>
-          </section>
-        </div>
-      </section>
-    </main>
+          </section></div><details class="scope-detail"><summary>Review applied scope and provenance</summary><article class="panel" id="filtersPanel">
+              <div class="panel-head">
+                <div>
+                  <p class="section-label">Query scope</p>
+                  <h2>Applied scope &amp; source</h2>
+                </div>
+                <span class="status-pill" id="filterConfidence">Parsed</span>
+              </div>
+              <dl id="filters" class="filters"></dl>
+            </article></details></section>
+  <section class="query-workbench" id="queryPanel"><div class="dock-heading"><label for="queryInput">Ask Vahan</label></div><div class="query-suggestions" id="querySuggestions" hidden aria-label="Suggested questions"><span>Try asking:</span><button type="button" data-query-suggestion="EV registrations in Maharashtra from January to March 2026">EV registrations in Maharashtra</button><button type="button" data-query-suggestion="Two-wheeler registrations in Delhi in 2025">Two-wheelers in Delhi</button><button type="button" data-query-suggestion="Petrol registrations in Karnataka from April to June 2025">Petrol in Karnataka</button></div><form id="queryForm" class="query-form" autocomplete="off">
+            <input
+              id="queryInput"
+              name="query"
+              aria-label="Registration query"
+              placeholder="Ask about registrations by state, vehicle type, fuel, or month"
+              value=""
+            />
+            <button type="submit" id="submitBtn">
+              <span class="btn-text">Run query</span>
+            </button>
+          </form></section>
+  <p id="freshness" class="freshness">Run a query to see source and coverage information.</p>
+</main>
     </div>
+    <script src="/system.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

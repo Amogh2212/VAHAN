@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f4f5f9"/>
+    </linearGradient>
+    <linearGradient id="nexusViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b3398"/>
+      <stop offset="60%" stop-color="#4f46b8"/>
+      <stop offset="100%" stop-color="#7367f0"/>
+    </linearGradient>
+    <linearGradient id="nexusApricot" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ea6535"/>
+      <stop offset="50%" stop-color="#f68e65"/>
+      <stop offset="100%" stop-color="#f6bea5"/>
+    </linearGradient>
+    <linearGradient id="nexusInk" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182139"/>
+      <stop offset="100%" stop-color="#2d3855"/>
+    </linearGradient>
+    <filter id="drop2" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="22" flood-color="#182139" flood-opacity="0.10" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg2)"/>
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="#e3e6ed" stroke-width="2"/>
+
+  <g filter="url(#drop2)" transform="translate(0, 0)">
+    <!-- Primary Violet Vector (Velocity Loop) -->
+    <path d="M 140 120 
+             C 140 120 185 240 236 345 
+             C 246 365 266 365 276 345 
+             C 300 295 345 200 372 140 
+             L 316 140 
+             C 296 185 268 248 256 272 
+             C 244 248 216 185 196 140 
+             L 140 120 Z" 
+          fill="url(#nexusViolet)"/>
+
+    <!-- Interlocking Mobility Trajectory (Apricot Ribbon Arching Through) -->
+    <path d="M 120 190 
+             C 160 190 200 240 240 310 
+             C 252 331 260 331 272 310 
+             L 300 260 
+             L 266 220 
+             C 252 245 240 255 230 240 
+             C 210 210 180 150 140 150 
+             Z" 
+          fill="url(#nexusApricot)" opacity="0.95"/>
+
+    <!-- Precision Anchor Node -->
+    <circle cx="372" cy="140" r="16" fill="#f6bea5" stroke="#ffffff" stroke-width="4"/>
+    <!-- Deep Ink Base Keystone -->
+    <path d="M 232 355 L 256 395 L 280 355 Z" fill="url(#nexusInk)"/>
+  </g>
+</svg>

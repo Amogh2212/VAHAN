@@ -1,13 +1,13 @@
 {
-  "source_url": "https://vahan.parivahan.gov.in/vahan4dashboard/vahan/view/reportview.xhtml",
+  "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
   "dimension": "fuel",
   "output_file": "data\\vahan\\vahan_fuel_monthly.csv",
   "error_file": "data\\vahan\\vahan_fuel_monthly_errors.jsonl",
-  "total_rows": 12615,
-  "attempted_this_run": 0,
-  "succeeded_this_run": 0,
+  "total_rows": 17281,
+  "attempted_this_run": 1,
+  "succeeded_this_run": 1,
   "failed_this_run": 0,
-  "neon_upserted_this_run": 0,
+  "neon_upserted_this_run": 1,
   "neon_skipped_this_run": false,
-  "completed_at": "2026-06-11T17:53:07.257Z"
+  "completed_at": "2026-09-06T08:59:28.838Z"
 }

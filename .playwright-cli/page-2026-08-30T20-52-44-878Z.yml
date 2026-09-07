@@ -1,0 +1,114 @@
+- generic [active] [ref=e1]:
+  - link "Skip to registration query" [ref=e2] [cursor=pointer]:
+    - /url: "#queryInput"
+  - generic [ref=e3]:
+    - complementary "Dashboard features" [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]: V
+        - generic [ref=e7]:
+          - strong [ref=e8]: VAHAN Analyst
+          - generic [ref=e9]: India mobility intelligence
+      - navigation "Feature navigation" [ref=e10]:
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /
+        - link "Compare data" [ref=e16] [cursor=pointer]:
+          - /url: /compare.html
+        - link "Map view" [ref=e21] [cursor=pointer]:
+          - /url: /map.html
+        - link "RTO daily trends" [ref=e27] [cursor=pointer]:
+          - /url: /rto-trends.html
+        - link "RTO reports" [ref=e32] [cursor=pointer]:
+          - /url: /rto-reports.html
+        - link "RTO insights" [ref=e38] [cursor=pointer]:
+          - /url: /rto-insights.html
+        - link "Monthly reports" [ref=e46] [cursor=pointer]:
+          - /url: /reports/monthly-sales.html
+        - link "Telegram bot" [ref=e52] [cursor=pointer]:
+          - /url: https://t.me/Vahan_bot
+    - main [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e62]:
+            - paragraph [ref=e63]: India vehicle registration intelligence
+            - heading "Ask the registration data." [level=1] [ref=e64]
+            - paragraph [ref=e65]: Explore vehicle registrations by place, period, fuel and vehicle type—with the interpreted filters and data reliability kept beside the answer.
+          - generic [ref=e66]:
+            - link "Read monthly reports" [ref=e67] [cursor=pointer]:
+              - /url: /reports/monthly-sales.html
+            - generic [ref=e68]:
+              - button "Export current answer" [ref=e69] [cursor=pointer]:
+                - generic [ref=e72]: Export answer
+              - menu "Download options":
+                - menuitem "Download CSV" [disabled]
+                - menuitem "Download PDF" [disabled]
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - generic [ref=e75]: Registration query
+            - generic [ref=e76]: State your geography, vehicle context and period in one sentence.
+          - generic [ref=e77]:
+            - textbox "Registration query" [ref=e78]:
+              - /placeholder: light motor vehicle registrations in Maharashtra in 2026
+            - button "Show registrations" [ref=e79] [cursor=pointer]
+          - generic [ref=e80]:
+            - generic "Example analyst queries" [ref=e81]:
+              - generic [ref=e82]: "Try:"
+              - button "Noida EV trend" [ref=e83] [cursor=pointer]
+              - button "Haridwar EV" [ref=e84] [cursor=pointer]
+              - button "Maharashtra LMV" [ref=e85] [cursor=pointer]
+            - paragraph [ref=e86]
+      - region [ref=e87]:
+        - generic [ref=e88]:
+          - paragraph [ref=e89]: Current answer
+          - heading "Registration evidence" [level=2] [ref=e90]
+        - paragraph [ref=e91]: Every figure below follows the same interpreted query. Review the filter and source panels before using the result in a report.
+        - group "Answer detail level" [ref=e92]:
+          - button "Overview" [pressed] [ref=e93] [cursor=pointer]
+          - button "Detail" [ref=e94] [cursor=pointer]
+          - button "Brief" [ref=e95] [cursor=pointer]
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - article [ref=e99]:
+            - generic [ref=e100]: Total registrations
+            - strong [ref=e101]: "0"
+          - article [ref=e102]:
+            - generic [ref=e103]: Monthly average
+            - strong [ref=e104]: "0"
+          - article [ref=e105]:
+            - generic [ref=e106]: Peak month
+            - strong [ref=e107]: "-"
+          - article [ref=e108]:
+            - generic [ref=e109]: Data status
+            - strong [ref=e110]: Waiting
+        - generic [ref=e111]:
+          - article [ref=e112]:
+            - generic [ref=e113]:
+              - generic [ref=e114]:
+                - paragraph [ref=e115]: Query scope
+                - heading "What this answer uses" [level=2] [ref=e116]
+              - generic [ref=e117]: Parsed
+          - article [ref=e118]:
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - paragraph [ref=e121]: Time series
+                - heading "Registrations over time" [level=2] [ref=e122]
+              - generic [ref=e123]: Waiting for data
+        - generic [ref=e125]:
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - paragraph [ref=e128]: Composition
+              - heading "Registration mix by fuel" [level=2] [ref=e129]
+            - generic [ref=e130]: No leader yet
+          - generic [ref=e131]:
+            - generic [ref=e133]:
+              - paragraph [ref=e134]: Fuel mix
+              - generic [ref=e135]: All months
+            - generic [ref=e137]:
+              - paragraph [ref=e138]: Monthly distribution
+              - generic [ref=e139]: Waiting for data
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - generic [ref=e143]:
+              - paragraph [ref=e144]: Underlying detail
+              - heading "Monthly evidence" [level=2] [ref=e145]
+            - generic [ref=e146]: Grouped by month and fuel
+          - paragraph [ref=e148]: Run a query to review results grouped by month.

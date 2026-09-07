@@ -1,6 +1,8 @@
 param(
   [ValidateSet("Daily", "Insights", "Factor", "Local")]
   [string]$TaskSet = "Daily",
+  [ValidateSet("Local", "Neon")]
+  [string]$DatabaseMode = "Local",
   [ValidatePattern('^([01]\d|2[0-3]):[0-5]\d$')]
   [string]$FactorRunTime = "21:30"
 )
@@ -10,13 +12,17 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $launcher = Join-Path $PSScriptRoot "run-hidden-local-db-task.vbs"
 $wscript = (Get-Command wscript.exe).Source
 $taskUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$activeDatabaseLine = Get-Content (Join-Path $repoRoot ".env") |
+$environmentFile = if ($DatabaseMode -eq "Neon") { ".env.neon" } else { ".env" }
+$activeDatabaseLine = Get-Content (Join-Path $repoRoot $environmentFile) |
   Where-Object { $_ -match '^DATABASE_URL=' } |
   Select-Object -First 1
-if (-not $activeDatabaseLine) { throw "The active .env has no DATABASE_URL." }
+if (-not $activeDatabaseLine) { throw "$environmentFile has no DATABASE_URL." }
 $activeDatabaseUrl = [Uri](($activeDatabaseLine -split '=', 2)[1])
-if ($activeDatabaseUrl.Host -notin @("localhost", "127.0.0.1", "::1")) {
+if ($DatabaseMode -eq "Local" -and $activeDatabaseUrl.Host -notin @("localhost", "127.0.0.1", "::1")) {
   throw "Refusing to register local jobs while active DATABASE_URL points to $($activeDatabaseUrl.Host)."
+}
+if ($DatabaseMode -eq "Neon" -and $activeDatabaseUrl.Host -notmatch '\.neon\.tech$') {
+  throw "Refusing to register Neon jobs while DATABASE_URL points to $($activeDatabaseUrl.Host)."
 }
 
 function Register-VahanTask {
@@ -74,11 +80,13 @@ function Register-VahanTask {
 }
 
 if ($TaskSet -in @("Daily", "Local")) {
+  $rtoTaskName = if ($DatabaseMode -eq "Neon") { "VahanEY-RtoDaily-Neon" } else { "VahanEY-RtoDaily" }
+  $rtoJob = if ($DatabaseMode -eq "Neon") { "rto-daily-neon" } else { "rto-daily" }
   Register-VahanTask `
-    -Name "VahanEY-RtoDaily" `
-    -Job "rto-daily" `
+    -Name $rtoTaskName `
+    -Job $rtoJob `
     -Every15Minutes `
-    -Description "Run a hidden bounded two-worker RTO and ARTO rotation every 15 minutes."
+    -Description "Run a hidden bounded two-worker RTO and ARTO rotation every 15 minutes using $DatabaseMode database."
 }
 
 if ($TaskSet -in @("Insights", "Local")) {
@@ -99,7 +107,8 @@ if ($TaskSet -eq "Factor") {
     -Description "Refresh factor-source review queues and run eligible-event validations as review-only drafts."
 }
 
-Get-ScheduledTask -TaskName $(if ($TaskSet -eq "Daily") { "VahanEY-RtoDaily" } elseif ($TaskSet -eq "Insights") { "VahanEY-RtoInsightsOsm" } elseif ($TaskSet -eq "Factor") { "VahanEY-RtoFactorDaily" } else { "VahanEY-*" }) |
+$registeredTaskName = if ($TaskSet -eq "Daily") { $rtoTaskName } elseif ($TaskSet -eq "Insights") { "VahanEY-RtoInsightsOsm" } elseif ($TaskSet -eq "Factor") { "VahanEY-RtoFactorDaily" } else { "VahanEY-*" }
+Get-ScheduledTask -TaskName $registeredTaskName |
   Select-Object TaskName, State, @{
     Name = "Triggers"
     Expression = {

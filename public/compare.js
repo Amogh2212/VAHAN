@@ -1,3 +1,5 @@
+const comparisonScopes = {left:null, right:null};
+const comparisonResults = {left:null, right:null};
 const fmt = new Intl.NumberFormat("en-IN");
 
 const modeHelp = document.querySelector("#modeHelp");
@@ -97,6 +99,7 @@ function queryLabel(baseLabel, query) {
 }
 
 function setMode(nextMode) {
+  comparisonScopes.left = comparisonScopes.right = null;
   activeCompareRun += 1;
   currentMode = nextMode;
   monthModeBtn.classList.toggle("active", nextMode === "month");
@@ -241,9 +244,7 @@ function renderDoubleBars(leftData, rightData, leftQueryText = "", rightQueryTex
 
   const leftTotal = leftData.summary.total ?? 0;
   const rightTotal = rightData.summary.total ?? 0;
-  const combinedTotal = leftTotal + rightTotal;
-  const leftPercent = combinedTotal ? (leftTotal / combinedTotal) * 100 : 0;
-  const rightPercent = combinedTotal ? 100 - leftPercent : 0;
+  const largestTotal = Math.max(1, leftTotal, rightTotal);
   const horizontalObservedBar = (trend, month, side) => {
     if (!trend.has(month)) {
       return `
@@ -265,34 +266,16 @@ function renderDoubleBars(leftData, rightData, leftQueryText = "", rightQueryTex
   };
 
   verticalBarChart.innerHTML = `
-    <div class="donut-compare" role="img" aria-label="Total registrations split between left and right query">
-      <div
-        class="donut-compare-chart"
-        style="--left-share:${leftPercent.toFixed(2)}%"
-        aria-hidden="true"
-      >
-        <div class="donut-compare-center">
-          <span>Total</span>
-          <strong>${fmt.format(combinedTotal)}</strong>
-        </div>
-      </div>
-      <div class="donut-compare-metrics">
-        <div class="donut-compare-item">
-          <span><i class="legend-swatch left"></i>${escapeHtml(leftLabel)}</span>
-          <strong>${fmt.format(leftTotal)}</strong>
-          <em>${leftPercent.toFixed(1)}%</em>
-        </div>
-        <div class="donut-compare-item">
-          <span><i class="legend-swatch right"></i>${escapeHtml(rightLabel)}</span>
-          <strong>${fmt.format(rightTotal)}</strong>
-          <em>${rightPercent.toFixed(1)}%</em>
-        </div>
-      </div>
+    <div class="scope-total-comparison" aria-label="Total registrations by scope">
+      ${[[leftLabel,leftTotal,'left',leftData],[rightLabel,rightTotal,'right',rightData]].map(([label,total,side,data]) => {
+        const available = !['missing','fetch_failed'].includes(data.dataStatus) && !(data.dataStatus === 'refreshing' && !data.rows?.length);
+        return `<div><span>${escapeHtml(label)}</span><strong>${available ? fmt.format(total) : '—'}</strong><div class="double-bar-track"><span class="double-bar-fill ${side}" style="width:${available ? total / largestTotal * 100 : 0}%"></span></div></div>`;
+      }).join('')}
     </div>
   `;
 
   doubleBarChart.innerHTML = `
-    <div class="normal-chart-label">Normal form representation</div>
+    <div class="normal-chart-label">Monthly comparison</div>
     <div class="double-bar-legend">
       <span><i class="legend-swatch left"></i>${escapeHtml(leftLabel)}</span>
       <span><i class="legend-swatch right"></i>${escapeHtml(rightLabel)}</span>
@@ -314,6 +297,7 @@ function renderDoubleBars(leftData, rightData, leftQueryText = "", rightQueryTex
 }
 
 function renderSide(prefix, query, data, status = statusLabel(data)) {
+  comparisonResults[prefix] = data;
   const statusEl = document.querySelector(`#${prefix}Status`);
   if (statusEl) {
     statusEl.textContent = status;
@@ -321,8 +305,9 @@ function renderSide(prefix, query, data, status = statusLabel(data)) {
   }
   setText(`${prefix}QueryLabel`, query);
   setText(`${prefix}ResultMeta`, extractBracketMeta(query));
-  setText(`${prefix}Total`, fmt.format(data.summary.total));
-  setText(`${prefix}Average`, fmt.format(data.summary.monthlyAverage));
+  const trusted = !["missing","fetch_failed"].includes(data.dataStatus) && !(data.dataStatus === "refreshing" && !data.rows.length);
+  setText(`${prefix}Total`, trusted ? fmt.format(data.summary.total) : "—");
+  setText(`${prefix}Average`, trusted ? fmt.format(Math.round(data.summary.monthlyAverage)) : "—");
   setText(`${prefix}Peak`, data.summary.peakMonth ? `${data.summary.peakMonth}` : "-");
   setText(`${prefix}Rows`, fmt.format(data.rows.length));
   renderSideWarnings(prefix, data);
@@ -338,7 +323,7 @@ async function fetchQuery(query) {
     method: "POST",
     cache: "no-store",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(typeof query === "string" ? { query } : query),
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -367,6 +352,10 @@ function computeDelta(left, right) {
 }
 
 function renderDelta(leftData, rightData) {
+  if ([leftData,rightData].some((data) => ['missing','fetch_failed'].includes(data.dataStatus) || (data.dataStatus === 'refreshing' && !data.rows?.length))) {
+    deltaSummary.textContent = 'A comparison needs available data for both scopes. Review the source status above.';
+    return;
+  }
   const { diff, pct } = computeDelta(leftData, rightData);
   deltaSummary.innerHTML = `
     <div><strong>Difference:</strong> ${formatChange(diff)} registrations</div>
@@ -397,7 +386,7 @@ async function refreshPendingCompare(runId, leftQueryText, rightQueryText, leftD
   }
 }
 
-async function runCompare(event) {
+async function runCompare(event, { throwOnError = false } = {}) {
   event.preventDefault();
   const runId = ++activeCompareRun;
   compareBtn.disabled = true;
@@ -417,7 +406,7 @@ async function runCompare(event) {
     if (!left || !right) {
       throw new Error("Enter both queries before comparing.");
     }
-    const [leftData, rightData] = await Promise.all([fetchQuery(left), fetchQuery(right)]);
+    const [leftData, rightData] = await Promise.all([fetchQuery(comparisonScopes.left ? {filters:comparisonScopes.left} : left), fetchQuery(comparisonScopes.right ? {filters:comparisonScopes.right} : right)]);
     if (activeCompareRun !== runId) return;
     renderSide("left", left, leftData);
     renderSide("right", right, rightData);
@@ -428,6 +417,7 @@ async function runCompare(event) {
       refreshPendingCompare(runId, left, right, leftData, rightData);
     }
   } catch (error) {
+    if (activeCompareRun !== runId) return;
     deltaSummary.textContent = error.message;
     const message = escapeHtml(error.message);
     verticalBarChart.innerHTML = `<p class="compare-empty">${message}</p>`;
@@ -443,7 +433,9 @@ async function runCompare(event) {
     };
     renderSide("left", left || "Left query", fallbackData, "Error");
     renderSide("right", right || "Right query", fallbackData, "Error");
+    if (throwOnError) throw error;
   } finally {
+    if (activeCompareRun !== runId) return;
     compareBtn.disabled = false;
     compareBtn.textContent = "Compare";
   }
@@ -452,9 +444,11 @@ async function runCompare(event) {
 monthModeBtn.addEventListener("click", () => setMode("month"));
 locationModeBtn.addEventListener("click", () => setMode("location"));
 leftQuery.addEventListener("input", () => {
+  comparisonScopes.left = null;
   leftDirty = true;
 });
 rightQuery.addEventListener("input", () => {
+  comparisonScopes.right = null;
   rightDirty = true;
 });
 compareForm.addEventListener("submit", runCompare);
@@ -495,3 +489,16 @@ if (appFrame && sidebarTrigger && featureSidebar) {
 
 setMode("month");
 runCompare(new Event("submit"));
+
+for (const prefix of ['left','right']) {
+  const input = document.querySelector(`#${prefix}Query`);
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'text-action compare-filters'; button.textContent = `Edit ${prefix} filters`;
+  const wrapper = document.createElement('div');
+  input.parentElement.before(wrapper);
+  wrapper.append(input.parentElement,button);
+  button.addEventListener('click', () => VahanUI.openFilters({
+    title:`Edit ${prefix} comparison scope`, filters:comparisonScopes[prefix] ?? comparisonResults[prefix]?.filters ?? {},
+    onApply:async (filters) => { comparisonScopes[prefix] = filters; input.value = VahanUI.describeScope(filters); await runCompare(new Event('submit'), {throwOnError:true}); },
+  }));
+}

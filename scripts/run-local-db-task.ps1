@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet("postgres", "tracked", "backup", "rto-catalog", "rto-daily", "rto-insights-osm", "rto-factor-daily")]
+  [ValidateSet("postgres", "tracked", "backup", "rto-catalog", "rto-daily", "rto-daily-neon", "rto-insights-osm", "rto-factor-daily")]
   [string]$Job
 )
 
@@ -24,6 +24,7 @@ function Ensure-LocalPostgres {
 }
 
 $scriptArgs = @()
+$envFile = ".env"
 $script = if ($Job -eq "postgres") {
   Join-Path $PSScriptRoot "start-local-postgres.mjs"
 } elseif ($Job -eq "tracked") {
@@ -33,6 +34,10 @@ $script = if ($Job -eq "postgres") {
   Join-Path $PSScriptRoot "vahan-scraper.mjs"
 } elseif ($Job -eq "rto-daily") {
   $scriptArgs = @("--work-queue", "--time-budget-minutes", "55")
+  Join-Path $PSScriptRoot "run-rto-daily-snapshots.mjs"
+} elseif ($Job -eq "rto-daily-neon") {
+  $envFile = ".env.neon"
+  $scriptArgs = @("--neon", "--work-queue", "--time-budget-minutes", "55")
   Join-Path $PSScriptRoot "run-rto-daily-snapshots.mjs"
 } elseif ($Job -eq "rto-insights-osm") {
   $scriptArgs = @("--write", "--download", "--refresh-source", "--refresh", "--limit", "2000")
@@ -51,7 +56,6 @@ try {
   if ($Job -in @("rto-daily", "rto-insights-osm", "rto-factor-daily")) {
     Ensure-LocalPostgres
   }
-  $envFile = ".env"
   $previousErrorActionPreference = $ErrorActionPreference
   try {
     $ErrorActionPreference = "Continue"

@@ -81,14 +81,16 @@ assert.deepEqual(requests[0].options.headers, {
   referer: "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
 });
 
-await assert.rejects(fetchPublicDashboardRows({
+const emptyResponseRows = await fetchPublicDashboardRows({
   state: "Uttar Pradesh",
   rto: "Noida - UP16 (13-NOV-2017)",
   year: 2026,
   months: [8],
   fuels: ["PLUG-IN HYBRID EV"],
   fetchImpl: async () => new Response(JSON.stringify([]), { status: 200 }),
-}), /no requested monthly values/);
+});
+assert.equal(emptyResponseRows[0].vehicle_count, 0);
+assert.equal(emptyResponseRows[0].explicit_zero, true);
 
 const sourceZeroRows = await fetchPublicDashboardRows({
   state: "Uttar Pradesh",
@@ -100,6 +102,20 @@ const sourceZeroRows = await fetchPublicDashboardRows({
 });
 assert.equal(sourceZeroRows[0].vehicle_count, 0);
 assert.equal(sourceZeroRows[0].archive_scope, "ACTIVE_ONLY");
+
+const sparseZeroRows = await fetchPublicDashboardRows({
+  state: "Karnataka",
+  year: 2025,
+  months: [8],
+  fuels: ["PLUG-IN HYBRID EV"],
+  vehicleClasses: ["MOTOR CAR"],
+  fetchImpl: async () => new Response(JSON.stringify([
+    { yearAsString: "2025-May", registeredVehicleCount: 1 },
+    { yearAsString: "2025-April", registeredVehicleCount: 0 },
+  ]), { status: 200 }),
+});
+assert.equal(sparseZeroRows[0].vehicle_count, 0, "an omitted requested month in an otherwise valid year response is an explicit zero");
+assert.equal(sparseZeroRows[0].explicit_zero, true);
 
 let archiveRequest = 0;
 const archivedFallbackRows = await fetchPublicDashboardRows({

@@ -1,0 +1,5 @@
+{
+  "schemaVersion": "1.0.0",
+  "policy": "A promotion is a manual, evidence-backed decision for one exact baseline commit. Only confirmed, high-confidence P0/P1 findings with separately recorded introduction evidence may be promoted. Scanner output alone is insufficient.",
+  "promotions": []
+}

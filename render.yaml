@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: vahan-ey-web
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: PGSSL
+        value: "true"
+      - key: REQUIRE_DATABASE_FOR_READINESS
+        value: "1"
+      - key: APP_BASE_URL
+        sync: false
+      - key: CSRF_SECRET
+        generateValue: true
+      - key: RATE_LIMIT_STORE
+        value: database
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: VAHAN_DISABLE_LIVE_REFRESH
+        value: "1"
+      - key: TELEGRAM_ENABLE_POLLING
+        value: "0"
+      - key: AI_QUERY_PROVIDER
+        value: none
+      - key: DASHBOARD_QUERY_ROUTING_MODE
+        value: enforced
+      - key: FACTOR_AGENT_ENABLED
+        value: "0"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false

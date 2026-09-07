@@ -1,0 +1,183 @@
+Frozen oracle: C:\Users\amogh\Desktop\BHAIYA\Vahan EY\data\query-audits\random-filter-oracle-2026-07-30.csv (0f3b1865d0579a70dabce11b919b618fd5225034ba06a7af32813292e5fa1d5c)
+[rules] 1/50 Q001 checkpoint
+[rules] 2/50 Q002 checkpoint
+[rules] 3/50 Q003 checkpoint
+[rules] 4/50 Q004 checkpoint
+[rules] 5/50 Q005 checkpoint
+[rules] 6/50 Q006 checkpoint
+[rules] 7/50 Q007 checkpoint
+[rules] 8/50 Q008 checkpoint
+[rules] 9/50 Q009 checkpoint
+[rules] 10/50 Q010 checkpoint
+[rules] 11/50 Q011 checkpoint
+[rules] 12/50 Q012 checkpoint
+[rules] 13/50 Q013 checkpoint
+[rules] 14/50 Q014 checkpoint
+[rules] 15/50 Q015 checkpoint
+[rules] 16/50 Q016 checkpoint
+[rules] 17/50 Q017 checkpoint
+[rules] 18/50 Q018 checkpoint
+[rules] 19/50 Q019 checkpoint
+[rules] 20/50 Q020 checkpoint
+[rules] 21/50 Q021 checkpoint
+[rules] 22/50 Q022 checkpoint
+[rules] 23/50 Q023 checkpoint
+[rules] 24/50 Q024 checkpoint
+[rules] 25/50 Q025 checkpoint
+[rules] 26/50 Q026 checkpoint
+[rules] 27/50 Q027 checkpoint
+[rules] 28/50 Q028 checkpoint
+[rules] 29/50 Q029 checkpoint
+[rules] 30/50 Q030 checkpoint
+[rules] 31/50 Q031 checkpoint
+[rules] 32/50 Q032 checkpoint
+[rules] 33/50 Q033 checkpoint
+[rules] 34/50 Q034 checkpoint
+[rules] 35/50 Q035 checkpoint
+[rules] 36/50 Q036 checkpoint
+[rules] 37/50 Q037 checkpoint
+[rules] 38/50 Q038 checkpoint
+[rules] 39/50 Q039 checkpoint
+[rules] 40/50 Q040 checkpoint
+[rules] 41/50 Q041 checkpoint
+[rules] 42/50 Q042 checkpoint
+[rules] 43/50 Q043 checkpoint
+[rules] 44/50 Q044 checkpoint
+[rules] 45/50 Q045 checkpoint
+[rules] 46/50 Q046 checkpoint
+[rules] 47/50 Q047 checkpoint
+[rules] 48/50 Q048 checkpoint
+[rules] 49/50 Q049 checkpoint
+[rules] 50/50 Q050 checkpoint
+[groq] 1/50 Q001 checkpoint
+[groq] 2/50 Q002 running
+[groq] Q002 pass
+[groq] 3/50 Q003 running
+[groq] Q003 provider_inconclusive
+[groq] token quota pause; continuing at 2026-07-30T16:36:55.021Z
+[groq] 3/50 Q003 running
+[groq] Q003 pass
+[groq] 4/50 Q004 running
+[groq] Q004 provider_inconclusive
+[groq] token quota pause; continuing at 2026-07-30T16:37:28.416Z
+[groq] 4/50 Q004 running
+[groq] Q004 pass
+[groq] 5/50 Q005 running
+[groq] Q005 provider_inconclusive
+[groq] token quota pause; continuing at 2026-07-30T16:38:01.554Z
+[groq] 5/50 Q005 running
+[groq] Q005 pass
+[groq] 6/50 Q006 running
+[groq] Q006 provider_inconclusive
+[groq] token quota pause; continuing at 2026-07-30T16:38:32.299Z
+[groq] 6/50 Q006 running
+[groq] Q006 pass
+[groq] 7/50 Q007 running
+[groq] Q007 pass
+[groq] 8/50 Q008 running
+[groq] Q008 filter_mismatch
+[groq] 9/50 Q009 running
+[groq] Q009 pass
+[groq] 10/50 Q010 running
+[groq] Q010 pass
+[groq] 11/50 Q011 running
+[groq] Q011 pass
+[groq] 12/50 Q012 running
+[groq] Q012 pass
+[groq] 13/50 Q013 running
+[groq] Q013 pass
+[groq] 14/50 Q014 running
+[groq] Q014 pass
+[groq] 15/50 Q015 running
+[groq] Q015 pass
+[groq] 16/50 Q016 running
+[groq] Q016 filter_mismatch
+[groq] 17/50 Q017 running
+[groq] Q017 filter_mismatch
+[groq] 18/50 Q018 running
+[groq] Q018 filter_mismatch
+[groq] 19/50 Q019 running
+[groq] Q019 pass
+[groq] 20/50 Q020 running
+[groq] Q020 pass
+[groq] 21/50 Q021 running
+[groq] Q021 filter_mismatch
+[groq] 22/50 Q022 running
+[groq] Q022 pass
+[groq] 23/50 Q023 running
+[groq] Q023 filter_mismatch
+[groq] 24/50 Q024 running
+[groq] Q024 pass
+[groq] 25/50 Q025 running
+[groq] Q025 pass
+[groq] 26/50 Q026 running
+[groq] Q026 filter_mismatch
+[groq] 27/50 Q027 running
+[groq] Q027 filter_mismatch
+[groq] 28/50 Q028 running
+[groq] Q028 filter_mismatch
+[groq] 29/50 Q029 running
+[groq] Q029 pass
+[groq] 30/50 Q030 running
+[groq] Q030 pass
+[groq] 31/50 Q031 running
+[groq] Q031 data_inconsistency
+[groq] 32/50 Q032 running
+[groq] Q032 filter_mismatch
+[groq] 33/50 Q033 running
+[groq] Q033 filter_mismatch
+[groq] 34/50 Q034 running
+[groq] Q034 pass
+[groq] 35/50 Q035 running
+[groq] Q035 pass
+[groq] 36/50 Q036 running
+[groq] Q036 pass
+[groq] 37/50 Q037 running
+[groq] Q037 pass
+[groq] 38/50 Q038 running
+[groq] Q038 pass
+[groq] 39/50 Q039 running
+[groq] Q039 pass
+[groq] 40/50 Q040 running
+[groq] Q040 filter_mismatch
+[groq] 41/50 Q041 running
+[groq] Q041 pass
+[groq] 42/50 Q042 running
+[groq] Q042 pass
+[groq] 43/50 Q043 running
+[groq] Q043 pass
+[groq] 44/50 Q044 running
+[groq] Q044 api_error
+[groq] 45/50 Q045 running
+[groq] Q045 pass
+[groq] 46/50 Q046 running
+[groq] Q046 pass
+[groq] 47/50 Q047 running
+[groq] Q047 data_inconsistency
+[groq] 48/50 Q048 running
+[groq] Q048 pass
+[groq] 49/50 Q049 running
+[groq] Q049 pass
+[groq] 50/50 Q050 running
+[groq] Q050 filter_mismatch
+{
+  "oracle": "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\data\\query-audits\\random-filter-oracle-2026-07-30.csv",
+  "reports": [
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.csv",
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.json",
+    "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\reports\\query-filter-audit-2026-07-30.md"
+  ],
+  "classifications": {
+    "rules:pass": 38,
+    "rules:filter_mismatch": 12,
+    "groq:pass": 32,
+    "groq:filter_mismatch": 14,
+    "groq:data_inconsistency": 3,
+    "groq:api_error": 1
+  },
+  "groqAttemptCount": 50,
+  "groqQuotaPauseCount": 5,
+  "groqCallCapReached": false,
+  "database": "verified",
+  "dataFilesUnchanged": true
+}

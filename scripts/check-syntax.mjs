@@ -3,7 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
 
-const roots = ["server.mjs", "lib", "scripts"];
+const roots = ["server.mjs", "lib", "scripts", "public"];
 const files = [];
 
 async function collect(target) {
@@ -16,7 +16,7 @@ async function collect(target) {
     }
     return;
   }
-  if (target.endsWith(".mjs")) files.push(target);
+  if (/\.(mjs|js)$/.test(target)) files.push(target);
 }
 
 for (const root of roots) {

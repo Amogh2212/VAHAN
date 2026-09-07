@@ -1,0 +1,10 @@
+[
+  { "label": "Bulk 12 retry", "query": "Show the number of BS VI CNG taxis registered in West Bengal in December 2024." },
+  { "label": "Bulk 73 retry", "query": "Show the monthly registration count of BS VI hybrid cars in Karnataka for 2025." },
+  { "label": "Bulk 87 retry", "query": "Show the registration count of BS VI diesel ambulances across all RTOs in Rajasthan in 2024." },
+  { "label": "Bulk 91 retry", "query": "How many electric two-wheelers were registered in Delhi in January 2026, with the emission norm marked as not applicable?" },
+  { "label": "Bulk 94 retry", "query": "Give the registration count of electric buses in Karnataka from April 2025 to March 2026 where the emission norm is not applicable." },
+  { "label": "Bulk 96 retry", "query": "How many hydrogen fuel-cell buses were registered in Delhi during 2025 with the emission norm marked as not applicable?" },
+  { "label": "Bulk 97 retry", "query": "Find the registration count of BS VI ethanol cars in Uttar Pradesh from January to December 2025." },
+  { "label": "Bulk 99 retry", "query": "How many BS VI methanol buses were registered in Maharashtra between January and June 2026?" }
+]

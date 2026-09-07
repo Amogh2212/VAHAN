@@ -577,6 +577,8 @@ async function loadMap() {
 
 function renderMapData(data) {
   latestMapFilters = data.filters ?? null;
+  if (latestMapFilters?.from) document.querySelector("#mapFrom").value = latestMapFilters.from;
+  if (latestMapFilters?.to) document.querySelector("#mapTo").value = latestMapFilters.to;
   stateData = new Map(data.states.map((item) => [item.state, item]));
   renderMapHeading(data.filters);
   applyMapData(data.states);

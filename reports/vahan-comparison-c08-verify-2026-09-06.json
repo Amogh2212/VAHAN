@@ -1,0 +1,300 @@
+{
+  "generatedAt": "2026-09-05T19:56:33.973Z",
+  "updatedAt": "2026-09-05T19:56:40.293Z",
+  "input": "reports/vahan-comparison-c08-verify-2026-09-06.input.json",
+  "sourceReport": null,
+  "mode": "live",
+  "health": {
+    "status": "ok",
+    "storage": "postgres",
+    "rowCount": 18864,
+    "latestMonth": "2026-09",
+    "source": "VAHAN public dashboard aggregate data",
+    "database": {
+      "status": "ok"
+    },
+    "liveRefreshDisabled": false,
+    "queryRouting": {
+      "configuredMode": "enforced",
+      "since": "2026-09-05T19:56:32.316Z",
+      "totalQueries": 0,
+      "requestsByMode": {
+        "shadow": 0,
+        "enforced": 0
+      },
+      "decisions": {
+        "local": 0,
+        "repair": 0,
+        "reject": 0
+      },
+      "outcomes": {
+        "localDeterministicSuccesses": 0,
+        "groqAssistedSuccesses": 0,
+        "rejected": 0,
+        "unsupportedRejected": 0,
+        "conflictRejected": 0,
+        "clarificationRequired": 0
+      },
+      "groq": {
+        "repairDemand": 0,
+        "invocations": 0,
+        "quotaRateLimitEvents": 0,
+        "plansValidated": 0,
+        "postValidationFailures": 0,
+        "deterministicComparisons": 0,
+        "deterministicDisagreements": 0
+      },
+      "fuzzy": {
+        "candidates": 0,
+        "accepted": 0
+      },
+      "rates": {
+        "localDeterministicSuccess": null,
+        "groqInvocation": null,
+        "groqQuotaRateLimitEvent": null,
+        "clarificationRequired": null,
+        "fuzzyCorrectionAcceptance": null,
+        "postGroqValidationFailure": null,
+        "deterministicGroqDisagreement": null
+      }
+    },
+    "queryAgent": {
+      "enabled": false,
+      "storage": "available",
+      "counts": {}
+    }
+  },
+  "count": 1,
+  "queue": [
+    {
+      "index": 1,
+      "label": "C08 official-source verification",
+      "query": "Show pure EV registrations in West Bengal during September 2024.",
+      "expect": {}
+    }
+  ],
+  "summary": {
+    "completed": 1,
+    "passed": 1,
+    "failed": 0,
+    "okResponses": 1,
+    "refreshed": 1,
+    "refreshCompleted": 1,
+    "refreshFailed": 0,
+    "nonZeroRows": 1,
+    "byCategory": {
+      "pass": 1,
+      "parser_mismatch": 0,
+      "data_missing": 0,
+      "scrape_failed": 0,
+      "api_server_error": 0
+    },
+    "averageDurationMs": 6301
+  },
+  "results": [
+    {
+      "index": 1,
+      "label": "C08 official-source verification",
+      "query": "Show pure EV registrations in West Bengal during September 2024.",
+      "expect": {},
+      "ok": true,
+      "passed": true,
+      "category": "pass",
+      "status": 200,
+      "durationMs": 1276,
+      "refreshDurationMs": 5025,
+      "dataStatus": "live",
+      "rowCount": 1,
+      "total": 1421,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": "PURE EV",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [],
+        "norms": [],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "West Bengal"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2024-09",
+        "to": "2024-09",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched PURE EV fuel",
+        "semanticConfidence": 0.8200000000000001,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": true,
+        "rowsScraped": 1,
+        "failedRuns": [],
+        "errorSummary": "",
+        "runs": [
+          {
+            "year": 2024,
+            "months": [
+              9
+            ],
+            "success": true,
+            "rowsScraped": 1
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "1",
+        "status": "complete",
+        "requiredMonths": [
+          "2024-09"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 300,
+        "error": null
+      },
+      "warnings": [],
+      "issues": [],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "EV",
+          "fuelType": "PURE EV",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [],
+          "norms": [],
+          "state": "West Bengal",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "West Bengal"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2024-09",
+          "to": "2024-09",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "PURE EV"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched PURE EV fuel",
+          "semanticConfidence": 0.8200000000000001,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "live",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 1421,
+          "monthlyAverage": 1421,
+          "peakMonth": "2024-09",
+          "peakMonthCount": 1421
+        },
+        "trend": [
+          {
+            "month": "2024-09",
+            "count": 1421
+          }
+        ],
+        "fuelBreakdown": [
+          {
+            "fuelType": "PURE EV",
+            "count": 1421
+          }
+        ],
+        "rows": [
+          {
+            "year": 2024,
+            "month": 9,
+            "state": "West Bengal",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "PURE EV",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "ALL",
+            "vehicle_class_filter": "ALL",
+            "vehicle_count": 1421,
+            "scraped_at": "2026-09-05T19:56:37.682Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "EV",
+            "fuel_type": "PURE EV"
+          }
+        ],
+        "freshness": {
+          "latestMonth": "2024-09",
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": true,
+          "rowsScraped": 1,
+          "failedRuns": [],
+          "errorSummary": "",
+          "runs": [
+            {
+              "year": 2024,
+              "months": [
+                9
+              ],
+              "success": true,
+              "rowsScraped": 1
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "1",
+          "status": "complete",
+          "requiredMonths": [
+            "2024-09"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 300,
+          "error": null
+        },
+        "refreshContext": null,
+        "warnings": []
+      },
+      "completedAt": "2026-09-05T19:56:40.282Z"
+    }
+  ],
+  "status": "complete"
+}

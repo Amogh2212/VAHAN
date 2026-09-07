@@ -237,7 +237,7 @@ function renderOemGroups(groups = []) {
         <section class="monthly-report-oem-group">
           <div class="monthly-report-oem-head">
             <h3>${escapeHtml(group.title)}</h3>
-            <span>${fmt.format(group.total ?? 0)} registrations</span>
+            <span>${group.status === 'missing' ? 'Count unavailable' : `${fmt.format(group.total ?? 0)} registrations`}</span>
           </div>
           ${group.status !== "available" ? `<p class="result-empty">${escapeHtml(group.warning ?? "No complete maker rows are available for this category.")}</p>` : ""}
           <div class="monthly-report-table-wrap">
@@ -247,8 +247,8 @@ function renderOemGroups(groups = []) {
                 ${(group.brands ?? []).map((brand) => `
                   <tr>
                     <td>${escapeHtml(brand.name)}</td>
-                    <td>${fmt.format(brand.count ?? 0)}</td>
-                    <td>${formatPercent(brand.share)}</td>
+                    <td>${brand.matchedMakers?.length ? fmt.format(brand.count ?? 0) : '—'}</td>
+                    <td>${brand.matchedMakers?.length ? formatPercent(brand.share) : '—'}</td>
                     <td>${escapeHtml((brand.matchedMakers ?? []).join(", ") || "Not found")}</td>
                   </tr>
                 `).join("")}
@@ -278,7 +278,7 @@ function renderFuelPie(items = []) {
   const chartItems = otherCount
     ? [...visibleItems, { fuelType: "Other", count: otherCount, share: otherCount / total }]
     : visibleItems;
-  const colors = ["#35c28f", "#45a9f2", "#f4c542", "#f97373", "#a78bfa", "#fb923c", "#22d3ee", "#94a3b8"];
+  const colors = ["#535e8d", "#137c73", "#7258ac", "#ad602f", "#2f718c", "#737987", "#846979", "#747244"];
   let offset = 0;
   const slices = chartItems.map((item, index) => {
     const value = Number(item.count || 0);
@@ -480,7 +480,6 @@ function renderSection(section) {
     <article class="panel monthly-report-section" id="section-${escapeHtml(section.id)}">
       <div class="panel-head">
         <div>
-          <p class="eyebrow">${escapeHtml(section.chartType ?? "section")}</p>
           <h2>${escapeHtml(section.title)}</h2>
         </div>
       </div>

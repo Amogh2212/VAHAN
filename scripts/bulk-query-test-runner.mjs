@@ -170,7 +170,16 @@ function startServer() {
       OLLAMA_TIMEOUT_MS: "10000",
       GEMINI_API_KEY: "",
       GROQ_API_KEY: "",
-      PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH: NO_LIVE ? "1" : "0",
+      // A corpus run must exercise query handling, not stop after the normal
+      // public-request allowance.  These in-memory limits apply only to the
+      // child server started by this test harness.
+      RATE_LIMIT_STORE: "memory",
+      ALLOW_IN_MEMORY_RATE_LIMIT: "1",
+      EXPENSIVE_RATE_LIMIT_MAX: "10000",
+      EXPENSIVE_RATE_LIMIT_GLOBAL_MAX: "10000",
+      DASHBOARD_QUERY_RATE_LIMIT_MAX: "10000",
+      DASHBOARD_QUERY_RATE_LIMIT_GLOBAL_MAX: "10000",
+      VAHAN_DISABLE_LIVE_REFRESH: NO_LIVE ? "1" : "0",
       TELEGRAM_BOT_TOKEN: "",
       TELEGRAM_ALLOWED_CHAT_IDS: "",
       TELEGRAM_ENABLE_POLLING: "0",
@@ -349,6 +358,16 @@ function scrapeIssue(body) {
   return null;
 }
 
+function dataAvailabilityIssue(body) {
+  if (body.dataStatus === "missing") {
+    return {
+      type: "data_missing",
+      message: "The exact requested dashboard slice has no verified numeric rows; zero is not a source-backed result.",
+    };
+  }
+  return null;
+}
+
 function categorize(ok, issues) {
   if (!ok || issues.some((issue) => issue.type === "api_error")) return "api_server_error";
   if (issues.some((issue) => issue.type === "parser_mismatch")) return "parser_mismatch";
@@ -369,6 +388,8 @@ function compactResult(item, response, finalBody, timings) {
     issues.push(...evaluateExpectations(item, body));
     const refreshIssue = scrapeIssue(body);
     if (refreshIssue) issues.push(refreshIssue);
+    const dataIssue = dataAvailabilityIssue(body);
+    if (dataIssue) issues.push(dataIssue);
   }
   const category = categorize(response.ok, issues);
   return {

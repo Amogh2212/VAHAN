@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vahan-ey.invalid/schemas/audit-findings.schema.json",
+  "title": "Vahan EY audit findings",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/finding"
+  },
+  "$defs": {
+    "nonemptyString": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "artifactPath": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "message": { "$ref": "#/$defs/nonemptyString" },
+        "artifact": { "$ref": "#/$defs/artifactPath" },
+        "stdout_artifact": { "$ref": "#/$defs/artifactPath" },
+        "stderr_artifact": { "$ref": "#/$defs/artifactPath" },
+        "advisory": { "$ref": "#/$defs/nonemptyString" },
+        "file": { "$ref": "#/$defs/nonemptyString" },
+        "line": { "type": "integer", "minimum": 1 },
+        "rule": { "$ref": "#/$defs/nonemptyString" },
+        "installed_versions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonemptyString" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "severity",
+        "confidence",
+        "status",
+        "title",
+        "affected_files",
+        "evidence",
+        "impact",
+        "reproduction_or_detection_method",
+        "expected_invariant",
+        "recommended_remediation",
+        "required_regression_test",
+        "source_tool",
+        "baseline_commit",
+        "introduced_in_current_checkout"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^VEY-[A-F0-9]{12}$" },
+        "category": {
+          "enum": [
+            "confirmed_bug",
+            "security_risk",
+            "data_trust_risk",
+            "operational_risk",
+            "maintainability_issue",
+            "test_gap",
+            "documentation_configuration_gap"
+          ]
+        },
+        "severity": { "enum": ["P0", "P1", "P2", "P3"] },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "status": { "enum": ["confirmed", "needs_validation", "accepted_false_positive"] },
+        "title": { "$ref": "#/$defs/nonemptyString" },
+        "affected_files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonemptyString" },
+          "uniqueItems": true
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidence" }
+        },
+        "impact": { "$ref": "#/$defs/nonemptyString" },
+        "reproduction_or_detection_method": { "$ref": "#/$defs/nonemptyString" },
+        "expected_invariant": { "$ref": "#/$defs/nonemptyString" },
+        "recommended_remediation": { "$ref": "#/$defs/nonemptyString" },
+        "required_regression_test": { "$ref": "#/$defs/nonemptyString" },
+        "source_tool": { "$ref": "#/$defs/nonemptyString" },
+        "baseline_commit": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+        "introduced_in_current_checkout": { "type": ["boolean", "null"] }
+      }
+    }
+  }
+}

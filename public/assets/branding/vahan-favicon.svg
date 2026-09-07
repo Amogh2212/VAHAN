@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="16" fill="#182139"/>
+  <!-- Dynamic V Mark -->
+  <path d="M 16 16 L 25 16 L 32 38 L 29 48 L 22 48 Z" fill="#ffffff"/>
+  <path d="M 31 48 L 36 36 L 43 36 L 38 48 Z" fill="#4f46b8"/>
+  <path d="M 38 32 L 44 18 L 50 18 L 44 32 Z" fill="#f6bea5"/>
+  <circle cx="49" cy="13" r="4" fill="#ff7a59"/>
+</svg>

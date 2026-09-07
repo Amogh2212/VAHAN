@@ -1,10 +1,9 @@
 name: RTO Daily Cloud Collection
 
 on:
-  schedule:
-    # Five resumable four-hour slices provide up to twenty hours of collection
-    # capacity per IST day without exceeding the hosted-runner job limit.
-    - cron: "0 0,4,8,12,16 * * *"
+  # Scraping is intentionally owned by the local laptop (then Oracle VM), not
+  # by ephemeral hosted runners. Keep this workflow only for an explicit,
+  # operator-initiated diagnostic run.
   workflow_dispatch:
 
 concurrency:

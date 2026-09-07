@@ -18,6 +18,8 @@ const downloadMenuBtn = document.querySelector("#downloadMenuBtn");
 const dashboardLayout = document.querySelector("#dashboardLayout");
 const dashboardModeButtons = document.querySelectorAll("[data-dashboard-mode]");
 const queryShortcutButtons = document.querySelectorAll("[data-query]");
+const querySuggestions = document.querySelector("#querySuggestions");
+const querySuggestionButtons = document.querySelectorAll("[data-query-suggestion]");
 
 const fmt = new Intl.NumberFormat("en-IN");
 const monthFmt = new Intl.DateTimeFormat("en", { month: "short", year: "numeric" });
@@ -31,6 +33,27 @@ let latestResult = null;
 let selectedDistributionMonth = null;
 let warningToastTimers = [];
 const DASHBOARD_STATE_KEY = "vahan-dashboard:last-answer:v1";
+
+async function configureQuerySuggestions() {
+  if (!querySuggestions) return;
+  try {
+    const response = await fetch("/api/me", { credentials: "same-origin" });
+    const session = await response.json();
+    querySuggestions.hidden = Boolean(session.authenticated);
+  } catch {
+    // Keep suggestions visible when session status cannot be checked.
+    querySuggestions.hidden = false;
+  }
+}
+
+querySuggestionButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    input.value = button.dataset.querySuggestion ?? "";
+    input.focus();
+  });
+});
+
+configureQuerySuggestions();
 
 /* Helpers */
 
@@ -246,30 +269,14 @@ function setExportButtonsEnabled(enabled) {
   downloadPdfBtn.disabled = !enabled;
 }
 
-function animateCounter(el, target) {
-  const start = parseInt(el.textContent.replace(/[^\d]/g, "")) || 0;
-  if (start === target) return;
-  const duration = 600;
-  const startTime = performance.now();
-  function tick(now) {
-    const elapsed = now - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(start + (target - start) * eased);
-    el.textContent = fmt.format(current);
-    if (progress < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-
 function setMetricDisplay(id, value, { trusted = true } = {}) {
   const el = document.querySelector(`#${id}`);
   if (!el) return;
   if (!trusted) {
-    el.textContent = "--";
+    el.textContent = "—";
     return;
   }
-  animateCounter(el, value);
+  el.textContent = value === null || value === undefined ? "—" : fmt.format(value);
 }
 
 /* Renderers */
@@ -278,7 +285,7 @@ function renderFilters(filters) {
   const el = document.querySelector("#filters");
   const entries = usefulFilterEntries(filters);
   el.innerHTML = entries
-    .map(([key, value]) => `<dt>${escapeHtml(filterPresentationLabels[key] ?? key)}</dt><dd>${escapeHtml(value)}</dd>`)
+    .map(([key, value]) => `<div><dt>${escapeHtml(filterPresentationLabels[key] ?? key)}</dt><dd>${escapeHtml(value)}</dd></div>`)
     .join("");
 }
 
@@ -289,6 +296,11 @@ function renderTrend(trend) {
     return;
   }
   el.innerHTML = buildTrendLineChart(trend, { compact: true });
+  el.querySelectorAll('.trend-month-hit').forEach((point) => point.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault(); setFuelMixSelection(point.dataset.month);
+    }
+  }));
 }
 
 function renderFuelBreakdown(items) {
@@ -297,13 +309,14 @@ function renderFuelBreakdown(items) {
     el.innerHTML = `<p style="color:var(--text-muted)">No fuel breakdown for these filters.</p>`;
     return;
   }
-  const max = Math.max(1, ...items.map((item) => item.count));
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+  const colors = { PETROL:'#535e8d', 'ELECTRIC(BOV)':'#137c73', 'PURE EV':'#7258ac', 'PETROL(E20)':'#ad602f', 'CNG ONLY':'#2f718c' };
   el.innerHTML = items
     .map(
       (item, i) => `
-      <div class="fuel-item" style="animation: fadeSlideIn 0.4s var(--ease-out) ${i * 0.03}s both">
+      <div class="fuel-item">
         <span>${escapeHtml(item.fuelType)}</span>
-        <strong>${fmt.format(item.count)}</strong>
+        <strong>${fmt.format(item.count)}</strong><div class="fuel-track" aria-hidden="true"><i style="width:${total ? item.count / total * 100 : 0}%;--fuel-color:${colors[item.fuelType] || '#737987'}"></i></div>
       </div>
     `,
     )
@@ -592,7 +605,7 @@ function renderReliabilityBanner(data) {
       </div>
     </dl>
   `;
-  filtersPanel.parentElement?.insertBefore(banner, filtersPanel);
+  document.querySelector(".result-intro")?.insertAdjacentElement("afterend", banner);
 }
 
 function renderWarnings(items) {
@@ -620,7 +633,7 @@ function renderWarnings(items) {
       warnings.hidden = warnings.children.length === 0;
     };
     toast.querySelector("button")?.addEventListener("click", removeToast);
-    warningToastTimers.push(setTimeout(removeToast, 30_000));
+    warningToastTimers.push(setTimeout(removeToast, 15_000));
     warnings.appendChild(toast);
   }
 }
@@ -642,6 +655,34 @@ function compactRefreshMessage(data) {
 
 function render(data, query, requestId) {
   if (requestId !== activeQueryRequestId) return false;
+  app.classList.add("has-answer");
+  let monthlySummary = document.querySelector('#monthlySummary');
+  if (!monthlySummary) {
+    monthlySummary = document.createElement('div'); monthlySummary.id = 'monthlySummary'; monthlySummary.className = 'table-wrap';
+    document.querySelector('#rowChart').before(monthlySummary);
+  }
+  const periodTotal = (data.trend ?? []).reduce((sum, item) => sum + Number(item.count ?? 0), 0);
+  monthlySummary.innerHTML = data.trend?.length ? `<table class="monthly-summary"><caption class="sr-only">Monthly registration totals, period share, and change from the previous available month</caption><thead><tr><th scope="col">Month</th><th scope="col">Registrations</th><th scope="col">Share of period</th><th scope="col">Change</th></tr></thead><tbody>${data.trend.map((item,index) => {
+    const previous = data.trend[index-1];
+    const date = new Date(`${item.month}-01T00:00:00Z`); date.setUTCMonth(date.getUTCMonth()-1);
+    const consecutive = previous?.month === date.toISOString().slice(0,7);
+    const change = consecutive && previous.count > 0 ? `${((item.count/previous.count-1)*100).toFixed(1)}%` : '—';
+    const share = periodTotal ? `${(item.count / periodTotal * 100).toFixed(1)}%` : '—';
+    return `<tr class="monthly-evidence-row" data-month="${escapeAttribute(item.month)}" tabindex="0"><th scope="row">${escapeHtml(displayMonth(item.month))}</th><td>${fmt.format(item.count)}</td><td>${share}</td><td>${change}</td></tr>`;
+  }).join('')}</tbody></table>` : '';
+  monthlySummary.querySelectorAll('.monthly-evidence-row').forEach((row) => {
+    row.addEventListener('click', () => setFuelMixSelection(selectedDistributionMonth === row.dataset.month ? null : row.dataset.month));
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); row.click(); }
+    });
+  });
+  const scope = data.filters ?? {};
+  const scopeItems = [
+    ['geography', scope.state || 'All India'], ['geography', scope.rto || 'All RTOs'],
+    ['geography', scope.from && scope.to ? `${displayMonth(scope.from)} – ${displayMonth(scope.to)}` : 'All saved months'],
+    ['vehicle', selectedVehicleCategoryText(scope)], ['fuel', selectedFuelLabelText(scope)],
+  ];
+  document.querySelector('#scopeSummary').innerHTML = scopeItems.map(([section,label]) => `<button type="button" class="scope-chip" data-filter-section="${section}">${escapeHtml(label)}</button>`).join('');
   latestResult = Object.freeze({ query, data, requestId });
   persistLatestResult(latestResult);
   latestData = data;
@@ -654,7 +695,7 @@ function render(data, query, requestId) {
   const waitingForExactSideFilterRows = status === "refreshing" && hasSideFilterContext(data.filters) && !(data.rows?.length ?? 0);
   const showMetricNumbers = status !== "missing" && status !== "fetch_failed" && !waitingForExactSideFilterRows;
   setMetricDisplay("total", data.summary.total, { trusted: showMetricNumbers });
-  setMetricDisplay("average", data.summary.monthlyAverage, { trusted: showMetricNumbers });
+  setMetricDisplay("average", Math.round(data.summary.monthlyAverage), { trusted: showMetricNumbers });
   setMetricDisplay("rowCount", data.rows.length, { trusted: showMetricNumbers });
 
   setText(
@@ -669,8 +710,8 @@ function render(data, query, requestId) {
 
   const scraperMessage = data.scraper?.autoTriggered
     ? data.scraper.success
-      ? [`Auto-scraped missing Public Dashboard data for ${data.scraper.runs.map((run) => `${run.year}`).join(", ")} before answering.`]
-      : [`Public Dashboard fetch failed for ${data.scraper.failedRuns?.length ?? 0} run(s). Results may be missing or stale.`]
+      ? [`Auto-scraped missing VAHAN data for ${data.scraper.runs.map((run) => `${run.year}`).join(", ")} before answering.`]
+      : [`Live VAHAN fetch failed for ${data.scraper.failedRuns?.length ?? 0} run(s). Results may be missing or stale.`]
     : [];
   const statusMessage =
     data.dataStatus === "fetch_failed"
@@ -678,7 +719,7 @@ function render(data, query, requestId) {
       : data.dataStatus === "stale"
         ? ["Showing stale local data because the live fetch failed."]
         : data.dataStatus === "live"
-          ? ["Showing freshly scraped Public Dashboard data while it is saved in the background."]
+          ? ["Showing freshly scraped VAHAN data while it is saved in the background."]
         : data.dataStatus === "refreshing"
           ? [compactRefreshMessage(data)]
         : data.dataStatus === "partial"
@@ -826,10 +867,11 @@ function buildTrendLineChart(trend = [], options = {}) {
   }
 
   const compact = Boolean(options.compact);
-  const width = compact ? Math.max(900, trend.length * 80) : Math.max(860, trend.length * 72);
-  const height = compact ? 400 : 280;
+  const narrow = compact && window.matchMedia('(max-width:767px)').matches;
+  const width = compact ? Math.max(320, document.querySelector('#trend')?.clientWidth || 900) : Math.max(860, trend.length * 72);
+  const height = compact ? (narrow ? 260 : 320) : 280;
   const padding = compact
-    ? { top: 58, right: 132, bottom: 70, left: 88 }
+    ? { top: 36, right: 24, bottom: 36, left: 48 }
     : { top: 42, right: 104, bottom: 50, left: 78 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
@@ -859,8 +901,8 @@ function buildTrendLineChart(trend = [], options = {}) {
     `The highest month was ${displayMonth(peakItem.month)} with ${fmt.format(peakItem.count)} registrations.`;
   const averageLabel = `Avg ${compactChartNumber(average)}`;
   const averageChipWidth = Math.max(70, averageLabel.length * 7 + 18);
-  const averageChipX = padding.left + plotWidth + 10;
-  const averageChipY = clampChartValue(averageY - 12, padding.top + 4, padding.top + plotHeight - 28);
+  const averageChipX = compact ? padding.left : padding.left + plotWidth + 10;
+  const averageChipY = compact ? 2 : clampChartValue(averageY - 12, padding.top + 4, padding.top + plotHeight - 28);
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
     const y = padding.top + plotHeight - ratio * plotHeight;
     const value = Math.round(max * ratio);
@@ -872,7 +914,7 @@ function buildTrendLineChart(trend = [], options = {}) {
   const labels = trend.map((item, index) => {
     const x = xFor(index);
     const y = yFor(item.count);
-    const isImportant = importantIndexes.has(index);
+    const isImportant = importantIndexes.has(index) && (!narrow || index === peakIndex);
     const pointClass = [
       "line-point",
       index === peakIndex ? "peak-point" : "",
@@ -882,14 +924,15 @@ function buildTrendLineChart(trend = [], options = {}) {
     const labelX = index === 0 ? x + 8 : index === lastIndex ? x - 8 : x;
     const labelY = clampChartValue(y - 13, padding.top - 8, padding.top + plotHeight - 10);
     const xLabel = shortMonthLabel(item.month, !compact && (index === 0 || index === lastIndex));
+    const showTick = index === lastIndex || index % Math.max(1, Math.ceil(trend.length / (narrow ? 5 : 12))) === 0;
     return `
       <g class="trend-month-hit" data-month="${escapeAttribute(item.month)}" tabindex="0" role="button" aria-label="Show fuel mix for ${escapeAttribute(displayMonth(item.month))}">
-        <rect class="trend-month-hit-target" x="${x - 30}" y="${padding.top}" width="60" height="${plotHeight + 42}" fill="transparent" />
+        <rect class="trend-month-hit-target" x="${x - Math.min(30, plotWidth / trend.length / 2)}" y="${padding.top}" width="${Math.min(60, plotWidth / trend.length)}" height="${plotHeight + 24}" fill="transparent" />
         <circle cx="${x}" cy="${y}" r="${index === peakIndex || index === lastIndex ? 5.5 : 4.5}" class="${pointClass}">
           <title>${escapeHtml(displayMonth(item.month))}: ${fmt.format(item.count)} registrations</title>
         </circle>
         ${isImportant ? `<text x="${labelX}" y="${labelY}" class="point-label" text-anchor="${labelAnchor}">${fmt.format(item.count)}</text>` : ""}
-        <text x="${x}" y="${height - 18}" class="axis-label x-axis-label" text-anchor="middle">${escapeHtml(xLabel)}</text>
+        ${showTick ? `<text x="${x}" y="${height - 10}" class="axis-label x-axis-label" text-anchor="middle">${escapeHtml(xLabel)}</text>` : ''}
       </g>
     `;
   }).join("");
@@ -897,7 +940,7 @@ function buildTrendLineChart(trend = [], options = {}) {
   return `
     <p class="chart-summary">${escapeHtml(chartSummary)}</p>
     <div class="${compact ? "dashboard-line-chart-wrap" : "line-chart-wrap"}">
-      <svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly registrations line chart">
+      <svg class="line-chart" viewBox="0 0 ${width} ${height}" role="${compact ? 'group' : 'img'}" aria-label="Monthly registrations line chart">
         <rect x="0" y="0" width="${width}" height="${height}" rx="10" class="chart-bg" />
         <polygon points="${areaPoints}" class="line-area" />
         ${gridLines}
@@ -986,6 +1029,8 @@ function openPrintableReport() {
             tr { break-inside: avoid; }
           }
         </style>
+        <link rel="stylesheet" href="/report-theme.css">
+        <style>@font-face{font-family:"Plus Jakarta Sans";src:url('/fonts/plus-jakarta-sans.ttf') format('truetype');font-weight:200 800}</style>
       </head>
       <body>
         <h1>VAHAN Registration Report</h1>
@@ -1024,7 +1069,7 @@ function openPrintableReport() {
 
 /* API Call */
 
-async function runQuery(query) {
+async function runQuery(query, payload = { query }) {
   activeRefreshJobId = null;
   activeQueryController?.abort();
   const requestId = ++activeQueryRequestId;
@@ -1036,7 +1081,7 @@ async function runQuery(query) {
       method: "POST",
       cache: "no-store",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
     if (requestId !== activeQueryRequestId) return { status: "stale", requestId };
@@ -1104,7 +1149,15 @@ async function pollLiveRefresh(jobId, requestId, query) {
 
     if (requestId === activeQueryRequestId && activeRefreshJobId === jobId) {
       activeRefreshJobId = null;
-      render(data, query, requestId);
+      // A refresh response may update monthly rows without carrying the
+      // optional chart payload. Preserve the chart already shown for this
+      // query instead of replacing it with the aggregate ALL fallback.
+      render({
+        ...data,
+        fuelBreakdown: data.fuelBreakdown?.length && !(data.fuelBreakdown.length === 1 && data.fuelBreakdown[0]?.fuelType === "ALL")
+          ? data.fuelBreakdown
+          : latestData?.fuelBreakdown ?? [],
+      }, query, requestId);
     }
     return;
   }
@@ -1129,51 +1182,71 @@ async function pollLiveRefresh(jobId, requestId, query) {
 
 /* Events */
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const query = input.value.trim();
-  if (!query) {
-    renderWarnings(["Enter a query before running the dashboard."]);
-    input.focus();
-    return;
-  }
-  input.value = query;
+async function submitAnswer(payload, label) {
   const submissionToken = Symbol("query submission");
   activeSubmissionToken = submissionToken;
-  latestResult = null;
-  setText("answerHeading", `Loading evidence for “${query}”`);
   app.classList.add("loading");
-  setExportButtonsEnabled(false);
+  app.setAttribute("aria-busy", "true");
   submitBtn.disabled = true;
-  submitBtn.querySelector(".btn-text").textContent = "Loading answer...";
-  renderWarnings([
-    "Working on it. Saved data will appear first, then missing or latest months will refresh from VAHAN.",
-  ]);
-  try {
-    await runQuery(query);
-  } catch (error) {
-    if (activeSubmissionToken === submissionToken) {
-      renderWarnings([error.message]);
-      app.classList.remove("loading");
-    }
-  } finally {
+  submitBtn.querySelector(".btn-text").textContent = "Loading answer…";
+  renderWarnings([latestResult ? "Loading the new scope. The previous answer and its exports remain available below." : "Loading registrations for your scope…"]);
+  try { await runQuery(label, payload); }
+  catch (error) { if (activeSubmissionToken === submissionToken) renderWarnings([error.message]); throw error; }
+  finally {
     if (activeSubmissionToken === submissionToken) {
       activeSubmissionToken = null;
-      submitBtn.disabled = false;
-      submitBtn.querySelector(".btn-text").textContent = "Show registrations";
+      app.classList.remove("loading"); app.removeAttribute("aria-busy");
+      submitBtn.disabled = false; submitBtn.querySelector(".btn-text").textContent = "Run query";
     }
+  }
+}
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = input.value.trim();
+  if (!query) { renderWarnings(["Enter a query before running the dashboard."]); input.focus(); return; }
+  input.value = query;
+  submitAnswer({query},query).catch(() => {});
+});
+const editScope = (section) => VahanUI.openFilters({
+  filters: latestData?.filters ?? {}, section,
+  onApply: (filters) => submitAnswer({filters},VahanUI.describeScope(filters)),
+});
+document.querySelector('#openFilters').addEventListener('click', () => editScope());
+document.querySelector('#scopeSummary').addEventListener('click', (event) => { const button = event.target.closest('[data-filter-section]'); if (button) editScope(button.dataset.filterSection); });
+document.querySelector('#resetFuelSelection').addEventListener('click', () => setFuelMixSelection(null));
+document.querySelector('#toggleEvidence').addEventListener('click', (event) => {
+  const expanded = document.querySelector('#tablePanel').classList.toggle('expanded');
+  event.currentTarget.textContent = expanded ? 'Show fewer months' : 'View all months';
+  event.currentTarget.setAttribute('aria-expanded',String(expanded));
+});
+downloadMenuBtn.addEventListener('click', () => downloadMenuBtn.setAttribute('aria-expanded',String(downloadMenu.classList.toggle('open'))));
+document.addEventListener('click', (event) => { if (!downloadMenu.contains(event.target)) { downloadMenu.classList.remove('open'); downloadMenuBtn.setAttribute('aria-expanded','false'); } });
+downloadMenu.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') { downloadMenu.classList.remove('open'); downloadMenuBtn.setAttribute('aria-expanded','false'); downloadMenuBtn.focus(); }
+  if (['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
+    event.preventDefault();
+    const items = [...downloadMenu.querySelectorAll('[role=menuitem]:not(:disabled)')];
+    if (!items.length) return;
+    downloadMenu.classList.add('open'); downloadMenuBtn.setAttribute('aria-expanded','true');
+    const current = items.indexOf(document.activeElement);
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (current + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+    items[index].focus();
   }
 });
 
 downloadCsvBtn.addEventListener("click", downloadCurrentCsv);
 downloadPdfBtn.addEventListener("click", openPrintableReport);
-downloadMenu?.addEventListener("mouseenter", () => downloadMenuBtn?.setAttribute("aria-expanded", "true"));
-downloadMenu?.addEventListener("mouseleave", () => downloadMenuBtn?.setAttribute("aria-expanded", "false"));
-downloadMenu?.addEventListener("focusin", () => downloadMenuBtn?.setAttribute("aria-expanded", "true"));
 downloadMenu?.addEventListener("focusout", (event) => {
   if (!downloadMenu.contains(event.relatedTarget)) {
+    downloadMenu.classList.remove('open');
     downloadMenuBtn?.setAttribute("aria-expanded", "false");
   }
+});
+
+let chartResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(chartResizeTimer);
+  chartResizeTimer = setTimeout(() => { if (latestData) renderTrend(latestData.trend); }, 100);
 });
 
 dashboardModeButtons.forEach((button) => {
@@ -1284,7 +1357,15 @@ if (initialQuery) {
 } else {
   const savedResult = readPersistedResult();
   if (savedResult) {
-    input.value = savedResult.query;
-    render(savedResult.data, savedResult.query, ++activeQueryRequestId);
+    const savedStructured = savedResult.data.filters?.aiProvider === "Filter editor";
+    input.value = savedStructured ? "" : savedResult.query;
+    if (savedResult.data.liveRefresh?.status === "pending") {
+      runQuery(savedResult.query, savedStructured ? {filters:VahanUI.editableScope(savedResult.data.filters)} : {query:savedResult.query}).catch((error) => {
+        renderWarnings([error.message]);
+        app.classList.remove("loading");
+      });
+    } else {
+      render(savedResult.data, savedResult.query, ++activeQueryRequestId);
+    }
   }
 }

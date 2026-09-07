@@ -1,0 +1,2317 @@
+{
+  "generatedAt": "2026-09-05T16:40:21.254Z",
+  "updatedAt": "2026-09-05T16:42:17.875Z",
+  "input": "reports/bulk-query-supported-retry-2026-09-05.input.json",
+  "sourceReport": null,
+  "mode": "live",
+  "health": {
+    "status": "ok",
+    "storage": "postgres",
+    "rowCount": 18896,
+    "latestMonth": "2026-09",
+    "source": "VAHAN public dashboard aggregate data",
+    "database": {
+      "status": "ok"
+    },
+    "liveRefreshDisabled": false,
+    "queryRouting": {
+      "configuredMode": "enforced",
+      "since": "2026-09-05T16:40:19.610Z",
+      "totalQueries": 0,
+      "requestsByMode": {
+        "shadow": 0,
+        "enforced": 0
+      },
+      "decisions": {
+        "local": 0,
+        "repair": 0,
+        "reject": 0
+      },
+      "outcomes": {
+        "localDeterministicSuccesses": 0,
+        "groqAssistedSuccesses": 0,
+        "rejected": 0,
+        "unsupportedRejected": 0,
+        "conflictRejected": 0,
+        "clarificationRequired": 0
+      },
+      "groq": {
+        "repairDemand": 0,
+        "invocations": 0,
+        "quotaRateLimitEvents": 0,
+        "plansValidated": 0,
+        "postValidationFailures": 0,
+        "deterministicComparisons": 0,
+        "deterministicDisagreements": 0
+      },
+      "fuzzy": {
+        "candidates": 0,
+        "accepted": 0
+      },
+      "rates": {
+        "localDeterministicSuccess": null,
+        "groqInvocation": null,
+        "groqQuotaRateLimitEvent": null,
+        "clarificationRequired": null,
+        "fuzzyCorrectionAcceptance": null,
+        "postGroqValidationFailure": null,
+        "deterministicGroqDisagreement": null
+      }
+    },
+    "queryAgent": {
+      "enabled": false,
+      "storage": "available",
+      "counts": {}
+    }
+  },
+  "count": 8,
+  "queue": [
+    {
+      "index": 1,
+      "label": "Bulk 12 retry",
+      "query": "Show the number of BS VI CNG taxis registered in West Bengal in December 2024.",
+      "expect": {}
+    },
+    {
+      "index": 2,
+      "label": "Bulk 73 retry",
+      "query": "Show the monthly registration count of BS VI hybrid cars in Karnataka for 2025.",
+      "expect": {}
+    },
+    {
+      "index": 3,
+      "label": "Bulk 87 retry",
+      "query": "Show the registration count of BS VI diesel ambulances across all RTOs in Rajasthan in 2024.",
+      "expect": {}
+    },
+    {
+      "index": 4,
+      "label": "Bulk 91 retry",
+      "query": "How many electric two-wheelers were registered in Delhi in January 2026, with the emission norm marked as not applicable?",
+      "expect": {}
+    },
+    {
+      "index": 5,
+      "label": "Bulk 94 retry",
+      "query": "Give the registration count of electric buses in Karnataka from April 2025 to March 2026 where the emission norm is not applicable.",
+      "expect": {}
+    },
+    {
+      "index": 6,
+      "label": "Bulk 96 retry",
+      "query": "How many hydrogen fuel-cell buses were registered in Delhi during 2025 with the emission norm marked as not applicable?",
+      "expect": {}
+    },
+    {
+      "index": 7,
+      "label": "Bulk 97 retry",
+      "query": "Find the registration count of BS VI ethanol cars in Uttar Pradesh from January to December 2025.",
+      "expect": {}
+    },
+    {
+      "index": 8,
+      "label": "Bulk 99 retry",
+      "query": "How many BS VI methanol buses were registered in Maharashtra between January and June 2026?",
+      "expect": {}
+    }
+  ],
+  "summary": {
+    "completed": 8,
+    "passed": 0,
+    "failed": 8,
+    "okResponses": 8,
+    "refreshed": 8,
+    "refreshCompleted": 0,
+    "refreshFailed": 8,
+    "nonZeroRows": 0,
+    "byCategory": {
+      "pass": 0,
+      "parser_mismatch": 0,
+      "data_missing": 0,
+      "scrape_failed": 8,
+      "api_server_error": 0
+    },
+    "averageDurationMs": 14572
+  },
+  "results": [
+    {
+      "index": 1,
+      "label": "Bulk 12 retry",
+      "query": "Show the number of BS VI CNG taxis registered in West Bengal in December 2024.",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 1020,
+      "refreshDurationMs": 10033,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "CNG",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "MOTOR CAB"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "West Bengal",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "West Bengal"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2024-12",
+        "to": "2024-12",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "CNG ONLY"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAB"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched CNG ONLY fuel; MOTOR CAB class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2024,
+            "months": [
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2024 months 12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2024,
+            "months": [
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "1",
+        "status": "failed",
+        "requiredMonths": [
+          "2024-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 129,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "CNG",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "MOTOR CAB"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "West Bengal",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "West Bengal"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2024-12",
+          "to": "2024-12",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "CNG ONLY"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "MOTOR CAB"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched CNG ONLY fuel; MOTOR CAB class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2024,
+              "months": [
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2024 months 12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2024,
+              "months": [
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "1",
+          "status": "failed",
+          "requiredMonths": [
+            "2024-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 129,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states West Bengal --years 2024 --months 12 --fuels CNG ONLY --norms BHARAT STAGE VI --vehicle-classes MOTOR CAB\n[scraper] direct attempt 1/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 2/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\n[scraper] direct attempt 3/3 failed for 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nFailed: 2024 West Bengal All RTOs: Public dashboard returned no monthly values for CNG ONLY.\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:40:32.313Z"
+    },
+    {
+      "index": 2,
+      "label": "Bulk 73 retry",
+      "query": "Show the monthly registration count of BS VI hybrid cars in Karnataka for 2025.",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 586,
+      "refreshDurationMs": 15053,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": null,
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Karnataka"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2025-01",
+        "to": "2025-12",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL/HYBRID",
+          "PETROL(E20)/HYBRID",
+          "PETROL(E20)/HYBRID/CNG",
+          "PETROL/HYBRID",
+          "PETROL/HYBRID/CNG",
+          "PLUG-IN HYBRID EV",
+          "STRONG HYBRID EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "2",
+        "status": "failed",
+        "requiredMonths": [
+          "2025-01",
+          "2025-02",
+          "2025-03",
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 130,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": null,
+          "fuelType": null,
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "MOTOR CAR"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "Karnataka",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Karnataka"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2025-01",
+          "to": "2025-12",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "DIESEL/HYBRID",
+            "PETROL(E20)/HYBRID",
+            "PETROL(E20)/HYBRID/CNG",
+            "PETROL/HYBRID",
+            "PETROL/HYBRID/CNG",
+            "PLUG-IN HYBRID EV",
+            "STRONG HYBRID EV"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "MOTOR CAR"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched DIESEL/HYBRID, PETROL(E20)/HYBRID, PETROL(E20)/HYBRID/CNG, PETROL/HYBRID, PETROL/HYBRID/CNG, PLUG-IN HYBRID EV, STRONG HYBRID EV fuel; MOTOR CAR class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "2",
+          "status": "failed",
+          "requiredMonths": [
+            "2025-01",
+            "2025-02",
+            "2025-03",
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 130,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels DIESEL/HYBRID,PETROL(E20)/HYBRID,PETROL(E20)/HYBRID/CNG,PETROL/HYBRID,PETROL/HYBRID/CNG,PLUG-IN HYBRID EV,STRONG HYBRID EV --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for PETROL(E20)/HYBRID/CNG.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:40:47.958Z"
+    },
+    {
+      "index": 3,
+      "label": "Bulk 87 retry",
+      "query": "Show the registration count of BS VI diesel ambulances across all RTOs in Rajasthan in 2024.",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 1913,
+      "refreshDurationMs": 10010,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "AMBULANCE"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "Rajasthan",
+        "rto": "All Vahan4 Running Office",
+        "locationText": "all rtos",
+        "locationSource": "exact_city",
+        "locationError": null,
+        "matchedLocations": [
+          "Rajasthan"
+        ],
+        "matchedRtoAliases": [
+          "all rtos"
+        ],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2024-01",
+        "to": "2024-12",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "AMBULANCE"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; AMBULANCE class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoSearch": null,
+        "unresolvedLocation": null,
+        "rtoResolution": {
+          "status": "resolved",
+          "rto": "All Vahan4 Running Office",
+          "method": "all-rtos"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2024,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2024 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2024,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "3",
+        "status": "failed",
+        "requiredMonths": [
+          "2024-01",
+          "2024-02",
+          "2024-03",
+          "2024-04",
+          "2024-05",
+          "2024-06",
+          "2024-07",
+          "2024-08",
+          "2024-09",
+          "2024-10",
+          "2024-11",
+          "2024-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 131,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "DIESEL",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "AMBULANCE"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "Rajasthan",
+          "rto": "All Vahan4 Running Office",
+          "locationText": "all rtos",
+          "locationSource": "exact_city",
+          "locationError": null,
+          "matchedLocations": [
+            "Rajasthan"
+          ],
+          "matchedRtoAliases": [
+            "all rtos"
+          ],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2024-01",
+          "to": "2024-12",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "DIESEL"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "AMBULANCE"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched DIESEL fuel; AMBULANCE class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoSearch": null,
+          "unresolvedLocation": null,
+          "rtoResolution": {
+            "status": "resolved",
+            "rto": "All Vahan4 Running Office",
+            "method": "all-rtos"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2024,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2024 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2024,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "3",
+          "status": "failed",
+          "requiredMonths": [
+            "2024-01",
+            "2024-02",
+            "2024-03",
+            "2024-04",
+            "2024-05",
+            "2024-06",
+            "2024-07",
+            "2024-08",
+            "2024-09",
+            "2024-10",
+            "2024-11",
+            "2024-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 131,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Rajasthan --years 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12 --rtos All Vahan4 Running Office --fuels DIESEL --norms BHARAT STAGE VI --vehicle-classes AMBULANCE\n[scraper] direct attempt 1/3 failed for 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nFailed: 2024 Rajasthan All Vahan4 Running Office: Could not find public-dashboard RTO \"All Vahan4 Running Office\".\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:40:59.884Z"
+    },
+    {
+      "index": 4,
+      "label": "Bulk 91 retry",
+      "query": "How many electric two-wheelers were registered in Delhi in January 2026, with the emission norm marked as not applicable?",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 453,
+      "refreshDurationMs": 15041,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [
+          "TWO WHEELER(NT)",
+          "TWO WHEELER(T)"
+        ],
+        "vehicleClasses": [],
+        "norms": [
+          "NOT APPLICABLE"
+        ],
+        "state": "Delhi",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Delhi"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2026-01",
+        "to": "2026-01",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [],
+        "selectedVehicleCategories": [
+          "TWO WHEELER(NT)",
+          "TWO WHEELER(T)"
+        ],
+        "selectedNorms": [
+          "NOT APPLICABLE"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TWO WHEELER(NT), TWO WHEELER(T) category",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2026,
+            "months": [
+              1
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2026 months 1: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2026,
+            "months": [
+              1
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "4",
+        "status": "failed",
+        "requiredMonths": [
+          "2026-01"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 132,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "EV",
+          "fuelType": null,
+          "fuelFilters": [],
+          "vehicleCategories": [
+            "TWO WHEELER(NT)",
+            "TWO WHEELER(T)"
+          ],
+          "vehicleClasses": [],
+          "norms": [
+            "NOT APPLICABLE"
+          ],
+          "state": "Delhi",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Delhi"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2026-01",
+          "to": "2026-01",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "ELECTRIC(BOV)",
+            "PURE EV"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [],
+          "selectedVehicleCategories": [
+            "TWO WHEELER(NT)",
+            "TWO WHEELER(T)"
+          ],
+          "selectedNorms": [
+            "NOT APPLICABLE"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; TWO WHEELER(NT), TWO WHEELER(T) category",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2026,
+              "months": [
+                1
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2026 months 1: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2026,
+              "months": [
+                1
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "4",
+          "status": "failed",
+          "requiredMonths": [
+            "2026-01"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 132,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2026 --months 1 --fuels ELECTRIC(BOV),PURE EV --vehicle-categories TWO WHEELER(NT),TWO WHEELER(T) --norms NOT APPLICABLE\n[scraper] direct attempt 1/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Delhi All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 1 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:41:15.382Z"
+    },
+    {
+      "index": 5,
+      "label": "Bulk 94 retry",
+      "query": "Give the registration count of electric buses in Karnataka from April 2025 to March 2026 where the emission norm is not applicable.",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 496,
+      "refreshDurationMs": 25074,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "EV",
+        "fuelType": null,
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "norms": [
+          "NOT APPLICABLE"
+        ],
+        "state": "Karnataka",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Karnataka"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2025-04",
+        "to": "2026-03",
+        "dateError": null,
+        "dateInterpretation": "2025-04 to 2026-03",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ELECTRIC(BOV)",
+          "PURE EV"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "NOT APPLICABLE"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2025,
+            "months": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          },
+          {
+            "year": 2026,
+            "months": [
+              1,
+              2,
+              3
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2026 --months 1,2,3 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 3 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2025 months 4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n; 2026 months 1,2,3: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2026 --months 1,2,3 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 3 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2025,
+            "months": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          },
+          {
+            "year": 2026,
+            "months": [
+              1,
+              2,
+              3
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "5",
+        "status": "failed",
+        "requiredMonths": [
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12",
+          "2026-01",
+          "2026-02",
+          "2026-03"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 133,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "EV",
+          "fuelType": null,
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "BUS"
+          ],
+          "norms": [
+            "NOT APPLICABLE"
+          ],
+          "state": "Karnataka",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Karnataka"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2025-04",
+          "to": "2026-03",
+          "dateError": null,
+          "dateInterpretation": "2025-04 to 2026-03",
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "ELECTRIC(BOV)",
+            "PURE EV"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "BUS"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "NOT APPLICABLE"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched ELECTRIC(BOV), PURE EV fuel; BUS class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2025,
+              "months": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            },
+            {
+              "year": 2026,
+              "months": [
+                1,
+                2,
+                3
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2026 --months 1,2,3 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 3 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2025 months 4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n; 2026 months 1,2,3: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2026 --months 1,2,3 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2026 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 3 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2025,
+              "months": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            },
+            {
+              "year": 2026,
+              "months": [
+                1,
+                2,
+                3
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "5",
+          "status": "failed",
+          "requiredMonths": [
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12",
+            "2026-01",
+            "2026-02",
+            "2026-03"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 133,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Karnataka --years 2025 --months 4,5,6,7,8,9,10,11,12 --fuels ELECTRIC(BOV),PURE EV --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 2/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\n[scraper] direct attempt 3/3 failed for 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nFailed: 2025 Karnataka All RTOs: Public dashboard returned no monthly values for ELECTRIC(BOV).\nError: 9 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:41:40.956Z"
+    },
+    {
+      "index": 6,
+      "label": "Bulk 96 retry",
+      "query": "How many hydrogen fuel-cell buses were registered in Delhi during 2025 with the emission norm marked as not applicable?",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 797,
+      "refreshDurationMs": 15025,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "FUEL CELL HYDROGEN",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "norms": [
+          "NOT APPLICABLE"
+        ],
+        "state": "Delhi",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Delhi"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2025-01",
+        "to": "2025-12",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "FUEL CELL HYDROGEN"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "NOT APPLICABLE"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched FUEL CELL HYDROGEN fuel; BUS class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "6",
+        "status": "failed",
+        "requiredMonths": [
+          "2025-01",
+          "2025-02",
+          "2025-03",
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 134,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "FUEL CELL HYDROGEN",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "BUS"
+          ],
+          "norms": [
+            "NOT APPLICABLE"
+          ],
+          "state": "Delhi",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Delhi"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2025-01",
+          "to": "2025-12",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "FUEL CELL HYDROGEN"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "BUS"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "NOT APPLICABLE"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched FUEL CELL HYDROGEN fuel; BUS class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "6",
+          "status": "failed",
+          "requiredMonths": [
+            "2025-01",
+            "2025-02",
+            "2025-03",
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 134,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Delhi --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels FUEL CELL HYDROGEN --norms NOT APPLICABLE --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 2/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\n[scraper] direct attempt 3/3 failed for 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nFailed: 2025 Delhi All RTOs: Public dashboard returned no monthly values for FUEL CELL HYDROGEN.\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:41:56.784Z"
+    },
+    {
+      "index": 7,
+      "label": "Bulk 97 retry",
+      "query": "Find the registration count of BS VI ethanol cars in Uttar Pradesh from January to December 2025.",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 528,
+      "refreshDurationMs": 10014,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "ETHANOL(E100)",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "Uttar Pradesh",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Uttar Pradesh"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2025-01",
+        "to": "2025-12",
+        "dateError": null,
+        "dateInterpretation": "january to december 2025",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "ETHANOL(E100)"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "MOTOR CAR"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched ETHANOL(E100) fuel; MOTOR CAR class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2025,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "7",
+        "status": "failed",
+        "requiredMonths": [
+          "2025-01",
+          "2025-02",
+          "2025-03",
+          "2025-04",
+          "2025-05",
+          "2025-06",
+          "2025-07",
+          "2025-08",
+          "2025-09",
+          "2025-10",
+          "2025-11",
+          "2025-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 135,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "ETHANOL(E100)",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "MOTOR CAR"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "Uttar Pradesh",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Uttar Pradesh"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2025-01",
+          "to": "2025-12",
+          "dateError": null,
+          "dateInterpretation": "january to december 2025",
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "ETHANOL(E100)"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "MOTOR CAR"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched ETHANOL(E100) fuel; MOTOR CAR class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2025 months 1,2,3,4,5,6,7,8,9,10,11,12: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2025,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "7",
+          "status": "failed",
+          "requiredMonths": [
+            "2025-01",
+            "2025-02",
+            "2025-03",
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 135,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Uttar Pradesh --years 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12 --fuels ETHANOL(E100) --norms BHARAT STAGE VI --vehicle-classes MOTOR CAR\n[scraper] direct attempt 1/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 2/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\n[scraper] direct attempt 3/3 failed for 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nFailed: 2025 Uttar Pradesh All RTOs: Public dashboard returned no monthly values for ETHANOL(E100).\nError: 12 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:42:07.331Z"
+    },
+    {
+      "index": 8,
+      "label": "Bulk 99 retry",
+      "query": "How many BS VI methanol buses were registered in Maharashtra between January and June 2026?",
+      "expect": {},
+      "ok": true,
+      "passed": false,
+      "category": "scrape_failed",
+      "status": 200,
+      "durationMs": 517,
+      "refreshDurationMs": 10017,
+      "dataStatus": "fetch_failed",
+      "rowCount": 0,
+      "total": 0,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "METHANOL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "BUS"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "Maharashtra",
+        "rto": null,
+        "locationText": null,
+        "locationSource": "state",
+        "locationError": null,
+        "matchedLocations": [
+          "Maharashtra"
+        ],
+        "matchedRtoAliases": [],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2026-01",
+        "to": "2026-06",
+        "dateError": null,
+        "dateInterpretation": "january and june 2026",
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "METHANOL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "BUS"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched METHANOL fuel; BUS class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoResolution": {
+          "status": "none"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": false,
+        "rowsScraped": 0,
+        "failedRuns": [
+          {
+            "year": 2026,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+          }
+        ],
+        "errorSummary": "2026 months 1,2,3,4,5,6: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+        "runs": [
+          {
+            "year": 2026,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "success": false,
+            "rowsScraped": 0
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "8",
+        "status": "failed",
+        "requiredMonths": [
+          "2026-01",
+          "2026-02",
+          "2026-03",
+          "2026-04",
+          "2026-05",
+          "2026-06"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 136,
+        "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+      },
+      "warnings": [
+        "Public Dashboard refresh did not complete. Results may still be incomplete.",
+        "Public Dashboard fetch failed for this query. Results may be missing or stale."
+      ],
+      "issues": [
+        {
+          "type": "scrape_failed",
+          "message": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        }
+      ],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "METHANOL",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "BUS"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "Maharashtra",
+          "rto": null,
+          "locationText": null,
+          "locationSource": "state",
+          "locationError": null,
+          "matchedLocations": [
+            "Maharashtra"
+          ],
+          "matchedRtoAliases": [],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2026-01",
+          "to": "2026-06",
+          "dateError": null,
+          "dateInterpretation": "january and june 2026",
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "METHANOL"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "BUS"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched METHANOL fuel; BUS class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoResolution": {
+            "status": "none"
+          }
+        },
+        "dataStatus": "fetch_failed",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 0,
+          "monthlyAverage": 0,
+          "peakMonth": null,
+          "peakMonthCount": 0
+        },
+        "trend": [],
+        "fuelBreakdown": [],
+        "rows": [],
+        "freshness": {
+          "latestMonth": null,
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": false,
+          "rowsScraped": 0,
+          "failedRuns": [
+            {
+              "year": 2026,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+            }
+          ],
+          "errorSummary": "2026 months 1,2,3,4,5,6: Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n",
+          "runs": [
+            {
+              "year": 2026,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+              ],
+              "success": false,
+              "rowsScraped": 0
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "8",
+          "status": "failed",
+          "requiredMonths": [
+            "2026-01",
+            "2026-02",
+            "2026-03",
+            "2026-04",
+            "2026-05",
+            "2026-06"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 136,
+          "error": "Command failed: C:\\Program Files\\nodejs\\node.exe scripts/vahan-scraper.mjs --mode scrape --no-persist --emit-rows-json --states Maharashtra --years 2026 --months 1,2,3,4,5,6 --fuels METHANOL --norms BHARAT STAGE VI --vehicle-classes BUS\n[scraper] direct attempt 1/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 2/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\n[scraper] direct attempt 3/3 failed for 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nFailed: 2026 Maharashtra All RTOs: Public dashboard returned no monthly values for METHANOL.\nError: 6 scrape item(s) failed. See data\\vahan\\vahan_fuel_monthly_errors.jsonl\n    at scrape (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:1921:13)\n    at async main (file:///C:/Users/amogh/Desktop/BHAIYA/Vahan%20EY/scripts/vahan-scraper.mjs:2064:9)\n"
+        },
+        "refreshContext": null,
+        "warnings": [
+          "Public Dashboard refresh did not complete. Results may still be incomplete.",
+          "Public Dashboard fetch failed for this query. Results may be missing or stale."
+        ]
+      },
+      "completedAt": "2026-09-05T16:42:17.869Z"
+    }
+  ],
+  "status": "complete"
+}

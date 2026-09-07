@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "baselineCommit": null,
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "policy": "Finding IDs may enter this baseline only after manual evidence review. Baseline membership suppresses a previously accepted finding; it never confirms, promotes, or proves introduction of a finding.",
+  "findingIds": []
+}

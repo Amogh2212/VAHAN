@@ -1,0 +1,15 @@
+name: Safe workflow fixture
+
+on:
+  pull_request:
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Treat event text as data
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          printf '%s\n' "$TITLE"
+      - run: echo "fixed command"

@@ -1,253 +1,65 @@
----
-name: VAHAN Analyst
-description: A public-data editorial atlas for Indian vehicle-registration evidence.
-colors:
-  statistical-navy: "#0d3443"
-  statistical-navy-deep: "#082733"
-  signal-marigold: "#f0b429"
-  signal-marigold-hover: "#ffc94f"
-  evidence-teal: "#087a72"
-  evidence-teal-deep: "#075e58"
-  evidence-teal-soft: "#d9eeea"
-  cool-paper: "#eef1ed"
-  white-sheet: "#ffffff"
-  copy: "#1d2d33"
-  muted-copy: "#607077"
-  rule: "#c8d1cd"
-  rule-strong: "#9fada8"
-  warning-ink: "#7d5100"
-  warning-paper: "#fff4d6"
-  danger-ink: "#a33a32"
-  danger-paper: "#fdecea"
-typography:
-  display:
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", Arial, sans-serif'
-    fontSize: "38px"
-    fontWeight: 720
-    lineHeight: 1.08
-    letterSpacing: "-0.025em"
-  headline:
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", Arial, sans-serif'
-    fontSize: "25px"
-    fontWeight: 720
-    lineHeight: 1.5
-    letterSpacing: "-0.02em"
-  title:
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", Arial, sans-serif'
-    fontSize: "17px"
-    fontWeight: 720
-    lineHeight: 1.5
-    letterSpacing: "-0.012em"
-  body:
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", Arial, sans-serif'
-    fontSize: "15px"
-    fontWeight: 400
-    lineHeight: 1.5
-    letterSpacing: "normal"
-  label:
-    fontFamily: '"Segoe UI Variable Text", "Segoe UI", Arial, sans-serif'
-    fontSize: "11px"
-    fontWeight: 800
-    lineHeight: 1.5
-    letterSpacing: "0.075em"
-rounded:
-  track: "1px"
-  tight: "3px"
-  surface: "4px"
-spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "14px"
-  lg: "22px"
-  xl: "30px"
-components:
-  primary-action:
-    backgroundColor: "{colors.signal-marigold}"
-    textColor: "{colors.statistical-navy-deep}"
-    rounded: "{rounded.tight}"
-    padding: "0 22px"
-    height: "54px"
-  primary-action-hover:
-    backgroundColor: "{colors.signal-marigold-hover}"
-    textColor: "{colors.statistical-navy-deep}"
-  secondary-action:
-    backgroundColor: "transparent"
-    textColor: "{colors.white-sheet}"
-    rounded: "{rounded.tight}"
-    padding: "0 16px"
-    height: "40px"
-  query-field:
-    backgroundColor: "{colors.white-sheet}"
-    textColor: "{colors.copy}"
-    rounded: "{rounded.tight}"
-    padding: "0 17px"
-    height: "54px"
-  evidence-panel:
-    backgroundColor: "{colors.white-sheet}"
-    textColor: "{colors.copy}"
-    rounded: "{rounded.surface}"
-    padding: "22px"
-  navigation-active:
-    backgroundColor: "{colors.signal-marigold}"
-    textColor: "{colors.statistical-navy-deep}"
-    rounded: "{rounded.tight}"
-    padding: "0 10px"
-    height: "42px"
-  status-success:
-    backgroundColor: "{colors.evidence-teal-soft}"
-    textColor: "{colors.evidence-teal-deep}"
-    rounded: "{rounded.tight}"
-    padding: "3px 7px"
-  warning-banner:
-    backgroundColor: "{colors.warning-paper}"
-    textColor: "{colors.warning-ink}"
-    rounded: "{rounded.tight}"
-    padding: "12px 16px"
----
+# Vahan Analyst — E: Best-of-System
 
-# Design System: VAHAN Analyst
+Approved visual direction: E from the September 2026 dashboard concepts. This system applies to the overview, comparison, map, daily RTO trends, local insights, tracked queries, RTO reports, monthly reports and printable exports.
 
-## Overview
+## Product expression
 
-**Creative North Star: "The Public-Data Atlas"**
+A calm analytical workspace with white surfaces, violet actions, dark ink and restrained apricot highlights. The answer carries the visual weight. Keep exact scope, availability and source context close to the figures they qualify.
 
-VAHAN Analyst should feel like an independent mobility-research desk: cool paper beneath deep statistical navy, signal marigold reserved for decisive actions, and evidence teal attached to provenance and measured data. The visual voice is calm, exact, and publication-grade. Numbers and their qualifications carry more visual weight than interface decoration.
+The frontend remains vanilla HTML, CSS and JavaScript. `public/styles.css` contains existing component geometry inside a CSS layer. `public/system.css` owns the shared visual system; `public/atlas.css` is a compatibility import. `public/system.js` provides navigation and the staged filter editor.
 
-Operate and Read coexist in this world. Controls are compact and familiar; answers unfold as ruled evidence sheets with their interpretation and reliability close by. Motion only confirms focus, disclosure, and navigation state, and reduced-motion preferences remove it. The system rejects decorative gradients, glass, glows, and walls of interchangeable cards.
+## Shared tokens
 
-**Key Characteristics:**
+| Role | Value | Use |
+| --- | --- | --- |
+| Canvas | #f7f8fa | Page background |
+| Surface | #ffffff | Evidence and control panels |
+| Quiet surface | #f1f2f6 | Tracks and secondary controls |
+| Ink | #182139 | Headings and figures |
+| Supporting text | #586174 | Labels, descriptions and provenance |
+| Violet | #4f46b8 | Primary actions, active routes and main trend |
+| Violet tint | #efedf9 | Ask Vahan dock and selected scope |
+| Apricot | #f6bea5 | Brand mark and annotated peak |
+| Divider | #dde1e8 | Fine separation |
+| Control boundary | #8c91a0 | Inputs and secondary actions |
+| Success | #17684f on #eaf4ef | Confirmed successful state |
+| Warning | #8a5700 on #fff4dc | Partial, stale or bounded evidence |
+| Error | #a33b2b on #fff0eb | Failed or missing evidence |
 
-- Cool paper and white evidence sheets framed by deep statistical navy.
-- Fine rules, flat surfaces, taut corners, and very limited elevation.
-- Tabular figures and explicit labels that keep evidence scannable.
-- Marigold for action, teal for evidence, and semantic colors for exceptions.
-- Responsive composition that preserves content order and access to provenance.
+Use a self-hosted Plus Jakarta Sans variable font for headings and the primary total. Use Segoe UI/system fonts for body copy and tabular figures. Page titles are 32px desktop / 26px mobile; panel titles 18px; body 16px; supporting copy 13–14px. The primary total scales from 32–52px. Monthly averages may be rounded for display; exported data retains its underlying value.
 
-## Colors
+Panels have 12px corners, controls 8px, compact status labels 4px. Prefer borders and spacing to shadows. Reserve shadow for temporary menus and the filter sheet. Typical desktop gaps are 24px with 24px panel padding; mobile uses 16px gutters. No count interpolation, decorative glows, glass or hover lift.
 
-The palette behaves like a printed statistical brief: a dark editorial frame, a pale reading field, and two scarce functional accents.
+## Navigation and composition
 
-### Primary
+Use one horizontal header across routes: Overview, Compare, Map, RTO workspace (Daily trends and Local insights), Reports (RTO and Monthly sales), Tracked queries, and Account. Current routes carry a tinted violet state. At widths below 1200px the navigation opens with a Menu button; Escape closes menus and returns focus.
 
-- **Deep Statistical Navy** (`#0d3443`): anchors branded work surfaces and high-contrast analytical framing.
-- **Index Navy** (`#082733`): provides the deepest navigation ground and primary ink for large figures.
+Overview uses an asymmetric 28/72 layout. The left region holds the primary total, supporting measures and exact fuel composition. The right region holds the trend and monthly evidence. Compact scope chips open the same full editor. Monthly rows expand without changing the answer. Ask Vahan sits below the evidence in document flow; before the first answer and on mobile it moves above the results. It never overlays data or the software keyboard.
 
-### Secondary
+Compare uses two explicit scopes with separate staged editors, exact totals and monthly bars on a shared scale. Do not add the scopes into a combined total: they can overlap. Keep missing months distinct from zero.
 
-- **Signal Marigold** (`#f0b429`): marks the primary action and current navigation location; its brighter hover state is Signal Marigold Hover (`#ffc94f`).
+Map uses a violet sequential scale with neutral missing states. Comparison against India uses an apricot-to-violet diverging scale. Every bucket has a text label; state selection must work by keyboard. Daily trends, insights, tracked queries and report workspaces retain their established workflows inside the shared header and visual tokens.
 
-### Tertiary
+## Scope editor contract
 
-- **Evidence Teal** (`#087a72`): identifies evidence labels, data marks, and provenance-oriented emphasis.
-- **Evidence Teal Deep** (`#075e58`) and **Evidence Teal Soft** (`#d9eeea`): pair for positive, confirmed status treatments.
+The modal sheet stages geography, month range, broad vehicle groups or exact classes/categories, exact fuel labels, fuel family, emission norms and supported exclusions. Cancel and Escape make no query request. Apply submits the whole scope to `/api/query` as `{filters}`; changes are not converted into a new natural-language question. State changes clear incompatible RTO selections. Clear selections preserves the explicitly shown months. Metadata errors are visible and can be retried by reopening the sheet.
 
-### Neutral
+Battery electric means ELECTRIC(BOV) plus PURE EV. An exact label remains exact. Hybrid labels, exclusions and non-EV restrictions must survive reopening. Server validation rejects conflicting or unsupported combinations rather than silently widening the answer. The structured route shares the normal retrieval, refresh and error handling path.
 
-- **Cool Paper** (`#eef1ed`): the application reading field.
-- **White Sheet** (`#ffffff`): fields and evidence panels.
-- **Editorial Copy** (`#1d2d33`) and **Muted Copy** (`#607077`): primary explanation and supporting context.
-- **Rule** (`#c8d1cd`) and **Strong Rule** (`#9fada8`): dividers, panel borders, and structural grouping.
+## Evidence and interaction
 
-### State colors
+Display counts immediately and exactly. A failed or missing response must not be presented as a trustworthy zero. A failed replacement on Overview preserves the previous answer and its matching exports. Only the latest submitted query can replace the result. Put partial/stale/fetch status in plain text beside the answer; chart colors do not imply reliability.
 
-- **Warning Ink** (`#7d5100`) on **Warning Paper** (`#fff4d6`): bounded-data, freshness, and review-required messages.
-- **Danger Ink** (`#a33a32`) on **Danger Paper** (`#fdecea`): failed or unsafe states.
+Month points are interactive by click, Enter and Space and update fuel composition. Responsive charts use fewer visible axis ticks while retaining all observations and accessible month controls. Keep tables in local scroll containers where required, with no page-wide horizontal overflow.
 
-**The Signal Economy Rule.** Marigold denotes a decisive action or current location; it is never background decoration.
+Focus outlines are visible. Dialogs return focus to their opener. Reduced motion removes transitions. Use native buttons, links, details, form labels and dialog semantics. Export menus expose expanded state and close on Escape, outside interaction or focus departure.
 
-**The Evidence Color Rule.** Teal describes provenance, completeness, or plotted evidence and never implies confidence that the data state has not earned.
+## Reports
 
-## Typography
+`public/report-theme.css` and `lib/report-theme.mjs` share the E print treatment. Server-rendered reports embed the font so PDF generation has no remote-font dependency. Use A4 with 14mm margins, repeated table headers, rows that do not split, visible source/quality notes and legible monochrome labels. RTO PDF renderer revision is 3 so previously cached exports cannot retain the discarded theme.
 
-**Display Font:** Segoe UI Variable Text (with Segoe UI, Arial, and sans-serif fallbacks)
+## Verification and reference
 
-**Body Font:** Segoe UI Variable Text (with Segoe UI, Arial, and sans-serif fallbacks)
+The selected composition is `.impeccable/mocks/second-pass-2026-09-06/E-best-of-system.png`. Historical fixture values live in `docs/design/dashboard-second-pass-fixture.csv`; they are design evidence, not a live data verification.
 
-**Label/Mono Font:** No separate mono face; numeric evidence uses tabular figures in the system sans.
-
-**Character:** A neutral civic sans keeps the interface familiar and lets differences in size, weight, and spacing carry the hierarchy. Sentence case dominates; uppercase is reserved for short evidence and section labels.
-
-### Hierarchy
-
-- **Display** (720, `38px`, `1.08`): one concise surface thesis, reducing to `30px` and then `27px` on narrow screens.
-- **Headline** (720, `25px`, `1.5`): the title of an answer or major reading section.
-- **Title** (720, `17px`, `1.5`): panel-level headings that remain descriptive rather than promotional.
-- **Body** (400, `15px`, `1.5`): explanations and reading guidance, generally constrained to about 72 characters per line.
-- **Label** (800, `11px`, `0.075em` letter spacing): short section and evidence labels; uppercase only where it improves scanning.
-
-**The Figures Speak First Rule.** Registration values use strong weight, tabular numerals, and plain ink; never apply gradients, outlines, or novelty display type to data.
-
-## Layout
-
-The spacing rhythm is compact but breathable, using the implemented `4px`, `8px`, `14px`, `22px`, and `30px` steps. Evidence aligns to clear columns on wide screens and becomes a single reading stream on small screens. Summary figures compare across a ruled strip, while panels use consistent internal padding (`22px`) and structural gaps (`14px`).
-
-Atlas-style analytical surfaces may use the dashboard's persistent `244px` route index on wide screens and its compact drawer below `960px`. That pattern is available, not mandatory: each surface brief decides whether a permanent index supports the task. At `720px`, queries, evidence panels, and reliability context stack without changing their semantic order; `420px` tightens typography and controls without hiding evidence.
-
-**The One Reading Order Rule.** Responsive layouts may reflow, but the question, interpretation, trend, detail, and reliability context retain a coherent document order.
-
-## Elevation & Depth
-
-The system is flat by default. White sheets separate from Cool Paper through a one-pixel rule rather than a shadow, and navigation separates through tonal contrast. Elevation is reserved for temporary overlays: export menus use a restrained ambient shadow (`0 16px 36px rgba(8, 39, 51, 0.18)`) and the mobile drawer uses a stronger overlay shadow (`0 24px 54px rgba(8, 39, 51, 0.34)`).
-
-**The Flat Evidence Rule.** Persistent analytical surfaces never float for decoration; borders and tonal fields establish hierarchy at rest.
-
-## Shapes
-
-Corners are taut and minimally softened. Interactive controls, active navigation, tags, and notices use the tight radius (`3px`); major surfaces and drawers use the surface radius (`4px`); chart tracks and fills use the near-square track radius (`1px`). Fine one-pixel borders and dividers do most of the grouping.
-
-**The Taut Corner Rule.** Radius clarifies containment but must not turn analytical elements into pills, bubbles, or friendly SaaS cards.
-
-## Components
-
-Components feel restrained and decisive: strong hierarchy, obvious states, and no decorative lift.
-
-### Buttons
-
-- **Shape:** compact rectangular controls with a tight radius (`3px`).
-- **Primary:** Signal Marigold with Index Navy text, a `54px` query-action height, and `0 22px` padding.
-- **Hover / Focus:** brighten to Signal Marigold Hover without translating; all keyboard focus uses a visible `3px` marigold outline with a `3px` offset.
-- **Secondary:** transparent over Statistical Navy with a visible cool border and white text; it deepens tonally on hover without a shadow.
-
-### Inputs / Fields
-
-- **Style:** White Sheet, Editorial Copy, a tight radius (`3px`), a `54px` height, and `0 17px` padding.
-- **Focus:** the transparent border becomes Signal Marigold; no glow is added.
-- **Disabled / Loading:** shift to a quiet gray-green field while preserving legible text and state explanation.
-
-### Navigation
-
-Wide atlas navigation uses a deep navy index with compact `42px` links. Default links are cool blue-white, hover uses a darker tonal field, and the current destination switches to Signal Marigold with Index Navy text. On narrow screens the same navigation becomes a keyboard-operable drawer; click-away and Escape close it.
-
-### Cards / Containers
-
-- **Corner Style:** minimally softened (`4px`).
-- **Background:** White Sheet on Cool Paper, or Statistical Navy for a high-contrast work surface.
-- **Shadow Strategy:** none at rest; follow the Flat Evidence Rule.
-- **Border:** one-pixel Rule, with Strong Rule reserved for major boundaries.
-- **Internal Padding:** normally `22px`, increasing to `30px` only for a primary work surface.
-
-### Status tags and notices
-
-Status tags are compact bordered rectangles rather than pills. Teal confirms completed evidence; warning and danger pairs describe review-required and failed states. Notices sit in the document flow so they cannot obscure actions or data.
-
-### Evidence figures and charts
-
-Headline figures use tabular numerals and plain Index Navy ink. Charts use Evidence Teal for the measured series, Signal Marigold only for a comparison or annotation, pale rule-colored grids, and text summaries for assistive technology. Evidence rows read like a table even when rendered as responsive cards.
-
-## Do's and Don'ts
-
-### Do:
-
-- **Do** keep interpretation, freshness, coverage, and save state beside the figures they qualify.
-- **Do** use Cool Paper, White Sheet, and one-pixel rules to build hierarchy before adding elevation.
-- **Do** reserve Signal Marigold for primary actions and the current navigation location.
-- **Do** preserve clear keyboard focus, document order, and reduced-motion behavior at every breakpoint.
-- **Do** let each surface brief choose its composition while reusing the atlas palette, typography, shape, and evidence language.
-
-### Don't:
-
-- **Don't** use gradients, glass, atmospheric glows, decorative blobs, or hover lift in persistent analytical surfaces.
-- **Don't** turn every metric or paragraph into a rounded card or badge.
-- **Don't** use Teal or Marigold as decoration detached from evidence, action, or state.
-- **Don't** hide partial, stale, missing, or failed states behind reassuring color or ambiguous copy.
-- **Don't** copy the homepage's `244px` index into every route; surface purpose determines navigation composition.
+`npm run check:e-ui` checks all eight routes at desktop, tablet and mobile widths with isolated fixtures, plus staged filtering, keyboard month selection, error/missing states and export behavior. `npm run check:structured-query` verifies validation and canonical parity with the text-query path. Existing query-race, RTO workflow and backend regression checks remain applicable.

@@ -184,6 +184,8 @@ async function loadCurrentUser() {
 }
 
 function closeSuggestions() {
+  clearTimeout(searchTimer);
+  searchGeneration += 1;
   suggestions.hidden = true;
   lookupInput.setAttribute("aria-expanded", "false");
   lookupInput.removeAttribute("aria-activedescendant");
@@ -465,8 +467,9 @@ lookupInput.addEventListener("input", () => {
     currentStatus = null;
     renderSelectionActions();
   }
-  const generation = ++searchGeneration;
-  clearTimeout(searchTimer);
+  closeSuggestions();
+  searchMatches = [];
+  const generation = searchGeneration;
   searchTimer = setTimeout(() => searchRtos(lookupInput.value, generation).catch((error) => showNotice(error.message, "error")), 180);
 });
 lookupInput.addEventListener("keydown", (event) => {
@@ -484,6 +487,7 @@ form.addEventListener("submit", async (event) => {
   showNotice("");
   try {
     if (!currentSelection) await resolveTypedSelection();
+    closeSuggestions();
     await loadSelection();
   } catch (error) {
     if (error.body?.candidates?.length) renderSuggestions(error.body.candidates.map((item) => ({ state: item.state, rto: item.label })));

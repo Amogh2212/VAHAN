@@ -1,0 +1,26 @@
+name: Unsafe workflow fixture
+
+on:
+  issues:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      label:
+        required: true
+        type: string
+
+jobs:
+  fixture:
+    runs-on: ubuntu-latest
+    steps:
+      # audit-expect: vahan-actions-untrusted-event-in-shell
+      - run: echo "${{ github.event.issue.title }}"
+      - name: Block scalar
+        # audit-expect: vahan-actions-untrusted-event-in-shell
+        run: |
+          echo "prefix"
+          printf '%s\n' "${{ github.event.pull_request.title }}"
+      - name: Folded scalar
+        # audit-expect: vahan-actions-untrusted-event-in-shell
+        run: >-
+          echo "${{ inputs.label }}"

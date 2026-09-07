@@ -1,0 +1,28 @@
+/* E report theme. Layout rules are print-aware; evidence is never clipped. */
+:root{background:#fff}
+body{color:#182139;background:#fff;font:14px/1.5 "Segoe UI",Arial,sans-serif}
+h1,h2,h3{font-family:"Plus Jakarta Sans","Segoe UI",sans-serif;letter-spacing:-.02em;color:#182139;text-transform:none}
+h1{font-size:30px;line-height:1.25}h2{font-size:18px;line-height:1.45}
+p,.source,.context-caveat{color:#586174}
+.report-hero{color:#182139;background:#efedf9;border-radius:12px;padding:24px}
+.report-hero p,.report-kicker{color:#4f46b8!important;text-transform:none;letter-spacing:0}
+.report-pdf-link{color:white;background:#4f46b8;border-radius:8px}
+main>header{border-bottom-color:#4f46b8}.eyebrow{color:#586174}
+.source{border-color:#dde1e8}.report-section,.metric,.chart,.report-meta-grid article,.report-metric-grid article{border-color:#dde1e8;border-radius:8px;box-shadow:none;background:white}
+.metric strong,.report-metric-grid strong{color:#182139;font-variant-numeric:tabular-nums}
+.metric span,.report-meta-grid span,.report-metric-grid span{font-size:12px;color:#586174;text-transform:none;letter-spacing:0}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;break-inside:auto}
+th,td{border-color:#dde1e8;padding:9px 10px;overflow-wrap:anywhere}th{background:#f7f8fa;color:#586174}
+thead{display:table-header-group}tr{break-inside:avoid}
+.warnings,.report-warning{color:#8a5700;background:#fff4dc;border:0;border-radius:8px;padding:12px 16px}
+.context-card{background:#f7f8fa;border:1px solid #dde1e8;border-radius:8px}
+.context-label,.context-sources a{color:#4f46b8}
+.chart-bg,.trend-chart-bg{fill:white;stroke:#dde1e8}.chart-grid,.trend-grid,.report-trend-grid{stroke:#dde1e8}
+.line-path,.report-trend-line{stroke:#4f46b8;fill:none}.line-area{fill:#efedf9}.line-point,.report-trend-point{fill:white;stroke:#4f46b8}
+.line-point.peak-point{fill:#f6bea5;stroke:#9c5738}.average-line{stroke:#a5a0c8}
+.axis-label,.point-label,.trend-axis{fill:#586174}.average-chip rect{fill:#efedf9}.average-chip text{fill:#4f46b8}
+.report-bar b{background:#4f46b8}.report-bar i{background:#eeedf4}
+.trend-ev,.trend-point.ev{stroke:#137c73}.trend-ice,.trend-point.ice{stroke:#535e8d}.legend i{background:#137c73}.legend i.ice{background:#535e8d}
+@page{size:A4;margin:14mm}
+@media print{.report-section.report-notes{break-inside:avoid}}
+@media print{body{margin:0!important;background:white}.report-document,main{padding:0!important;max-width:none;width:100%}.report-pdf-link,button{display:none!important}.report-section{break-inside:auto}.report-section-head,h2,h3{break-after:avoid}.metric,.chart,.report-meta-grid,.report-metric-grid{break-inside:avoid}.chart svg{max-height:210mm}table{break-inside:auto!important}a{color:#182139}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

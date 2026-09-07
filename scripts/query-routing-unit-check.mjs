@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 process.env.DATABASE_URL = "";
-process.env.PUBLIC_DASHBOARD_DISABLE_LIVE_REFRESH = "1";
+process.env.VAHAN_DISABLE_LIVE_REFRESH = "1";
 process.env.NODE_ENV = "test";
 process.env.TEST_CURRENT_MONTH = "2026-07";
 
@@ -69,6 +69,22 @@ const relativeDate = await queryData(
 assert.equal(decoderCalls, 0, "A deterministic relative date must not call AI.");
 assert.equal(relativeDate.filters.from, "2026-06");
 assert.equal(relativeDate.filters.to, "2026-06");
+
+for (const [query, fuel] of [
+  ["How many hydrogen fuel-cell buses were registered in Delhi during 2025 with the emission norm marked as not applicable?", "FUEL CELL HYDROGEN"],
+  ["Find the registration count of BS VI ethanol cars in Uttar Pradesh from January to December 2025.", "ETHANOL(E100)"],
+  ["How many BS VI methanol buses were registered in Maharashtra between January and June 2026?", "METHANOL"],
+]) {
+  const interpretation = interpretDashboardQuery(query);
+  assert.equal(classifyDashboardQueryRouting(query, interpretation).state, "local", query);
+  assert.deepEqual(interpretation.filters.selectedFuelTypes, [fuel], query);
+}
+
+const betweenMonths = interpretDashboardQuery(
+  "How many BS VI methanol buses were registered in Maharashtra between January and June 2026?",
+);
+assert.equal(betweenMonths.filters.from, "2026-01");
+assert.equal(betweenMonths.filters.to, "2026-06");
 
 async function expectedError(query, expectedStatus, expectedCode, dependencies = groqDependencies) {
   try {

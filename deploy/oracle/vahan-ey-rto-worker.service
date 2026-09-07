@@ -1,0 +1,14 @@
+[Unit]
+Description=Vahan EY resumable Neon RTO scraper
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=vahan-ey
+WorkingDirectory=/opt/vahan-ey
+ExecStart=/usr/bin/node --env-file=/etc/vahan-ey/rto-worker.env /opt/vahan-ey/scripts/run-rto-daily-snapshots.mjs --neon --work-queue --time-budget-minutes 55 --workers 1
+TimeoutStartSec=60min
+KillSignal=SIGINT
+NoNewPrivileges=true
+PrivateTmp=true

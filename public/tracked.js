@@ -464,7 +464,8 @@ async function disableTrackedQuery(item) {
 }
 
 async function deleteTrackedQuery(item) {
-  const confirmed = window.confirm(`Delete "${displayLabel(item)}" and all of its observations?`);
+  const label = displayLabel(item);
+  const confirmed = window.confirm(`Delete “${label}” and its observations? This cannot be undone.`);
   if (!confirmed) return;
   await apiJson(`/api/tracked-queries/${item.id}?hard=true`, { method: "DELETE" });
   showNotice(`Deleted ${displayLabel(item)}.`, "success");

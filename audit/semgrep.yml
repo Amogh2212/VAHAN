@@ -1,0 +1,187 @@
+rules:
+  - id: vahan-no-dynamic-evaluation
+    languages: [javascript, typescript]
+    message: Dynamic evaluation can turn untrusted text into executable code.
+    severity: ERROR
+    metadata:
+      category: security
+      confidence: HIGH
+      invariant: Application input must never be evaluated as JavaScript.
+      remediation: Replace dynamic evaluation with explicit parsing or an allowlisted dispatch table.
+      regression_test: Add a test proving attacker-controlled text remains inert.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+
+  - id: vahan-request-input-to-process-execution
+    mode: taint
+    languages: [javascript, typescript]
+    message: HTTP request input may reach a process-execution sink.
+    severity: ERROR
+    metadata:
+      category: security
+      confidence: HIGH
+      invariant: Process executable names and arguments must come from fixed allowlists, never HTTP input.
+      remediation: Remove the flow or validate against an exact argument allowlist and keep shell disabled.
+      regression_test: Exercise metacharacters and option-injection payloads and assert no process is started.
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.body
+          - pattern: $CTX.body
+          - pattern: $REQ.url
+          - pattern: $URL.searchParams.get(...)
+          - pattern: $CTX.params.$FIELD
+          - pattern: readBody($REQ)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: exec($CMD, ...)
+          - pattern: execSync($CMD, ...)
+          - pattern: execFile($CMD, ...)
+          - pattern: execFileSync($CMD, ...)
+          - pattern: execFileAsync($CMD, ...)
+          - pattern: spawn($CMD, ...)
+          - pattern: spawnSync($CMD, ...)
+          - pattern: $CHILD.execFile($CMD, ...)
+          - pattern: $CHILD.execFileSync($CMD, ...)
+
+  - id: vahan-request-input-to-external-fetch
+    mode: taint
+    languages: [javascript, typescript]
+    message: HTTP request input may control an outbound fetch destination.
+    severity: WARNING
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: External fetch destinations must use approved origins and protocols.
+      remediation: Resolve destinations from an origin allowlist and reject credentials, local addresses, redirects, and unexpected protocols.
+      regression_test: Test loopback, private-network, credential, redirect, and protocol-confusion URLs.
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.body
+          - pattern: $CTX.body
+          - pattern: $REQ.url
+          - pattern: $URL.searchParams.get(...)
+          - pattern: $CTX.params.$FIELD
+          - pattern: readBody($REQ)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: fetch($DEST, ...)
+          - pattern: $CLIENT.get($DEST, ...)
+          - pattern: $CLIENT.request($DEST, ...)
+
+  - id: vahan-request-input-to-file-path
+    mode: taint
+    languages: [javascript, typescript]
+    message: HTTP request input may reach a filesystem path sink.
+    severity: ERROR
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: Filesystem targets must stay within an explicit root and use server-owned names.
+      remediation: Canonicalize the target, enforce root containment, reject traversal and reparse-point escapes, and avoid user-controlled filenames.
+      regression_test: Test absolute paths, dot-dot segments, encoded traversal, Windows drive paths, UNC paths, and symlink escapes.
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.body
+          - pattern: $CTX.body
+          - pattern: $REQ.url
+          - pattern: $URL.pathname
+          - pattern: $URL.searchParams.get(...)
+          - pattern: $CTX.params.$FIELD
+          - pattern: readBody($REQ)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: fs.readFile($PATH, ...)
+          - pattern: fs.writeFile($PATH, ...)
+          - pattern: fs.appendFile($PATH, ...)
+          - pattern: fs.open($PATH, ...)
+          - pattern: fs.readdir($PATH, ...)
+          - pattern: fs.rename($PATH, ...)
+          - pattern: fs.copyFile($PATH, ...)
+          - pattern: fs.unlink($PATH, ...)
+          - pattern: fs.rm($PATH, ...)
+          - pattern: fs.createReadStream($PATH, ...)
+          - pattern: fs.createWriteStream($PATH, ...)
+
+  - id: vahan-request-input-to-location-header
+    mode: taint
+    languages: [javascript, typescript]
+    message: HTTP request input may control a redirect Location header.
+    severity: WARNING
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: Redirect targets must be same-origin or come from an explicit allowlist.
+      remediation: Parse and validate the destination origin and protocol before setting Location.
+      regression_test: Assert external, protocol-relative, credential-bearing, and encoded redirect targets are rejected.
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.url
+          - pattern: $URL.searchParams.get(...)
+          - pattern: $REQ.body
+          - pattern: $CTX.body
+          - pattern: readBody($REQ)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: $RES.setHeader("Location", $DEST)
+          - pattern: '$RES.writeHead($STATUS, { ..., "Location": $DEST, ... })'
+
+  - id: vahan-sql-template-interpolation
+    languages: [javascript, typescript]
+    message: SQL contains JavaScript interpolation; validate that identifiers are fixed and values are parameterized.
+    severity: WARNING
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: SQL values must be parameters and dynamic identifiers must come from a closed server-owned allowlist.
+      remediation: Replace value interpolation with driver parameters and centralize any unavoidable identifier allowlist.
+      regression_test: Add injection payload tests through the originating request or job input.
+    pattern-either:
+      - pattern: $DB.query(`...${$VALUE}...`, ...)
+      - pattern: $QUERY(`...${$VALUE}...`, ...)
+
+  - id: vahan-sensitive-request-headers-in-log
+    languages: [javascript, typescript]
+    message: Request headers are written to a log sink and may contain cookies or authorization data.
+    severity: WARNING
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: Logs must never contain authorization, cookie, session, token, or connection values.
+      remediation: Log an allowlisted metadata object and pass every value through the shared redactor.
+      regression_test: Capture logs for cookie and authorization requests and assert the values are absent.
+    pattern-either:
+      - pattern: console.$METHOD(..., $REQ.headers, ...)
+      - pattern: $LOGGER.$METHOD(..., $REQ.headers, ...)
+
+  - id: vahan-actions-no-write-all
+    languages: [yaml]
+    paths:
+      include:
+        - .github/workflows/*.yml
+        - .github/workflows/*.yaml
+    message: GitHub Actions workflow grants write-all permissions.
+    severity: ERROR
+    metadata:
+      category: security
+      confidence: HIGH
+      invariant: Workflow tokens must use least privilege at workflow or job scope.
+      remediation: Replace write-all with the minimum explicit read/write permissions required by the job.
+      regression_test: Keep a repository-local workflow scan in CI.
+    pattern: "permissions: write-all"
+
+  - id: vahan-actions-untrusted-event-in-shell
+    languages: [generic]
+    paths:
+      include:
+        - .github/workflows/*.yml
+        - .github/workflows/*.yaml
+    message: Untrusted GitHub event text appears directly inside a shell run block.
+    severity: ERROR
+    metadata:
+      category: security
+      confidence: MEDIUM
+      invariant: Untrusted event fields must not be interpolated into shell source.
+      remediation: Pass the value through an environment variable and treat it as data, or avoid using it.
+      regression_test: Scan every workflow and test hostile quotes, substitutions, and newline payloads.
+    pattern-regex: '(?m)^(?:(?P<li>[ \t]*)-(?P<ls>[ \t]+)run[ \t]*:[ \t]*(?:[|>][-+0-9]*[ \t]*\r?\n(?:(?P=li)[ \t](?P=ls)[ \t]+[^\r\n]*\r?\n)*(?P=li)[ \t](?P=ls)[ \t]+[^\r\n]*|[^\r\n]*)|(?P<mi>[ \t]*)run[ \t]*:[ \t]*(?:[|>][-+0-9]*[ \t]*\r?\n(?:(?P=mi)[ \t]+[^\r\n]*\r?\n)*(?P=mi)[ \t]+[^\r\n]*|[^\r\n]*))\$\{\{[ \t]*(?:github\.event\.|github\.head_ref\b|inputs\.)[^}]*\}\}'

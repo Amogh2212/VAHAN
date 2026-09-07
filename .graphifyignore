@@ -5,6 +5,7 @@ logs/
 output/
 reports/
 ui-preview-screenshots/
+audit-output/
 
 # Local runtime and generated graph output.
 node_modules/

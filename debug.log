@@ -12,3 +12,74 @@
 [0601/214517.260:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
 [0605/154529.199:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
 [0605/155336.515:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0625/002831.219:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0625/002855.509:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0625/003004.770:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0724/225225.126:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/115720.316:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/115816.289:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155637.819:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155638.462:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155638.650:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155638.995:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155639.048:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155639.420:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155705.591:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155705.688:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155706.375:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155706.708:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0725/155708.988:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.980:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0725/161308.982:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0727/160320.298:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0727/164043.518:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0727/201413.087:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0727/232648.019:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0728/001729.028:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0728/174215.687:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0802/195800.123:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0802/195921.040:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0803/171539.833:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171539.835:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.806:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.807:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.807:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.807:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.807:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.807:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.811:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.811:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.811:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.811:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0803/171540.811:ERROR:gpu\command_buffer\service\shared_image\shared_image_manager.cc:386] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[0829/142155.175:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+[0905/192929.709:ERROR:components\viz\service\display\display.cc:272] Frame latency is negative: -0.043 ms
+[0905/204116.837:ERROR:components\viz\service\display\display.cc:272] Frame latency is negative: -0.01 ms
+[0905/220636.769:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.775:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.785:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.786:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.888:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.906:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.926:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.927:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.944:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.951:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.952:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.967:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.970:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.970:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.981:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/220636.981:WARNING:net\dns\dns_config_service_win.cc:609] Failed to read DnsConfig.
+[0905/223736.409:ERROR:components\viz\service\display\display.cc:272] Frame latency is negative: -0.002 ms
+[0907/170906.415:ERROR:gpu\ipc\client\command_buffer_proxy_impl.cc:285] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.

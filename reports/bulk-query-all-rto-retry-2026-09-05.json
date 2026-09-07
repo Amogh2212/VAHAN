@@ -1,0 +1,581 @@
+{
+  "generatedAt": "2026-09-05T17:58:24.965Z",
+  "updatedAt": "2026-09-05T17:58:30.746Z",
+  "input": "reports/bulk-query-all-rto-retry-2026-09-05.input.json",
+  "sourceReport": null,
+  "mode": "live",
+  "health": {
+    "status": "ok",
+    "storage": "postgres",
+    "rowCount": 18896,
+    "latestMonth": "2026-09",
+    "source": "VAHAN public dashboard aggregate data",
+    "database": {
+      "status": "ok"
+    },
+    "liveRefreshDisabled": false,
+    "queryRouting": {
+      "configuredMode": "enforced",
+      "since": "2026-09-05T17:58:23.452Z",
+      "totalQueries": 0,
+      "requestsByMode": {
+        "shadow": 0,
+        "enforced": 0
+      },
+      "decisions": {
+        "local": 0,
+        "repair": 0,
+        "reject": 0
+      },
+      "outcomes": {
+        "localDeterministicSuccesses": 0,
+        "groqAssistedSuccesses": 0,
+        "rejected": 0,
+        "unsupportedRejected": 0,
+        "conflictRejected": 0,
+        "clarificationRequired": 0
+      },
+      "groq": {
+        "repairDemand": 0,
+        "invocations": 0,
+        "quotaRateLimitEvents": 0,
+        "plansValidated": 0,
+        "postValidationFailures": 0,
+        "deterministicComparisons": 0,
+        "deterministicDisagreements": 0
+      },
+      "fuzzy": {
+        "candidates": 0,
+        "accepted": 0
+      },
+      "rates": {
+        "localDeterministicSuccess": null,
+        "groqInvocation": null,
+        "groqQuotaRateLimitEvent": null,
+        "clarificationRequired": null,
+        "fuzzyCorrectionAcceptance": null,
+        "postGroqValidationFailure": null,
+        "deterministicGroqDisagreement": null
+      }
+    },
+    "queryAgent": {
+      "enabled": false,
+      "storage": "available",
+      "counts": {}
+    }
+  },
+  "count": 1,
+  "queue": [
+    {
+      "index": 1,
+      "label": "Bulk 87 aggregate-RTO retry",
+      "query": "Show the registration count of BS VI diesel ambulances across all RTOs in Rajasthan in 2024.",
+      "expect": {}
+    }
+  ],
+  "summary": {
+    "completed": 1,
+    "passed": 1,
+    "failed": 0,
+    "okResponses": 1,
+    "refreshed": 1,
+    "refreshCompleted": 1,
+    "refreshFailed": 0,
+    "nonZeroRows": 1,
+    "byCategory": {
+      "pass": 1,
+      "parser_mismatch": 0,
+      "data_missing": 0,
+      "scrape_failed": 0,
+      "api_server_error": 0
+    },
+    "averageDurationMs": 5762
+  },
+  "results": [
+    {
+      "index": 1,
+      "label": "Bulk 87 aggregate-RTO retry",
+      "query": "Show the registration count of BS VI diesel ambulances across all RTOs in Rajasthan in 2024.",
+      "expect": {},
+      "ok": true,
+      "passed": true,
+      "category": "pass",
+      "status": 200,
+      "durationMs": 753,
+      "refreshDurationMs": 5009,
+      "dataStatus": "live",
+      "rowCount": 12,
+      "total": 625,
+      "filters": {
+        "fuelSegment": "NON_EV",
+        "fuelType": "DIESEL",
+        "fuelFilters": [],
+        "vehicleCategories": [],
+        "vehicleClasses": [
+          "AMBULANCE"
+        ],
+        "norms": [
+          "BHARAT STAGE VI"
+        ],
+        "state": "Rajasthan",
+        "rto": "All Vahan4 Running Office",
+        "locationText": "all rtos",
+        "locationSource": "exact_city",
+        "locationError": null,
+        "matchedLocations": [
+          "Rajasthan"
+        ],
+        "matchedRtoAliases": [
+          "all rtos"
+        ],
+        "explicitRtoCodes": [],
+        "fuzzyLocationMatch": null,
+        "fuzzyLocationAmbiguity": null,
+        "from": "2024-01",
+        "to": "2024-12",
+        "dateError": null,
+        "dateInterpretation": null,
+        "metric": "registrations",
+        "selectedFuelTypes": [
+          "DIESEL"
+        ],
+        "selectedVehicleGroups": [],
+        "selectedVehicleClasses": [
+          "AMBULANCE"
+        ],
+        "selectedVehicleCategories": [],
+        "selectedNorms": [
+          "BHARAT STAGE VI"
+        ],
+        "excludedFuelTypes": [],
+        "excludedVehicleGroups": [],
+        "excludedVehicleClasses": [],
+        "excludedVehicleCategories": [],
+        "excludedNorms": [],
+        "semanticIntent": "Query matched DIESEL fuel; AMBULANCE class",
+        "semanticConfidence": 0.9,
+        "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+        "rtoSearch": null,
+        "unresolvedLocation": null,
+        "rtoResolution": {
+          "status": "resolved",
+          "rto": "All Vahan4 Running Office",
+          "method": "all-rtos"
+        }
+      },
+      "scraper": {
+        "autoTriggered": true,
+        "success": true,
+        "rowsScraped": 12,
+        "failedRuns": [],
+        "errorSummary": "",
+        "runs": [
+          {
+            "year": 2024,
+            "months": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12
+            ],
+            "success": true,
+            "rowsScraped": 12
+          }
+        ]
+      },
+      "liveRefresh": {
+        "jobId": "1",
+        "status": "complete",
+        "requiredMonths": [
+          "2024-01",
+          "2024-02",
+          "2024-03",
+          "2024-04",
+          "2024-05",
+          "2024-06",
+          "2024-07",
+          "2024-08",
+          "2024-09",
+          "2024-10",
+          "2024-11",
+          "2024-12"
+        ],
+        "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+        "auditId": 137,
+        "error": null
+      },
+      "warnings": [],
+      "issues": [],
+      "responseBody": {
+        "filters": {
+          "fuelSegment": "NON_EV",
+          "fuelType": "DIESEL",
+          "fuelFilters": [],
+          "vehicleCategories": [],
+          "vehicleClasses": [
+            "AMBULANCE"
+          ],
+          "norms": [
+            "BHARAT STAGE VI"
+          ],
+          "state": "Rajasthan",
+          "rto": "All Vahan4 Running Office",
+          "locationText": "all rtos",
+          "locationSource": "exact_city",
+          "locationError": null,
+          "matchedLocations": [
+            "Rajasthan"
+          ],
+          "matchedRtoAliases": [
+            "all rtos"
+          ],
+          "explicitRtoCodes": [],
+          "fuzzyLocationMatch": null,
+          "fuzzyLocationAmbiguity": null,
+          "from": "2024-01",
+          "to": "2024-12",
+          "dateError": null,
+          "dateInterpretation": null,
+          "metric": "registrations",
+          "selectedFuelTypes": [
+            "DIESEL"
+          ],
+          "selectedVehicleGroups": [],
+          "selectedVehicleClasses": [
+            "AMBULANCE"
+          ],
+          "selectedVehicleCategories": [],
+          "selectedNorms": [
+            "BHARAT STAGE VI"
+          ],
+          "excludedFuelTypes": [],
+          "excludedVehicleGroups": [],
+          "excludedVehicleClasses": [],
+          "excludedVehicleCategories": [],
+          "excludedNorms": [],
+          "semanticIntent": "Query matched DIESEL fuel; AMBULANCE class",
+          "semanticConfidence": 0.9,
+          "semanticExplanation": "Selected exact included and excluded VAHAN labels from deterministic query rules.",
+          "rtoSearch": null,
+          "unresolvedLocation": null,
+          "rtoResolution": {
+            "status": "resolved",
+            "rto": "All Vahan4 Running Office",
+            "method": "all-rtos"
+          }
+        },
+        "dataStatus": "live",
+        "persistenceStatus": "saved",
+        "summary": {
+          "total": 625,
+          "monthlyAverage": 52,
+          "peakMonth": "2024-10",
+          "peakMonthCount": 120
+        },
+        "trend": [
+          {
+            "month": "2024-01",
+            "count": 33
+          },
+          {
+            "month": "2024-02",
+            "count": 42
+          },
+          {
+            "month": "2024-03",
+            "count": 23
+          },
+          {
+            "month": "2024-04",
+            "count": 49
+          },
+          {
+            "month": "2024-05",
+            "count": 32
+          },
+          {
+            "month": "2024-06",
+            "count": 51
+          },
+          {
+            "month": "2024-07",
+            "count": 35
+          },
+          {
+            "month": "2024-08",
+            "count": 56
+          },
+          {
+            "month": "2024-09",
+            "count": 24
+          },
+          {
+            "month": "2024-10",
+            "count": 120
+          },
+          {
+            "month": "2024-11",
+            "count": 53
+          },
+          {
+            "month": "2024-12",
+            "count": 107
+          }
+        ],
+        "fuelBreakdown": [
+          {
+            "fuelType": "DIESEL",
+            "count": 625
+          }
+        ],
+        "rows": [
+          {
+            "year": 2024,
+            "month": 1,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 33,
+            "scraped_at": "2026-09-05T17:58:28.144Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 2,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 42,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 3,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 23,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 4,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 49,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 5,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 32,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 6,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 51,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 7,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 35,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 56,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 24,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 120,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 53,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "state": "Rajasthan",
+            "rto": "All Vahan4 Running Office",
+            "fuel_filter": "DIESEL",
+            "vehicle_category_filter": "ALL",
+            "norms_filter": "BHARAT STAGE VI",
+            "vehicle_class_filter": "AMBULANCE",
+            "vehicle_count": 107,
+            "scraped_at": "2026-09-05T17:58:28.145Z",
+            "source_url": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+            "fuel_segment": "NON_EV",
+            "fuel_type": "DIESEL"
+          }
+        ],
+        "freshness": {
+          "latestMonth": "2024-12",
+          "source": "VAHAN public dashboard aggregate data"
+        },
+        "scraper": {
+          "autoTriggered": true,
+          "success": true,
+          "rowsScraped": 12,
+          "failedRuns": [],
+          "errorSummary": "",
+          "runs": [
+            {
+              "year": 2024,
+              "months": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12
+              ],
+              "success": true,
+              "rowsScraped": 12
+            }
+          ]
+        },
+        "liveRefresh": {
+          "jobId": "1",
+          "status": "complete",
+          "requiredMonths": [
+            "2024-01",
+            "2024-02",
+            "2024-03",
+            "2024-04",
+            "2024-05",
+            "2024-06",
+            "2024-07",
+            "2024-08",
+            "2024-09",
+            "2024-10",
+            "2024-11",
+            "2024-12"
+          ],
+          "sourceUrl": "https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en",
+          "auditId": 137,
+          "error": null
+        },
+        "refreshContext": null,
+        "warnings": []
+      },
+      "completedAt": "2026-09-05T17:58:30.743Z"
+    }
+  ],
+  "status": "complete"
+}

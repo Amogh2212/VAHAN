@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Vahan EY RTO scraper every 15 minutes
+
+[Timer]
+OnCalendar=*-*-* *:0/15:00
+Persistent=true
+Unit=vahan-ey-rto-worker.service
+
+[Install]
+WantedBy=timers.target

@@ -146,6 +146,7 @@ const taskUnregister = fs.readFileSync(new URL("./unregister-local-db-tasks.ps1"
 const postgresPreflight = fs.readFileSync(new URL("./ensure-local-postgres.ps1", import.meta.url), "utf8");
 const scraperSource = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 const dailyRunnerSource = fs.readFileSync(new URL("./run-rto-daily-snapshots.mjs", import.meta.url), "utf8");
+const packageJson = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 assert.match(taskRegistration, /New-TimeSpan -Minutes 15/, "the local RTO worker should repeat every 15 minutes");
 assert.match(taskRegistration, /New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2:00AM/, "the OSM refresh should run once a week on Sunday");
 assert.match(taskRegistration, /VahanEY-RtoInsightsOsm/, "the OSM refresh should have its own scheduled task");
@@ -168,6 +169,13 @@ assert.match(dailyRunnerSource, /args\.dateExplicit[\s\S]+deferStaleRtoDailyCycl
 assert.match(dailyRunnerSource, /scrapeStatusForSnapshotDate/, "the runner should label after-midnight carryover rows as late_fill");
 assert.match(dailyRunnerSource, /stopReason[\s\S]+time_budget_reached/, "bounded worker output should explain a time-budget stop");
 assert.match(dailyRunnerSource, /RTO_DAILY_PROGRESS_LOG_INTERVAL_MS[\s\S]+30_000/, "RTO progress summaries should be throttled instead of printed after every completed job");
+assert.match(dailyRunnerSource, /args\.neon[\s\S]+assertNeonDatabaseUrl/, "Neon mode should validate the configured database before scraping");
+assert.match(dailyRunnerSource, /storage: args\.neon \? \"neon\"/, "Neon runs should identify their persistence target in output");
+assert.equal(
+  packageJson.scripts["rto-daily:neon"],
+  "node --env-file=.env.neon scripts/run-rto-daily-snapshots.mjs --neon --work-queue",
+  "the Neon RTO command should load the Neon environment and run the DB-backed work queue",
+);
 
 const catalog = {
   states: [
@@ -191,6 +199,14 @@ const resolvedDl01 = resolveRtoWithCatalog({ state: "Delhi", rtoSearch: "DL-01",
 });
 assert.equal(resolvedDl01.rto, "MALL ROAD - DL1", "DL-01 should match the exact RTO code, not DL-10 or DL-11");
 assert.equal(resolvedDl01.ambiguousRtos, null, "an exact RTO code should not be reported as ambiguous");
+const resolvedMh12WithDuplicateCatalogLabel = resolveRtoWithCatalog({ state: "Maharashtra", rtoSearch: "MH-12", locationText: "MH-12" }, {
+  states: [{ state: "Maharashtra", rtos: [
+    toCatalogRto("PUNE - MH12"),
+    toCatalogRto("Pune Regional Transport Office MH12"),
+  ] }],
+});
+assert.equal(resolvedMh12WithDuplicateCatalogLabel.rtoResolution.status, "resolved", "an exact code should resolve even if the catalog contains duplicate labels");
+assert.equal(resolvedMh12WithDuplicateCatalogLabel.ambiguousRtos, null, "duplicate labels for one exact code must not produce an ambiguity prompt");
 
 assert.equal(validateRtoDailyReport({
   status: "success",
