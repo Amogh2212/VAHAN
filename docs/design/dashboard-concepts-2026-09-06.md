@@ -28,7 +28,6 @@ Current source presents an editorial dashboard with persistent route navigation,
 | Dashboard — `public/index.html`, `public/app.js` | Query submission, example questions, interpreted exact filters including exclusions, clarification/failure handling, trend selection, fuel details, zero-row visibility, view modes and exports. |
 | Compare — `public/compare.html`, `public/compare.js` | Two query contexts, comparative summary, monthly trends and fuel breakdown for each side. |
 | Map — `public/map.html`, `public/map.js` | Geographic query controls, state EV share and selected-state detail. |
-| Tracked queries — `public/tracked.html`, `public/tracked.js` | Sign-in, saved queries, schedule settings, active state and observation history. Keep this discoverable even though it is absent from the main dashboard's present sidebar. |
 | RTO trends — `public/rto-trends.html`, `public/rto-trends.js` | Collection coverage, RTO search, EV/ICE, 2W/3W/4W, OEM selection, snapshot trend and private pinned RTOs. |
 | RTO reports — `public/rto-reports.html`, `public/rto-reports.js` | Period/search/status controls, individual reports, missing-cycle states. |
 | RTO insights — `public/rto-insights.html`, `public/rto-insights.js` | Source health, radius/limit controls, pattern ranking, EV-versus-charger comparison, RTO detail. Correlation must not become a causal AI claim. |

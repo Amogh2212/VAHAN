@@ -116,8 +116,8 @@ async function main() {
     assert(me.response.ok, `/api/me should be public, got ${me.response.status}`);
     assert(me.body.authenticated === false, "/api/me should show unauthenticated without a session");
 
-    const tracked = await fetchJson("/api/tracked-queries");
-    assert(tracked.response.status === 401, `tracked queries should require auth, got ${tracked.response.status}`);
+    const accountExport = await fetchJson("/api/account/export");
+    assert(accountExport.response.status === 401, `account export should require auth, got ${accountExport.response.status}`);
 
     const google = await fetchJson("/auth/google");
     assert(google.response.status === 503, `missing Google config should return 503, got ${google.response.status}`);
@@ -197,7 +197,7 @@ async function main() {
         availableStates: map.body.coverage?.availableStates,
         rowCount: map.body.coverage?.rowCount,
       },
-      protectedRouteStatus: tracked.response.status,
+      protectedRouteStatus: accountExport.response.status,
       googleConfigStatus: google.response.status,
       oversizedStatus: oversized.response.status,
       rateLimitStatus: spamThree.response.status,

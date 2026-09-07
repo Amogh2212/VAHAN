@@ -1,6 +1,6 @@
 # Vahan Analyst — E: Best-of-System
 
-Approved visual direction: E from the September 2026 dashboard concepts. This system applies to the overview, comparison, map, daily RTO trends, local insights, tracked queries, RTO reports, monthly reports and printable exports.
+Approved visual direction: E from the September 2026 dashboard concepts. This system applies to the overview, comparison, map, tracked queries, RTO reports, monthly reports and printable exports. Daily RTO trends and local insights are retained for a future RTO-product phase, but are not currently surfaced in navigation.
 
 ## Product expression
 
@@ -32,7 +32,7 @@ Panels have 12px corners, controls 8px, compact status labels 4px. Prefer border
 
 ## Navigation and composition
 
-Use one horizontal header across routes: Overview, Compare, Map, RTO workspace (Daily trends and Local insights), Reports (RTO and Monthly sales), Tracked queries, and Account. Current routes carry a tinted violet state. At widths below 1200px the navigation opens with a Menu button; Escape closes menus and returns focus.
+Use one horizontal header across surfaced routes: Overview, Compare, Map, Reports (RTO and Monthly sales), Tracked queries, and Account. Current routes carry a tinted violet state. At widths below 1200px the navigation opens with a Menu button; Escape closes menus and returns focus. The direct Daily trends and Local insights routes are intentionally dormant, not deleted.
 
 Overview uses an asymmetric 28/72 layout. The left region holds the primary total, supporting measures and exact fuel composition. The right region holds the trend and monthly evidence. Compact scope chips open the same full editor. Monthly rows expand without changing the answer. Ask Vahan sits below the evidence in document flow; before the first answer and on mobile it moves above the results. It never overlays data or the software keyboard.
 

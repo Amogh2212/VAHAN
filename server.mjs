@@ -102,16 +102,6 @@ import {
   userForTelegramChat,
 } from "./lib/auth.mjs";
 import {
-  createTrackedQuery,
-  deleteTrackedQuery,
-  disableTrackedQuery,
-  getTrackedQuery,
-  listTrackedQueries,
-  listTrackedQueryObservations,
-  listTrackedQueryRuns,
-  updateTrackedQuery,
-} from "./lib/tracked-queries.mjs";
-import {
   getRtoInsightDetail,
   getRtoInsightsCoverage,
   listRtoInsightSignals,
@@ -7236,7 +7226,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (request.method === "GET" && url.pathname === "/auth/google") {
-      const login = googleLoginUrl({ returnTo: url.searchParams.get("returnTo") || "/tracked.html" });
+      const login = googleLoginUrl({ returnTo: url.searchParams.get("returnTo") || "/account.html" });
       const stateCookie = oauthStateCookieValue(login.state, login.returnTo);
       redirect(response, login.url, {
         "set-cookie": oauthStateCookie(stateCookie),
@@ -7252,7 +7242,7 @@ const server = http.createServer(async (request, response) => {
       }
       const profile = await withExpensiveSlot(() => googleUserFromCode(url.searchParams.get("code")));
       const { session } = await createGoogleSession(profile);
-      redirect(response, stored.returnTo || "/tracked.html", {
+      redirect(response, stored.returnTo || "/account.html", {
         "set-cookie": [
           sessionCookie(session),
           clearCookieHeader(oauthStateCookieName()),
@@ -7334,86 +7324,6 @@ const server = http.createServer(async (request, response) => {
       sendJsonWithHeaders(response, 200, { deleted: true }, {
         "set-cookie": clearCookieHeader(authCookieName()),
       });
-      return;
-    }
-    if (request.method === "GET" && url.pathname === "/api/tracked-queries") {
-      const user = await requireUser(request);
-      sendJson(response, 200, { trackedQueries: await listTrackedQueries({ userId: user.id }) });
-      return;
-    }
-    if (request.method === "POST" && url.pathname === "/api/tracked-queries") {
-      const user = await requireUser(request);
-      requireCsrf(request);
-      await enforceRateLimit(request, "public", user.id);
-      const body = await readBody(request);
-      sendJson(response, 201, { trackedQuery: await createTrackedQuery(body, { userId: user.id }) });
-      return;
-    }
-    const trackedObservationMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/observations$/);
-    if (request.method === "GET" && trackedObservationMatch) {
-      const user = await requireUser(request);
-      const trackedQueryId = Number(trackedObservationMatch[1]);
-      const trackedQuery = await getTrackedQuery(trackedQueryId, { userId: user.id });
-      if (!trackedQuery) {
-        sendJson(response, 404, { error: "Tracked query not found" });
-        return;
-      }
-      sendJson(response, 200, {
-        trackedQuery,
-        observations: await listTrackedQueryObservations(trackedQueryId, {
-          from: url.searchParams.get("from"),
-          to: url.searchParams.get("to"),
-          limit: url.searchParams.get("limit"),
-        }),
-      });
-      return;
-    }
-    const trackedRunsMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)\/runs$/);
-    if (request.method === "GET" && trackedRunsMatch) {
-      const user = await requireUser(request);
-      const trackedQueryId = Number(trackedRunsMatch[1]);
-      const trackedQuery = await getTrackedQuery(trackedQueryId, { userId: user.id });
-      if (!trackedQuery) {
-        sendJson(response, 404, { error: "Tracked query not found" });
-        return;
-      }
-      sendJson(response, 200, {
-        trackedQuery,
-        runs: await listTrackedQueryRuns(trackedQueryId, {
-          from: url.searchParams.get("from"),
-          to: url.searchParams.get("to"),
-          limit: url.searchParams.get("limit"),
-        }),
-      });
-      return;
-    }
-    const trackedQueryMatch = url.pathname.match(/^\/api\/tracked-queries\/(\d+)$/);
-    if (trackedQueryMatch && request.method === "PATCH") {
-      const user = await requireUser(request);
-      requireCsrf(request);
-      await enforceRateLimit(request, "public", user.id);
-      const body = await readBody(request);
-      const trackedQuery = await updateTrackedQuery(Number(trackedQueryMatch[1]), body, { userId: user.id });
-      if (!trackedQuery) {
-        sendJson(response, 404, { error: "Tracked query not found" });
-        return;
-      }
-      sendJson(response, 200, { trackedQuery });
-      return;
-    }
-    if (trackedQueryMatch && request.method === "DELETE") {
-      const user = await requireUser(request);
-      requireCsrf(request);
-      await enforceRateLimit(request, "public", user.id);
-      const hardDelete = /^(1|true|yes)$/i.test(url.searchParams.get("hard") ?? "");
-      const trackedQuery = hardDelete
-        ? await deleteTrackedQuery(Number(trackedQueryMatch[1]), { userId: user.id })
-        : await disableTrackedQuery(Number(trackedQueryMatch[1]), { userId: user.id });
-      if (!trackedQuery) {
-        sendJson(response, 404, { error: "Tracked query not found" });
-        return;
-      }
-      sendJson(response, 200, { trackedQuery, deleted: hardDelete });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/rto-insights/coverage") {

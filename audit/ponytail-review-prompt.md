@@ -14,6 +14,7 @@ Rules:
 - Never expose `.env` values, URLs with query strings, cookies, tokens, credentials, or database connection strings.
 - Every candidate finding must include: category, proposed P0-P3 severity, confidence, exact affected files/symbols, evidence, impact, violated invariant, smallest safe remediation, and a required regression test.
 - Label uncertainty and likely false positives explicitly.
+- Treat `public/rto-trends.html`, `public/rto-insights.html`, and their supporting APIs, jobs, tests, and scripts as intentionally retained dormant functionality for a future RTO-product phase. They are deliberately absent from the current shared navigation and must not be reported as dead code solely for that reason.
 
 Reconcile each candidate against:
 

@@ -266,7 +266,7 @@ npm.cmd run tasks:rto-daily:register
 ```
 
 `tasks:local:clear` removes the old `VahanEY-Postgres`,
-`VahanEY-TrackedQueries`, `VahanEY-PostgresBackup`, `VahanEY-RtoCatalog`,
+`VahanEY-PostgresBackup`, `VahanEY-RtoCatalog`,
 `VahanEY-RtoDaily`, `VahanEY-RtoInsightsOsm`, and `VahanEY-RtoFactorDaily` tasks. `tasks:rto-daily:register` creates only
 `VahanEY-RtoDaily`, a hidden 15-minute task launched through `wscript.exe` so it
 does not open a terminal. Each invocation checks the active local `.env`, starts
@@ -276,11 +276,10 @@ Missed daily worker runs start when next available. Backups remain stored in
 `backups/postgres`, retained for 14 days, and local task logs go to
 `logs/local-jobs`.
 
-Tracked queries, backups, and RTO catalog refreshes are intentionally manual in
+Backups and RTO catalog refreshes are intentionally manual in
 this setup:
 
 ```powershell
-npm.cmd run tracked:run
 npm.cmd run db:backup:local
 npm.cmd run rto-daily:catalog
 ```
@@ -364,71 +363,9 @@ completed at least one successful scrape/report cycle. CockroachDB transaction
 retry error `40001` is retried automatically by the shared DB helper; tune
 `DB_MAX_RETRIES` and `DB_RETRY_BASE_MS` only if the logs show repeated retries.
 
-## Daily Tracked Queries
-
-Apply the schema first so the tracked query tables exist:
-
-```powershell
-npm run db:schema
-```
-
-Create tracked queries through the API, then run the daily batch from an
-external scheduler such as GitHub Actions:
-
-```powershell
-npm run tracked:run
-```
-
-This repo includes `.github/workflows/daily-tracked-queries.yml`, which runs the
-daily batch every day at `02:30 UTC` (`08:00 IST`). It can also be triggered
-manually from the GitHub Actions tab with `workflow_dispatch`.
-
-Add these GitHub Actions repository secrets before running it:
-
-- `DATABASE_URL`
-- `GEMINI_API_KEY`, if AI query interpretation should use Gemini
-- `GROQ_API_KEY`, if AI query interpretation should use Groq
-- `TELEGRAM_BOT_TOKEN`, if Telegram alerts are needed
-- `TELEGRAM_ALLOWED_CHAT_IDS`, if Telegram alerts are needed
-
-Optional non-secret GitHub Actions variables can be added for `GROQ_MODEL`,
-`TELEGRAM_ALERT_THRESHOLD_POINTS`, `TELEGRAM_PUBLIC_DAILY_LIMIT`, and
-`TRACKED_QUERY_FAIL_ON_PARTIAL`. The scheduled workflow defaults
-`TRACKED_QUERY_FAIL_ON_PARTIAL` to `0`, so one flaky VAHAN fetch stores a failed
-run row without failing the whole GitHub Action when other tracked queries
-succeed. Set it to `1`, or pass `--fail-on-partial`, when every query must
-succeed for the command to exit cleanly. It also defaults
-`TRACKED_QUERY_BACKFILL_DAYS` to `7`, so each daily run retries missing
-observations from the last week before writing today's observation. Keep secrets
-in GitHub Actions secrets; do not commit them to the repo.
-
-Tracked queries do not need to include a month. If a saved query has no date
-range, the daily runner defaults it to the observation month, so a query such as
-`EV registrations in Maharashtra` is checked against the current month on each
-daily run.
-
-Preview due queries without writing run or observation rows:
-
-```powershell
-npm run tracked:dry-run
-```
-
-Preview missed observations from the last week:
-
-```powershell
-node --env-file=.env scripts/run-tracked-queries.mjs --dry-run --backfill-days 7
-```
-
-For a controlled rerun of a specific observation date:
-
-```powershell
-node --env-file=.env scripts/run-tracked-queries.mjs --date 2026-06-01 --all
-```
-
 ## Daily RTO Snapshot Trends
 
-This collector is separate from saved tracked queries. It stores current-month
-daily snapshots for enabled RTOs across:
+This collector stores current-month daily snapshots for enabled RTOs across:
 
 ```text
 2 fuel groups x 3 vehicle categories x 15 OEMs = 90 rows per RTO per day

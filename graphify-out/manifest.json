@@ -8,8 +8,8 @@
     "hash": "580c27aba6b96dfdf9d7af667d7675b2"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\server.mjs": {
-    "mtime": 1788789569.238026,
-    "hash": "c26fd595de7ab1a7c15f60e565cdf727"
+    "mtime": 1788798700.1281168,
+    "hash": "df00e4358e0ba543faca08d5c1f3d836"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\audit\\semgrep-fixtures\\javascript-negative.mjs": {
     "mtime": 1786642258.7425833,
@@ -20,12 +20,12 @@
     "hash": "4a5809eef817d47460cab46adf1e5b5e"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\db\\schema.sql": {
-    "mtime": 1788200556.2154236,
-    "hash": "98428f468bf6e47338f5428f0746dbe5"
+    "mtime": 1788798905.5862274,
+    "hash": "899cfa5a2aaac8ada7351d92da68699c"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\auth.mjs": {
-    "mtime": 1784980717.497974,
-    "hash": "8061cf3630971739ff85772ee21830c0"
+    "mtime": 1788798857.1480718,
+    "hash": "8061d6bd580bb0c1c1cc39fbe2287f8b"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\daily-ev-report-try.mjs": {
     "mtime": 1784370966.3126044,
@@ -135,10 +135,6 @@
     "mtime": 1782556806.7227583,
     "hash": "50596da2787c38bd6338017d6b3d5d84"
   },
-  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\tracked-queries.mjs": {
-    "mtime": 1784979739.9866917,
-    "hash": "b4c253f320b0952ae3679b9161d87da0"
-  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\vahan-scrape-lock.mjs": {
     "mtime": 1782302399.1980648,
     "hash": "69c38dfe4c59c82a46bcef298afd5d24"
@@ -148,8 +144,8 @@
     "hash": "a60530b433fac55593626dd6bd70726c"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\audit\\browser.mjs": {
-    "mtime": 1786642291.46128,
-    "hash": "e25310254b1da5ab4b6cb9219b1e38c3"
+    "mtime": 1788798859.079075,
+    "hash": "4ecf9e45bfe1d57d82501b779cca106c"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\audit\\command-runner.mjs": {
     "mtime": 1786642293.9107468,
@@ -164,8 +160,8 @@
     "hash": "4afa6062be61976295aab0a213775a0e"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\audit\\policy.mjs": {
-    "mtime": 1786645068.1185615,
-    "hash": "abf6b9fdf1a8e0adc465ab75db680707"
+    "mtime": 1788798866.392889,
+    "hash": "08f766c47654c540451ab1385c6d8864"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\lib\\audit\\redact.mjs": {
     "mtime": 1786645068.1175725,
@@ -179,13 +175,17 @@
     "mtime": 1786642172.5797608,
     "hash": "e5606b8b1a4511f014d0f051acced83d"
   },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\account.js": {
+    "mtime": 1788798789.8030589,
+    "hash": "28db01519dd91d7a7c769fda162acd19"
+  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\app.js": {
     "mtime": 1788797449.2092428,
     "hash": "4724f68eac428475b7f7a6d9e3973648"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\compare.js": {
-    "mtime": 1788761198.4269722,
-    "hash": "8637648c1da29a9cd7e22361da2702f8"
+    "mtime": 1788799234.456803,
+    "hash": "a06e33d34ab5dc9f1ba50b2606c6ca24"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\india-states.js": {
     "mtime": 1779431454.5198903,
@@ -208,12 +208,8 @@
     "hash": "29642d9fc7b54d23411fa3fd13eedd63"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\system.js": {
-    "mtime": 1788788660.466914,
-    "hash": "9549bd668618c49f9bb587ac1edd1f4e"
-  },
-  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\tracked.js": {
-    "mtime": 1788780746.2524335,
-    "hash": "5117adee4debed1a020e57a3541b12d2"
+    "mtime": 1788799398.1224968,
+    "hash": "4112c10220ed10c1fec95613befc3036"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\routes\\rto-daily-routes.mjs": {
     "mtime": 1785092637.2019935,
@@ -264,8 +260,8 @@
     "hash": "85d0a333bdfb8a37b0e8c8a149f0fc9d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\backup-local-db.mjs": {
-    "mtime": 1782036472.5116496,
-    "hash": "5f245b861db270f4926b23f6ae88a06a"
+    "mtime": 1788798873.0407248,
+    "hash": "17708a02512ea3a780fa268928c56de7"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\build-final-validation-report.py": {
     "mtime": 1785678779.1868408,
@@ -288,8 +284,8 @@
     "hash": "5d59f684022a91902d6bdae4437605b2"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\cockroach-test-runner.mjs": {
-    "mtime": 1781641546.4603982,
-    "hash": "a8855f1b7875608a07b7363087aafd8c"
+    "mtime": 1788798877.6761036,
+    "hash": "3086d9b7d22337f29139f0a2c2c7f9e4"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\collect-rto-factor-sources.mjs": {
     "mtime": 1785091684.7909355,
@@ -312,8 +308,8 @@
     "hash": "2024e15c44cfb0efe3765904420e07d3"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\e-theme-browser-check.mjs": {
-    "mtime": 1788779478.3422842,
-    "hash": "0671fb77c4f74c6781a67f8b9bca58d1"
+    "mtime": 1788798863.6633034,
+    "hash": "ccdc5e58239c110334778b9cd5b101f6"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\ensure-local-postgres.ps1": {
     "mtime": 1782500946.6817276,
@@ -388,16 +384,16 @@
     "hash": "e305348d3ba69af0cbdaa7fcafa72744"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\local-db-check.mjs": {
-    "mtime": 1782247374.8339417,
-    "hash": "4a3a3980414b721378c7b9c4cf834845"
+    "mtime": 1788798868.7203722,
+    "hash": "ad766659bfc6d8e8816d8387655ff0cd"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\local-regression-check.mjs": {
     "mtime": 1788199597.2480829,
     "hash": "1dbee2bae36f451b25dab149b18112e5"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\migrate-to-local-postgres.mjs": {
-    "mtime": 1782243526.154017,
-    "hash": "5a031bce07870cf04af63eaf90dbcf04"
+    "mtime": 1788798870.9802926,
+    "hash": "941529ea92909a0021aee52e67d94f2b"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\monthly-oem-unit-check.mjs": {
     "mtime": 1781420905.112916,
@@ -408,8 +404,8 @@
     "hash": "2768b72e31a3f8cea64c142fc6757cbd"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\production-smoke-check.mjs": {
-    "mtime": 1788201135.9788823,
-    "hash": "6795c4f11c7359f407d3a79fa5ee5e59"
+    "mtime": 1788799107.2444997,
+    "hash": "c7554aaca69f4214f8cc467982474008"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\public-dashboard-client-unit-check.mjs": {
     "mtime": 1788692744.1388211,
@@ -476,8 +472,8 @@
     "hash": "5be27187c04eabf692a21dc419615369"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\restore-local-db.mjs": {
-    "mtime": 1782243677.9787703,
-    "hash": "037f024616f4c009871fdb582b8671f5"
+    "mtime": 1788798875.417996,
+    "hash": "0c728d1627998beef895c7f41f7468cf"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\rto-daily-browser-check.mjs": {
     "mtime": 1785397273.5745199,
@@ -540,8 +536,8 @@
     "hash": "957cca728907fe6f182462045e16a2c5"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\run-local-db-task.ps1": {
-    "mtime": 1787913508.176281,
-    "hash": "52e7047dd0b4fde4b85b98857b1ea8e9"
+    "mtime": 1788798706.0034568,
+    "hash": "ed5ee034e4de59a82ea46a87b1bac172"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\run-rto-daily-snapshots.mjs": {
     "mtime": 1785841688.2795842,
@@ -559,10 +555,6 @@
     "mtime": 1784912684.0615294,
     "hash": "be887413b996167a4d8a880e2b2fc2b8"
   },
-  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\run-tracked-queries.mjs": {
-    "mtime": 1782245954.3957994,
-    "hash": "3427964b183e01a4e07fed3e50e8f8e7"
-  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\security-unit-check.mjs": {
     "mtime": 1784980758.1916008,
     "hash": "69e89bac58e0638f66ede13dca46f10b"
@@ -576,8 +568,8 @@
     "hash": "68d6005b89ec80999afb992df5a01829"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\unregister-local-db-tasks.ps1": {
-    "mtime": 1785309138.778188,
-    "hash": "1ee7b6b0b79fe43b71d5e532e4081c87"
+    "mtime": 1788798953.4521985,
+    "hash": "2138123e2b3c6dcf9c2d5c46b3c95021"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\vahan-scraper-unit-check.mjs": {
     "mtime": 1788784885.2856767,
@@ -3888,8 +3880,8 @@
     "hash": "2ed67c68f28bc1ef95ac24167431d7e8"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\DESIGN.md": {
-    "mtime": 1788761855.1646874,
-    "hash": "14b0ef5e1c63366b4e36fdaa6b73bf96"
+    "mtime": 1788798351.9364533,
+    "hash": "c07e2f07022ad5cb5385f68e58ebd8ad"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\HANDOFF.md": {
     "mtime": 1778870481.6106453,
@@ -3956,8 +3948,8 @@
     "hash": "61dbc0896ebfac4f3c843ae2daf65c7a"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\audit\\ponytail-review-prompt.md": {
-    "mtime": 1786638871.5335364,
-    "hash": "16b0b15d0726c3a7d8335a1b22463723"
+    "mtime": 1788798354.7446668,
+    "hash": "6b2674008a5b98f281ac2a0e734f6bdf"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\audit\\README.md": {
     "mtime": 1786643832.1197672,
@@ -3988,8 +3980,8 @@
     "hash": "e9111243ecc2714426c24f52170c8f73"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\docs\\design\\dashboard-concepts-2026-09-06.md": {
-    "mtime": 1788698668.2468238,
-    "hash": "bc82b0250092336e2e88653101a53a9b"
+    "mtime": 1788798911.8476698,
+    "hash": "635d74c6ea8ce5bc42addfa1c8b597cb"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\docs\\design\\dashboard-second-pass-2026-09-06.md": {
     "mtime": 1788711173.8040252,
@@ -3999,9 +3991,13 @@
     "mtime": 1788779594.4462526,
     "hash": "d1ca82b425b86e52d46ab5df442c1a9b"
   },
+  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\account.html": {
+    "mtime": 1788798785.2425532,
+    "hash": "517a4e4f07110b0ce2a11c8509d84a90"
+  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\compare.html": {
-    "mtime": 1788788693.3325212,
-    "hash": "2d04bdbe4351e1f315a33a8c5963246f"
+    "mtime": 1788799230.6226091,
+    "hash": "7f43ebefa17558cffcaf5f3bbd9ff419"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\index.html": {
     "mtime": 1788789898.4456582,
@@ -4023,17 +4019,13 @@
     "mtime": 1788779197.4517,
     "hash": "f7db7804ff6b9d52447de5b4de5108e2"
   },
-  "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\tracked.html": {
-    "mtime": 1788778830.327885,
-    "hash": "eb47fa157d48b99b97c217ab011e48ab"
-  },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\public\\fonts\\OFL.txt": {
     "mtime": 1788716895.4404478,
     "hash": "028e355944f58645eb2a8d190e6b24f6"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\scripts\\README.md": {
-    "mtime": 1788624578.8378677,
-    "hash": "c1ea481738dbd2949cc5419429acc9cb"
+    "mtime": 1788798951.5221105,
+    "hash": "f0200e212e5b97819fdf90424d85091d"
   },
   "C:\\Users\\amogh\\Desktop\\BHAIYA\\Vahan EY\\tmp\\direct-public-api\\AGENTS.md": {
     "mtime": 1788277873.6323905,

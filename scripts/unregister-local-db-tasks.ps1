@@ -6,8 +6,7 @@ $taskNames = @(
   "VahanEY-RtoCatalog",
   "VahanEY-RtoDaily",
   "VahanEY-RtoInsightsOsm",
-  "VahanEY-RtoFactorDaily",
-  "VahanEY-TrackedQueries"
+  "VahanEY-RtoFactorDaily"
 )
 
 foreach ($name in $taskNames) {

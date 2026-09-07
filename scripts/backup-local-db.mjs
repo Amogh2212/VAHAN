@@ -9,7 +9,6 @@ const { Pool } = pg;
 const gzipAsync = promisify(gzip);
 const TABLES = [
   "registrations", "maker_registrations", "users", "sessions", "telegram_link_codes",
-  "tracked_queries", "tracked_query_runs", "tracked_query_observations",
   "rto_daily_snapshot_configs", "rto_daily_collection_runs", "rto_daily_snapshots",
   "rto_monthly_snapshot_aggregates",
 ];

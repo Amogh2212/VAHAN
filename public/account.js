@@ -1,1 +1,42 @@
-const $=s=>document.querySelector(s);let csrfToken,user;const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));function note(m,t='info'){const n=$('#accountNotice');n.hidden=!m;n.dataset.type=t;n.textContent=m||''}async function api(url,o={}){const m=(o.method||'GET').toUpperCase(),r=await fetch(url,{...o,headers:{'content-type':'application/json',...(!['GET','HEAD'].includes(m)&&csrfToken?{'x-csrf-token':csrfToken}:{}),...(o.headers||{})}}),b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||'Request failed.');return b}function setUser(u){user=u;$('#signedOut').hidden=!!u;$('#accountWorkspace').hidden=!u;if(!u)return;const n=u.name||u.email;$('#accountName').textContent=n;$('#accountEmail').textContent=u.email;$('#accountInitial').textContent=n.trim()[0].toUpperCase();if(u.createdAt)$('#memberSince').textContent=`Member since ${new Intl.DateTimeFormat('en-IN',{month:'long',year:'numeric'}).format(new Date(u.createdAt))}`}async function load(){const b=await api('/api/tracked-queries'),q=b.trackedQueries||[],on=q.filter(x=>x.active).length,linked=!!user.telegramChatId;$('#trackedTotal').textContent=q.length;$('#activeTotal').textContent=on;$('#telegramState').textContent=linked?'Connected':'Not connected';$('#telegramDetail').textContent=linked?'Updates can be delivered to Telegram':'Link Telegram to receive updates';$('#telegramCopy').textContent=linked?'Your Telegram account is linked. A new link code replaces unused earlier codes.':'Link the Vahan Analyst bot to receive monitoring updates in Telegram.';$('#telegramBtn').textContent=linked?'Create a new link code':'Link Telegram';$('#scheduleList').innerHTML=q.length?q.slice(0,4).map(x=>`<a class="schedule-row" href="/tracked.html"><span><strong>${esc(x.label||x.query)}</strong><small>${x.active?'Active daily schedule':'Paused'}${x.runTimeLocal?` · ${esc(x.runTimeLocal)} ${esc(x.timezone||'')}`:''}</small></span><span class="status-pill ${x.active?'success':''}">${x.active?'Active':'Paused'}</span></a>`).join(''):`<p class="result-empty">No tracked queries yet. <a href="/tracked.html">Create your first monitoring scope.</a></p>`}$('#telegramBtn').onclick=async()=>{try{const b=await api('/api/telegram/link-code',{method:'POST'}),c=`/link ${b.code}`;await navigator.clipboard?.writeText(c).catch(()=>{});note(b.deepLink?`Open Telegram to link your account: ${b.deepLink}`:`Send ${c} to the Vahan Analyst bot.`,'success')}catch(e){note(e.message,'error')}};$('#exportBtn').onclick=async()=>{try{const b=await api('/api/account/export'),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b.account,null,2)],{type:'application/json'}));a.download='vahan-analyst-account-data.json';a.click();URL.revokeObjectURL(a.href);note('Your account-data download has started.','success')}catch(e){note(e.message,'error')}};$('#deleteBtn').onclick=()=>{$('#deleteConfirm').value='';$('#deleteError').hidden=true;$('#deleteDialog').showModal()};$('#cancelDelete').onclick=()=>$('#deleteDialog').close();$('#deleteDialog').onsubmit=async e=>{e.preventDefault();if($('#deleteConfirm').value!=='DELETE'){$('#deleteError').textContent='Type DELETE exactly to confirm permanent deletion.';$('#deleteError').hidden=false;return}try{await api('/api/account',{method:'DELETE',body:JSON.stringify({confirm:'DELETE'})});$('#deleteDialog').close();setUser(null);note('Your account has been deleted.','success')}catch(x){$('#deleteError').textContent=x.message;$('#deleteError').hidden=false}};$('#logoutBtn').onclick=async()=>{try{await api('/auth/logout',{method:'POST'});csrfToken=null;setUser(null);note('You have signed out.','success')}catch(e){note(e.message,'error')}};api('/api/me').then(b=>{csrfToken=b.csrfToken||null;setUser(b.user);return b.user?load():null}).catch(e=>note(e.message,'error'));
+const $ = (selector) => document.querySelector(selector);
+let csrfToken;
+
+async function api(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      ...(!["GET", "HEAD"].includes(method) && csrfToken ? { "x-csrf-token": csrfToken } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "Request failed.");
+  return body;
+}
+
+function notice(message, type = "info") {
+  const element = $("#accountNotice");
+  element.hidden = !message;
+  element.dataset.type = type;
+  element.textContent = message || "";
+}
+
+function setUser(user) {
+  $("#signedOut").hidden = Boolean(user);
+  $("#accountWorkspace").hidden = !user;
+  if (!user) return;
+  const name = user.name || user.email;
+  $("#accountName").textContent = name;
+  $("#accountEmail").textContent = user.email;
+  $("#accountInitial").textContent = name.trim()[0].toUpperCase();
+  if (user.createdAt) $("#memberSince").textContent = `Member since ${new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric" }).format(new Date(user.createdAt))}`;
+}
+
+$("#logoutBtn").onclick = async () => { await api("/auth/logout", { method: "POST" }); csrfToken = null; setUser(null); notice("You have signed out.", "success"); };
+$("#exportBtn").onclick = async () => { const body = await api("/api/account/export"); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([JSON.stringify(body.account, null, 2)], { type: "application/json" })); link.download = "vahan-analyst-account-data.json"; link.click(); URL.revokeObjectURL(link.href); notice("Your account-data download has started.", "success"); };
+$("#deleteBtn").onclick = () => { $("#deleteConfirm").value = ""; $("#deleteError").hidden = true; $("#deleteDialog").showModal(); };
+$("#cancelDelete").onclick = () => $("#deleteDialog").close();
+$("#deleteDialog").onsubmit = async (event) => { event.preventDefault(); if ($("#deleteConfirm").value !== "DELETE") { $("#deleteError").textContent = "Type DELETE exactly to confirm permanent deletion."; $("#deleteError").hidden = false; return; } await api("/api/account", { method: "DELETE", body: JSON.stringify({ confirm: "DELETE" }) }); $("#deleteDialog").close(); setUser(null); notice("Your account has been deleted.", "success"); };
+api("/api/me").then((body) => { csrfToken = body.csrfToken || null; setUser(body.user); }).catch((error) => notice(error.message, "error"));

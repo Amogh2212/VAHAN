@@ -27,8 +27,6 @@ $scriptArgs = @()
 $envFile = ".env"
 $script = if ($Job -eq "postgres") {
   Join-Path $PSScriptRoot "start-local-postgres.mjs"
-} elseif ($Job -eq "tracked") {
-  Join-Path $PSScriptRoot "run-tracked-queries.mjs"
 } elseif ($Job -eq "rto-catalog") {
   $scriptArgs = @("--mode", "rto-catalog")
   Join-Path $PSScriptRoot "vahan-scraper.mjs"

@@ -25,9 +25,6 @@ const REQUIRED_TABLES = [
   "users",
   "sessions",
   "telegram_link_codes",
-  "tracked_queries",
-  "tracked_query_runs",
-  "tracked_query_observations",
   "rto_daily_snapshot_configs",
   "rto_daily_collection_runs",
   "rto_daily_snapshots",
@@ -139,7 +136,7 @@ async function loadMakerRows(args) {
 }
 
 async function validateCoreReads() {
-  const [freshness, makerRows, trackedRows, rtoRows] = await Promise.all([
+  const [freshness, makerRows, rtoRows] = await Promise.all([
     query(
       `
         select
@@ -149,7 +146,6 @@ async function validateCoreReads() {
       `,
     ),
     query("select count(*)::int as row_count from maker_registrations"),
-    query("select count(*)::int as row_count from tracked_queries"),
     query("select count(*)::int as row_count from rto_daily_snapshot_configs"),
   ]);
   return {
@@ -157,7 +153,6 @@ async function validateCoreReads() {
     makerRows: Number(makerRows.rows[0]?.row_count ?? 0),
     registrationRows: Number(freshness.rows[0]?.row_count ?? 0),
     rtoConfigRows: Number(rtoRows.rows[0]?.row_count ?? 0),
-    trackedQueryRows: Number(trackedRows.rows[0]?.row_count ?? 0),
   };
 }
 

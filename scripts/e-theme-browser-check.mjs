@@ -78,7 +78,7 @@ try{
       assert.equal(await page.locator('#openFilters').evaluate(el=>el===document.activeElement),true);
     }
   }
-  for(const route of ['compare.html','map.html','rto-trends.html','rto-reports.html','rto-insights.html','tracked.html','reports/monthly-sales.html']){
+  for(const route of ['compare.html','map.html','rto-trends.html','rto-reports.html','rto-insights.html','account.html','reports/monthly-sales.html']){
     await page.setViewportSize({width:1536,height:1024});await page.goto(`${base}/${route}`,{waitUntil:'networkidle'});
     if(route === 'compare.html'){
       assert.ok(await page.locator('#leftTrend .bar-fill').first().evaluate(el=>el.getBoundingClientRect().width > 0));

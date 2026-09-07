@@ -8,14 +8,11 @@ const { Pool } = pg;
 const gunzipAsync = promisify(gunzip);
 const TABLES = [
   "registrations", "maker_registrations", "users", "sessions", "telegram_link_codes",
-  "tracked_queries", "tracked_query_runs", "tracked_query_observations",
   "rto_daily_snapshot_configs", "rto_daily_collection_runs", "rto_daily_snapshots",
   "rto_monthly_snapshot_aggregates",
 ];
 const SEQUENCED_TABLES = TABLES.filter((table) => !["sessions", "telegram_link_codes"].includes(table));
 const JSON_COLUMNS = {
-  tracked_query_runs: new Set(["metadata"]),
-  tracked_query_observations: new Set(["filters", "summary", "warnings", "freshness"]),
   rto_daily_collection_runs: new Set(["errors", "metadata"]),
   rto_daily_snapshots: new Set(["raw"]),
 };
