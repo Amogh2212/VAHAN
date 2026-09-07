@@ -21,7 +21,14 @@ const server = http.createServer(async (request, response) => {
   const relativePath = url.pathname === "/" ? "index.html" : url.pathname.replace(/^\/+/, "");
   const filePath = path.resolve(PUBLIC_DIR, relativePath);
   if (!filePath.startsWith(`${PUBLIC_DIR}${path.sep}`) && filePath !== path.join(PUBLIC_DIR, "index.html")) return response.writeHead(403).end("Forbidden");
-  try { response.writeHead(200, { "content-type": contentType(filePath) }).end(await fs.readFile(filePath)); } catch { response.writeHead(404).end("Not found"); }
+  try {
+    const body = await fs.readFile(filePath);
+    if (!response.headersSent) response.writeHead(200, { "content-type": contentType(filePath) });
+    if (!response.writableEnded) response.end(body);
+  } catch {
+    if (!response.headersSent) response.writeHead(404);
+    if (!response.writableEnded) response.end("Not found");
+  }
 });
 
 try {
