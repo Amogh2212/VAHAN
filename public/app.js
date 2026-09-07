@@ -269,6 +269,25 @@ function setExportButtonsEnabled(enabled) {
   downloadPdfBtn.disabled = !enabled;
 }
 
+function animateCounter(el, target) {
+  const start = parseInt(el.textContent.replace(/[^\d]/g, "")) || 0;
+  if (start === target) {
+    el.textContent = fmt.format(target);
+    return;
+  }
+  const duration = 600;
+  const startTime = performance.now();
+  function tick(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + (target - start) * eased);
+    el.textContent = fmt.format(current);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 function setMetricDisplay(id, value, { trusted = true } = {}) {
   const el = document.querySelector(`#${id}`);
   if (!el) return;
@@ -276,7 +295,11 @@ function setMetricDisplay(id, value, { trusted = true } = {}) {
     el.textContent = "—";
     return;
   }
-  el.textContent = value === null || value === undefined ? "—" : fmt.format(value);
+  if (value === null || value === undefined) {
+    el.textContent = "—";
+    return;
+  }
+  animateCounter(el, value);
 }
 
 /* Renderers */
