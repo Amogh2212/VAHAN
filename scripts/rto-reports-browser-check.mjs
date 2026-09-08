@@ -73,7 +73,7 @@ async function main() {
     assert.equal(await emptyPage.locator("#rtoReportBatchStrip").isHidden(), true);
     assert.equal(await emptyPage.locator(".rto-report-list-panel").isHidden(), true);
     assert.equal(await emptyPage.getByRole("heading", { name: "No reports generated yet" }).isVisible(), true);
-    assert.match(await emptyPage.locator(".rto-report-empty p").innerText(), /9,000 per top-100 cycle/);
+    assert.match(await emptyPage.locator(".rto-report-empty p").innerText(), /at most 30 maker rows/);
     await assertTabsContained(emptyPage);
     await assertReadinessPillAligned(emptyPage);
     await assertNoPageOverflow(emptyPage);
@@ -94,7 +94,7 @@ async function main() {
     assert.equal(await page.locator("#rtoReportReadinessStatus").innerText(), "100 / 100");
     assert.equal(await page.locator(".rto-report-list-item").count(), 100);
     assert.equal(await page.getByRole("heading", { name: "Pune Central RTO" }).isVisible(), true);
-    assert.equal(await page.getByRole("heading", { name: "OEM performance" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "OEM stock" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
     assert.match(await page.locator(".rto-factor-card").innerText(), /associated with a higher daily EV run-rate/i);
     assert.equal(
@@ -104,10 +104,10 @@ async function main() {
     assert.equal(await page.locator("#rtoReportBatchDate").inputValue(), "2026-07-24");
     assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "READY WITH WARNINGS");
     const metricCards = page.locator(".rto-report-metrics article");
-    await expectMetricCard(metricCards.nth(0), "EV registrations", "1,253", "Fetched MTD; daily N/A");
-    await expectMetricCard(metricCards.nth(1), "ICE registrations", "5,908", "Fetched MTD; daily N/A");
-    await expectMetricCard(metricCards.nth(2), "EV share", "17.5%", "Fetched MTD; daily N/A");
-    assert.match(await page.locator(".rto-report-list-item").first().innerText(), /EV MTD 1,253/);
+    await expectMetricCard(metricCards.nth(0), "Active EV stock", "1,253", "Net N/A");
+    await expectMetricCard(metricCards.nth(1), "Active ICE stock", "5,908", "Net N/A");
+    await expectMetricCard(metricCards.nth(2), "EV stock share", "17.5%", "Baseline 16.8%");
+    assert.match(await page.locator(".rto-report-list-item").first().innerText(), /Active EV stock 1,253/);
     await page.evaluate(() => {
       window.__rtoDatePickerOpened = 0;
       HTMLInputElement.prototype.__rtoOriginalShowPicker = HTMLInputElement.prototype.showPicker;
@@ -348,17 +348,17 @@ function reportSummary(rank) {
     mtdIce,
     evShare: missingDailyBoundary ? null : 17.8,
     summary: missingDailyBoundary
-      ? `${names[1]} has unavailable daily additions because the previous-day boundary is incomplete. Month-to-date totals are ${mtdEv} EV and ${mtdIce} ICE registrations.`
-      : `${names[1]} recorded ${periodEv} EV and ${periodIce} ICE registrations in this period.`,
+      ? `${names[1]} has unavailable daily net stock movement because the previous-day boundary is incomplete. Current active stock is ${mtdEv} EV and ${mtdIce} ICE vehicles.`
+      : `${names[1]} recorded net stock movement of ${periodEv} EV and ${periodIce} ICE vehicles in this period.`,
     generatedAt: "2026-07-24T18:00:00.000Z",
   };
 }
 
 function fullReport(summary) {
   const categories = [
-    { vehicleCategory: "2W", period: { ev: 64, ice: 290, total: 354 }, mtd: { ev: 880, ice: 4_050, total: 4_930 } },
-    { vehicleCategory: "3W", period: { ev: 18, ice: 42, total: 60 }, mtd: { ev: 220, ice: 590, total: 810 } },
-    { vehicleCategory: "4W", period: { ev: 9, ice: 90, total: 99 }, mtd: { ev: 153, ice: 1_268, total: 1_421 } },
+    { vehicleCategory: "2W", period: { ev: 64, ice: 290, total: 354 }, stock: { ev: 880, ice: 4_050, total: 4_930 } },
+    { vehicleCategory: "3W", period: { ev: 18, ice: 42, total: 60 }, stock: { ev: 220, ice: 590, total: 810 } },
+    { vehicleCategory: "4W", period: { ev: 9, ice: 90, total: 99 }, stock: { ev: 153, ice: 1_268, total: 1_421 } },
   ];
   const oemNames = [
     "Hero MotoCorp",
@@ -431,7 +431,7 @@ function fullReport(summary) {
           evShare: summary.evShare,
         },
         previousPeriod: { ev: 82, ice: 407, total: 489, evShare: 16.8 },
-        mtd: { ev: summary.mtdEv, ice: summary.mtdIce, total: summary.mtdEv + summary.mtdIce, evShare: 17.5 },
+        stock: { ev: summary.mtdEv, ice: summary.mtdIce, total: summary.mtdEv + summary.mtdIce, evShare: 17.5 },
         change: {
           ev: { absolute: 9, percent: 11.0 },
           ice: { absolute: 15, percent: 3.7 },
@@ -441,15 +441,19 @@ function fullReport(summary) {
       categories,
       oems: oemNames.map((oem, index) => ({
         oem,
-        categories: ["2W", "3W", "4W"].map((vehicleCategory, categoryIndex) => {
+        categories: (() => {
+          const categoryIndex = Math.floor(index / 5);
           const categoryStart = categoryIndex * 5;
-          const outsideConfiguredCategory = index < categoryStart || index >= categoryStart + 5;
-          return {
+          const vehicleCategory = ["2W", "3W", "4W"][categoryIndex];
+          return [{
           vehicleCategory,
-          period: { ev: outsideConfiguredCategory ? 0 : Math.max(0, 12 - index - categoryIndex), ice: outsideConfiguredCategory ? 0 : Math.max(1, 36 - index * 2 - categoryIndex), total: outsideConfiguredCategory ? 0 : Math.max(1, 48 - index * 3 - categoryIndex * 2) },
-          previousPeriod: { ev: outsideConfiguredCategory ? 0 : Math.max(0, 10 - index - categoryIndex), ice: outsideConfiguredCategory ? 0 : Math.max(1, 33 - index * 2 - categoryIndex), total: outsideConfiguredCategory ? 0 : Math.max(1, 43 - index * 3 - categoryIndex * 2) },
+          period: { ev: Math.max(0, 12 - index - categoryIndex), ice: Math.max(1, 36 - index * 2 - categoryIndex), total: Math.max(1, 48 - index * 3 - categoryIndex * 2) },
+          previousPeriod: { ev: Math.max(0, 10 - index - categoryIndex), ice: Math.max(1, 33 - index * 2 - categoryIndex), total: Math.max(1, 43 - index * 3 - categoryIndex * 2) },
+          stock: { ev: Math.max(0, 120 - index), ice: Math.max(1, 360 - index * 2), total: Math.max(1, 480 - index * 3) },
+          rank: { ev: index - categoryStart + 1, ice: index - categoryStart + 1 },
+          previousRank: { ev: index - categoryStart + 2, ice: index - categoryStart + 1 },
           change: { total: { absolute: index % 3 === 0 ? -2 : 7 } },
-        }; }),
+        }]; })(),
       })),
       trend: Array.from({ length: 14 }, (_, index) => ({
         date: `2026-07-${String(11 + index).padStart(2, "0")}`,

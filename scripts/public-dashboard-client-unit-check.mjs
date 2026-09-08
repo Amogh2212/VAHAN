@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import {
   fetchPublicDashboardRows,
   fetchPublicFuelDistribution,
+  fetchPublicRtoStockSegment,
+  parsePublicCategoryDistribution,
   parsePublicMonthlyCounts,
+  parsePublicTopMakers,
   publicChartQueryString,
   publicMonthlyQueryString,
   publicRtoCode,
@@ -44,6 +47,18 @@ const monthlyResponse = [
   { yearAsString: "2026-February", registeredVehicleCount: "3,914" },
 ];
 assert.deepEqual([...parsePublicMonthlyCounts(monthlyResponse, 2026)], [[8, 3329], [2, 3914]]);
+assert.deepEqual(parsePublicTopMakers({ labels: ["Maker A", "Maker B"], datasets: [{ data: [90, "10"] }] }), [
+  { maker: "Maker A", count: 90, rank: 1 },
+  { maker: "Maker B", count: 10, rank: 2 },
+]);
+assert.deepEqual(parsePublicTopMakers({ labels: [], datasets: [{ data: [] }] }), []);
+assert.deepEqual(parsePublicCategoryDistribution({ labels: ["TWO WHEELER(NT)"], data: [125] }), [
+  { category: "TWO WHEELER(NT)", count: 125 },
+]);
+assert.throws(() => parsePublicTopMakers({ labels: ["A"], datasets: [{ data: [] }] }), /invalid top-maker response/);
+assert.throws(() => parsePublicTopMakers({ labels: ["A", "A"], datasets: [{ data: [1, 1] }] }), /invalid top-maker value/);
+assert.throws(() => parsePublicTopMakers({ labels: ["A", "B"], datasets: [{ data: [1, 2] }] }), /ranking order/);
+assert.throws(() => parsePublicCategoryDistribution({ labels: ["2W", "2W"], data: [1, 2] }), /category-distribution value/);
 
 const requests = [];
 const fetchImpl = async (url, options) => {
@@ -143,5 +158,51 @@ const distribution = await fetchPublicFuelDistribution({
 });
 assert.deepEqual(distribution, [{ fuelType: "PETROL", count: 100 }, { fuelType: "PURE EV", count: 25 }]);
 assert.match(requests[1].url, /vehicleSubCategories=LIGHT\+MOTOR\+VEHICLE%2CLIGHT\+PASSENGER\+VEHICLE/);
+
+const stockRequests = [];
+const stockSegment = await fetchPublicRtoStockSegment({
+  state: "Uttar Pradesh",
+  rto: "Noida - UP16 (13-NOV-2017)",
+  vehicleCategories: ["TWO WHEELER(NT)", "TWO WHEELER(T)"],
+  fuels: ["PURE EV", "ELECTRIC(BOV)"],
+  beforeRequest: async () => stockRequests.push("paced"),
+  fetchImpl: async (url) => {
+    stockRequests.push(url);
+    if (url.includes("top5Makerchart")) {
+      return new Response(JSON.stringify({ labels: ["Maker A", "Maker B"], datasets: [{ data: [70, 20] }] }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ labels: ["TWO WHEELER(NT)", "TWO WHEELER(T)"], data: [80, 40] }), { status: 200 });
+  },
+});
+assert.equal(stockSegment.total, 120);
+assert.equal(stockSegment.topFiveTotal, 90);
+assert.equal(stockSegment.metricKind, "active_stock");
+assert.equal(stockSegment.filters.archiveScope, "ACTIVE_ONLY");
+assert.equal(stockRequests.filter((item) => item === "paced").length, 2, "each Public Dashboard request should use the shared rate limiter");
+assert.match(stockRequests.find((item) => String(item).includes("top5Makerchart")), /rtoCode=16/);
+assert.match(stockRequests.find((item) => String(item).includes("top5Makerchart")), /vehicleFuels=PURE\+EV%2CELECTRIC%28BOV%29/);
+
+const zeroStock = await fetchPublicRtoStockSegment({
+  state: "Uttar Pradesh",
+  rto: "Noida - UP16",
+  fetchImpl: async (url) => new Response(JSON.stringify(
+    url.includes("top5Makerchart") ? { labels: [], datasets: [{ data: [] }] } : { labels: [], data: [] },
+  ), { status: 200 }),
+});
+assert.equal(zeroStock.explicitZero, true);
+assert.equal(zeroStock.makers.length, 0);
+
+await assert.rejects(
+  () => fetchPublicRtoStockSegment({
+    state: "Uttar Pradesh",
+    rto: "Noida - UP16",
+    fetchImpl: async (url) => new Response(JSON.stringify(
+      url.includes("top5Makerchart")
+        ? { labels: ["Maker A"], datasets: [{ data: [11] }] }
+        : { labels: ["TWO WHEELER(NT)"], data: [10] },
+    ), { status: 200 }),
+  }),
+  /top-maker total exceeds/,
+);
 
 console.log("public-dashboard-client-unit-check: ok");

@@ -261,6 +261,12 @@ create table if not exists rto_daily_collection_runs (
 );
 
 alter table rto_daily_collection_runs
+  add column if not exists metric_kind text not null default 'registration_flow';
+
+alter table rto_daily_collection_runs
+  add column if not exists source text not null default 'vahan-legacy-dashboard';
+
+alter table rto_daily_collection_runs
   add column if not exists snapshot_date date;
 
 alter table rto_daily_collection_runs
@@ -358,12 +364,20 @@ create table if not exists rto_daily_scrape_reports (
   attempts integer not null default 1 check (attempts >= 1),
   filters_confirmed boolean not null default false,
   explicit_zero boolean not null default false,
+  metric_kind text not null default 'registration_flow',
+  source text not null default 'vahan-legacy-dashboard',
   scraped_at timestamptz not null,
   evidence jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)
 );
+
+alter table rto_daily_scrape_reports
+  add column if not exists metric_kind text not null default 'registration_flow';
+
+alter table rto_daily_scrape_reports
+  add column if not exists source text not null default 'vahan-legacy-dashboard';
 
 create index if not exists rto_daily_scrape_reports_job_idx
   on rto_daily_scrape_reports (job_id, fuel_group, vehicle_category);
@@ -381,6 +395,8 @@ create table if not exists rto_daily_snapshots (
   vehicle_category text not null check (vehicle_category in ('2W', '3W', '4W')),
   oem text not null,
   vehicle_count integer not null check (vehicle_count >= 0),
+  source_rank smallint check (source_rank between 1 and 5),
+  metric_kind text not null default 'registration_flow',
   source text not null default 'vahan-scraper',
   scrape_status text not null default 'success',
   scrape_run_id bigint references rto_daily_collection_runs(id) on delete set null,
@@ -394,6 +410,12 @@ create table if not exists rto_daily_snapshots (
 
 alter table rto_daily_snapshots
   add column if not exists report_id bigint references rto_daily_scrape_reports(id) on delete set null;
+
+alter table rto_daily_snapshots
+  add column if not exists source_rank smallint;
+
+alter table rto_daily_snapshots
+  add column if not exists metric_kind text not null default 'registration_flow';
 
 create index if not exists rto_daily_snapshots_lookup_idx
   on rto_daily_snapshots (state, rto, fuel_group, vehicle_category, oem, snapshot_date desc);
@@ -420,10 +442,14 @@ create table if not exists rto_monthly_snapshot_aggregates (
   min_vehicle_count integer not null check (min_vehicle_count >= 0),
   max_vehicle_count integer not null check (max_vehicle_count >= 0),
   sample_count integer not null check (sample_count >= 0),
+  metric_kind text not null default 'registration_flow',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (target_month, state, rto, fuel_group, vehicle_category, oem)
 );
+
+alter table rto_monthly_snapshot_aggregates
+  add column if not exists metric_kind text not null default 'registration_flow';
 
 create index if not exists rto_monthly_snapshot_aggregates_lookup_idx
   on rto_monthly_snapshot_aggregates (state, rto, fuel_group, vehicle_category, oem, target_month desc);
@@ -462,11 +488,19 @@ create table if not exists rto_daily_report_totals (
   scrape_status text not null default 'success' check (scrape_status in ('success', 'late_fill')),
   quality_status text not null default 'ready' check (quality_status in ('ready', 'needs_review')),
   quality_flags jsonb not null default '{}'::jsonb,
+  metric_kind text not null default 'registration_flow',
+  source text not null default 'vahan-legacy-dashboard',
   scraped_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)
 );
+
+alter table rto_daily_report_totals
+  add column if not exists metric_kind text not null default 'registration_flow';
+
+alter table rto_daily_report_totals
+  add column if not exists source text not null default 'vahan-legacy-dashboard';
 
 create index if not exists rto_daily_report_totals_lookup_idx
   on rto_daily_report_totals (state, rto, snapshot_date desc, fuel_group, vehicle_category);
@@ -490,6 +524,9 @@ create table if not exists rto_daily_oem_totals (
   vehicle_category text not null check (vehicle_category in ('2W', '3W', '4W')),
   oem text not null,
   vehicle_count integer not null check (vehicle_count >= 0),
+  source_rank smallint check (source_rank between 1 and 5),
+  metric_kind text not null default 'registration_flow',
+  source text not null default 'vahan-legacy-dashboard',
   source_run_id bigint references rto_daily_collection_runs(id) on delete set null,
   scrape_status text not null default 'success' check (scrape_status in ('success', 'late_fill')),
   scraped_at timestamptz not null,
@@ -497,6 +534,15 @@ create table if not exists rto_daily_oem_totals (
   updated_at timestamptz not null default now(),
   unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem)
 );
+
+alter table rto_daily_oem_totals
+  add column if not exists source_rank smallint;
+
+alter table rto_daily_oem_totals
+  add column if not exists metric_kind text not null default 'registration_flow';
+
+alter table rto_daily_oem_totals
+  add column if not exists source text not null default 'vahan-legacy-dashboard';
 
 create index if not exists rto_daily_oem_totals_lookup_idx
   on rto_daily_oem_totals (state, rto, oem, snapshot_date desc, fuel_group, vehicle_category);

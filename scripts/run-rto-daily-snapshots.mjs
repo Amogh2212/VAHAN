@@ -9,7 +9,7 @@ import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_FILTERS,
   RTO_DAILY_FUEL_GROUPS,
-  buildSnapshotRows,
+  buildRankedStockSnapshotRows,
   claimRtoDailyJob,
   completeRtoDailyJob,
   deferStaleRtoDailyCycles,
@@ -27,14 +27,15 @@ import {
   upsertRtoDailyConfigs,
   validateRtoDailyReport,
 } from "../lib/rto-daily-snapshots.mjs";
+import { fetchPublicRtoStockSegment } from "../lib/public-dashboard-client.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 import { createTerminalProgress } from "../lib/terminal-progress.mjs";
 import {
+  getRtoReportReadiness,
   pruneRtoReportingData,
   reportHistoryStartDate,
   reconcileRtoReportsForRun,
 } from "../lib/rto-reports.mjs";
-import { createVahanMakerSession } from "./vahan-scraper.mjs";
 
 const DEFAULT_WORKERS = Number(process.env.RTO_DAILY_WORKERS ?? 2);
 const DEFAULT_RETENTION_DAYS = Number(process.env.RTO_DAILY_RETENTION_DAYS ?? 30);
@@ -62,6 +63,7 @@ function parseArgs(argv) {
     neon: false,
     timeBudgetMinutes: null,
     dateExplicit: false,
+    requireComplete: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -69,6 +71,7 @@ function parseArgs(argv) {
     else if (arg === "--bootstrap-configs") args.bootstrapConfigs = true;
     else if (arg === "--retry-failed") args.retryFailed = true;
     else if (arg === "--work-queue") args.workQueue = true;
+    else if (arg === "--require-complete") args.requireComplete = true;
     else if (arg === "--neon") args.neon = true;
     else if (arg === "--workers") args.workers = argv[++index];
     else if (arg.startsWith("--workers=")) args.workers = arg.slice("--workers=".length);
@@ -114,21 +117,38 @@ function usage() {
     "Usage: node --env-file=.env scripts/run-rto-daily-snapshots.mjs [options]",
     "",
     "Options:",
-    "  --dry-run              Preview enabled RTOs without creating jobs or launching browsers.",
+    "  --dry-run              Preview enabled RTOs without creating jobs or calling the dashboard.",
     "  --bootstrap-configs    Legacy bootstrap from data/vahan/rto_catalog.json.",
     "  --retry-failed         Requeue terminal failures in the selected cycle/scope.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
+    "  --require-complete     Exit non-zero unless the run finishes with complete 100-RTO report readiness.",
     "  --neon                 Require the configured DATABASE_URL to point to Neon.",
     "  --time-budget-minutes N Stop claiming new RTOs after N minutes (work-queue default 10).",
-    "  --workers N            Persistent browser workers (1-4, default 2).",
+    "  --workers N            Concurrent Public Dashboard workers (1-4, default 2).",
     "  --max-job-attempts N   Maximum claims per RTO before terminal failure (default 3).",
     "  --max-jobs N           Seed at most N RTOs for a targeted pilot.",
     "  --retention-days N     Detailed snapshot retention (default 30).",
     "  --date YYYY-MM-DD      IST snapshot date.",
-    "  --target-month YYYY-MM VAHAN month-to-date report month.",
+    "  --target-month YYYY-MM Storage partition for the daily stock snapshot.",
     "  --state NAME           Restrict a pilot cycle to one state.",
     "  --rto LABEL            Restrict a pilot cycle to one exact official RTO label.",
   ].join("\n");
+}
+
+export function requireCompleteFailureReasons({ finalized, readiness } = {}) {
+  const summary = finalized?.summary ?? {};
+  const reasons = [];
+  if (!finalized?.complete) reasons.push("cycle did not finish before the worker stopped");
+  if (Number(summary.total) !== 100) reasons.push(`expected 100 RTO jobs, found ${Number(summary.total ?? 0)}`);
+  if (Number(summary.succeeded) !== 100) reasons.push(`expected 100 successful RTO jobs, found ${Number(summary.succeeded ?? 0)}`);
+  if (Number(summary.failed) !== 0) reasons.push(`${Number(summary.failed ?? 0)} RTO jobs failed`);
+  if (Number(summary.queued) !== 0 || Number(summary.running) !== 0 || Number(summary.retrying) !== 0 || Number(summary.deferred) !== 0) {
+    reasons.push("RTO jobs remain queued, running, retrying, or deferred");
+  }
+  if (!readiness?.eligible) reasons.push(`report readiness is ${readiness?.reason ?? "not eligible"}`);
+  if (Number(readiness?.cohortSize) !== 100) reasons.push(`expected 100 frozen cohort members, found ${Number(readiness?.cohortSize ?? 0)}`);
+  if (Number(readiness?.completeRtos) !== 100) reasons.push(`expected complete evidence for 100 RTOs, found ${Number(readiness?.completeRtos ?? 0)}`);
+  return reasons;
 }
 
 async function readCatalogConfigs({ state = null } = {}) {
@@ -193,37 +213,51 @@ export function createAdaptiveController(initialWorkers, {
   };
 }
 
-function monthParts(monthKey) {
-  const [year, month] = String(monthKey).split("-").map(Number);
-  return { year, month };
-}
-
-async function scrapeJob({ session, job, workerId, rateLimit }) {
-  const { year, month } = monthParts(job.targetMonth);
+async function scrapeJob({ job, workerId, rateLimit }) {
   const reports = [];
   const rows = [];
-  let retryCount = 0;
   for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
     for (const vehicleCategory of RTO_DAILY_CATEGORIES) {
       await heartbeatRtoDailyJob({ jobId: job.id, workerId });
-      await rateLimit();
       const categoryFilters = RTO_DAILY_CATEGORY_FILTERS[vehicleCategory];
-      const report = await session.scrapeReport({
-        year,
-        month,
+      const segment = await fetchPublicRtoStockSegment({
+        state: job.state,
+        rto: job.rto,
+        fuels: RTO_DAILY_FUEL_FILTERS[fuelGroup],
+        vehicleCategories: categoryFilters.vehicleCategories,
+        vehicleClasses: categoryFilters.vehicleClasses,
+        beforeRequest: rateLimit,
+      });
+      const report = {
+        status: "success",
         state: job.state,
         rto: job.rto,
         fuelGroup,
         vehicleCategory,
-        fuels: RTO_DAILY_FUEL_FILTERS[fuelGroup],
-        vehicleCategories: categoryFilters.vehicleCategories,
-        vehicleClasses: categoryFilters.vehicleClasses,
-      });
+        filtersConfirmed: true,
+        reportTotal: segment.total,
+        explicitZero: segment.explicitZero,
+        rows: segment.makers.map((maker) => ({
+          maker: maker.maker,
+          vehicle_count: maker.count,
+          rank: maker.rank,
+        })),
+        attempts: 1,
+        scrapedAt: segment.scrapedAt,
+        metricKind: segment.metricKind,
+        source: segment.source,
+        evidence: {
+          source: segment.source,
+          metricKind: segment.metricKind,
+          filters: segment.filters,
+          categories: segment.categories,
+          topFiveTotal: segment.topFiveTotal,
+        },
+      };
       validateRtoDailyReport(report, { state: job.state, rto: job.rto });
-      if (report.attempts > 1) retryCount += 1;
       const scrapeStatus = scrapeStatusForSnapshotDate(job.snapshotDate, report.scrapedAt);
       reports.push(report);
-      rows.push(...buildSnapshotRows({
+      rows.push(...buildRankedStockSnapshotRows({
         sourceRows: report.rows,
         state: job.state,
         rto: job.rto,
@@ -235,23 +269,19 @@ async function scrapeJob({ session, job, workerId, rateLimit }) {
           scrapeRunId: job.runId,
           scrapedAt: report.scrapedAt,
           scrapeStatus,
-          raw: {},
+          source: segment.source,
+          raw: { filters: segment.filters },
         },
       }));
     }
   }
   await completeRtoDailyJob({ job, workerId, reports, rows });
-  return { retryCount, reportCount: reports.length };
+  return { retryCount: 0, reportCount: reports.length };
 }
 
 async function workerLoop({ index, runId, args, controller, rateLimit, deadline, progress }) {
   const workerId = `${os.hostname()}-${process.pid}-w${index + 1}`;
   const workerLabel = `w${index + 1}`;
-  let session = null;
-  const resetSession = async () => {
-    await session?.close().catch(() => {});
-    session = await createVahanMakerSession();
-  };
   try {
     while (true) {
       if (Date.now() >= deadline) return;
@@ -268,12 +298,11 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
         await sleep(2000);
         continue;
       }
-      if (!session) await resetSession();
       progress.log(`[${workerLabel}] started | ${job.state} / ${job.rto} | attempt ${job.attempts}`);
       try {
-        const result = await scrapeJob({ session, job, workerId, rateLimit });
+        const result = await scrapeJob({ job, workerId, rateLimit });
         controller.record({ retryCount: result.retryCount, reportCount: result.reportCount, failed: false });
-        progress.log(`[${workerLabel}] saved 90 rows | ${job.rto}`);
+        progress.log(`[${workerLabel}] saved public-dashboard stock rows | ${job.rto}`);
       } catch (error) {
         controller.record({ retryCount: 0, reportCount: 6, failed: true });
         const failed = await failRtoDailyJob({
@@ -283,12 +312,10 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
           maxAttempts: args.maxJobAttempts,
         });
         progress.log(`[${workerLabel}] ${failed?.status ?? "failed"} | ${job.rto} | ${error.message}`, { error: true });
-        await resetSession();
       }
       await progress.refresh();
     }
   } finally {
-    await session?.close().catch(() => {});
   }
 }
 
@@ -373,6 +400,12 @@ async function main() {
     const stopReason = finalized.complete
       ? "cycle_complete"
       : (Number.isFinite(deadline) && Date.now() >= deadline ? "time_budget_reached" : "queue_incomplete");
+    const readiness = args.requireComplete
+      ? await getRtoReportReadiness({ runId: run.id })
+      : reportSystem.readiness ?? null;
+    const completionFailures = args.requireComplete
+      ? requireCompleteFailureReasons({ finalized, readiness })
+      : [];
     console.log(JSON.stringify({
       finalized,
       stopReason,
@@ -380,8 +413,11 @@ async function main() {
       reportSystem,
       reportRetention,
       retention,
+      strictCompletion: args.requireComplete
+        ? { passed: completionFailures.length === 0, failures: completionFailures, readiness }
+        : null,
     }, null, 2));
-    if (finalized.complete && finalized.summary.failed) process.exitCode = 1;
+    if ((finalized.complete && finalized.summary.failed) || completionFailures.length) process.exitCode = 1;
   } finally {
     await releaseLock();
   }
