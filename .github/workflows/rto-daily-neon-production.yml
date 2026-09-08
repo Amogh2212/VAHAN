@@ -1,0 +1,94 @@
+name: RTO Daily Neon Production Collection
+
+on:
+  workflow_dispatch:
+    inputs:
+      initialize_cohort:
+        description: Seed the fixed 100-RTO production cohort before collection.
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: vahan-rto-daily-neon-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PGSSL: "true"
+      RTO_DAILY_WORKERS: "2"
+      RTO_DAILY_RETENTION_DAYS: "30"
+      RTO_DAILY_DELAY_MS: "1200"
+      RTO_DAILY_JITTER_MS: "400"
+      RTO_DAILY_MAX_JOB_ATTEMPTS: "3"
+      RTO_DAILY_WORK_BUDGET_MINUTES: "315"
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Create Neon runtime environment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          test -n "$DATABASE_URL"
+          {
+            printf 'DATABASE_URL=%s\n' "$DATABASE_URL"
+            printf 'PGSSL=true\n'
+            printf 'RTO_DAILY_WORKERS=2\n'
+            printf 'RTO_DAILY_RETENTION_DAYS=30\n'
+            printf 'RTO_DAILY_DELAY_MS=1200\n'
+            printf 'RTO_DAILY_JITTER_MS=400\n'
+            printf 'RTO_DAILY_MAX_JOB_ATTEMPTS=3\n'
+            printf 'RTO_DAILY_WORK_BUDGET_MINUTES=315\n'
+          } > .env
+
+      - name: Apply Neon schema
+        run: node --env-file=.env scripts/apply-neon-schema.mjs
+
+      - name: Initialize fixed 100-RTO production cohort
+        if: ${{ inputs.initialize_cohort == true }}
+        run: npm run rto-daily:production:seed
+
+      - name: Run complete 100-RTO collection
+        id: collect
+        continue-on-error: true
+        run: >-
+          node --env-file=.env scripts/run-rto-daily-snapshots.mjs
+          --neon --work-queue --retry-failed --time-budget-minutes 315 --workers 2 --require-complete
+
+      - name: Create sanitized production summary
+        if: always()
+        continue-on-error: true
+        run: node --env-file=.env scripts/rto-daily-load-test-summary.mjs --output artifacts/rto-daily-neon-production-summary.json
+
+      - name: Upload production evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rto-daily-neon-production-${{ github.run_id }}
+          path: artifacts/rto-daily-neon-production-summary.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Enforce complete collection
+        if: always()
+        run: test "${{ steps.collect.outcome }}" = "success"
