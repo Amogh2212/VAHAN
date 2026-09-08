@@ -10,26 +10,14 @@ import {
   reportPeriodsForSnapshotDate,
   renderRtoReportCsv,
   renderRtoReportHtml,
-  rtoReportCategoryOemRows,
   rtoReportExportRevision,
 } from "../lib/rto-reports.mjs";
 import { loadRtoReportWithOptionalFactorContext } from "../lib/rto-report-context.mjs";
 
-assert.equal(RTO_REPORT_EXPECTED_OEMS, 15);
-assert.equal(RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO, 90);
+assert.equal(RTO_REPORT_EXPECTED_OEMS, 5);
+assert.equal(RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO, 30);
 assert.equal(rtoReportExportRevision({ revision: 3 }, "csv"), 3);
 assert.ok(rtoReportExportRevision({ revision: 3 }, "pdf") > 3);
-const categoryOemRows = rtoReportCategoryOemRows();
-assert.equal(categoryOemRows.length, 15);
-assert.ok(
-  categoryOemRows.some((row) => row.vehicle_category === "4W" && row.oem === "Mahindra & Mahindra"),
-  "4W reconciliation should include Mahindra & Mahindra",
-);
-assert.ok(
-  !categoryOemRows.some((row) => row.vehicle_category === "4W" && row.oem === "Mahindra Last Mile Mobility"),
-  "4W reconciliation must not include 3W-only Mahindra Last Mile Mobility rows",
-);
-
 const weeklySeries = new Map([
   ["2026-06-28", { value: 90 }],
   ["2026-06-30", { value: 110 }],
@@ -108,7 +96,7 @@ const [daily] = buildRtoReportPayloads({
   generatedAt: new Date("2026-07-24T18:00:00.000Z"),
 });
 
-assert.equal(daily.periodEv, 30, "daily EV additions must be current MTD minus prior-day MTD");
+assert.equal(daily.periodEv, 30, "daily EV movement must be current stock minus prior-day stock");
 assert.equal(daily.periodIce, 30);
 assert.equal(daily.mtdEv, 170);
 assert.equal(daily.cohortRank, 1);
@@ -127,10 +115,10 @@ const [correctionDaily] = buildRtoReportPayloads({
   cohort,
   totalRows: correctionRows,
 });
-assert.equal(correctionDaily.periodEv, null, "negative daily corrections must not be shown as registrations");
-assert.equal(correctionDaily.payload.metrics.period.ev, null);
-assert.equal(correctionDaily.payload.metrics.change.ev.absolute, null);
-assert.match(correctionDaily.payload.quality.warnings.join(" "), /daily EV registrations are unavailable/);
+assert.equal(correctionDaily.periodEv, -90, "negative net stock movement is a valid observation");
+assert.equal(correctionDaily.payload.metrics.period.ev, -90);
+assert.equal(correctionDaily.payload.metrics.change.ev.absolute, -90);
+assert.doesNotMatch(correctionDaily.payload.quality.warnings.join(" "), /registrations/);
 
 const [incompleteDaily] = buildRtoReportPayloads({
   period: reportPeriod("daily", "2026-07-24"),
@@ -138,11 +126,11 @@ const [incompleteDaily] = buildRtoReportPayloads({
   totalRows: totalRows.filter((row) => row.snapshot_date === "2026-07-24"),
   oemRows: oemRows.filter((row) => row.snapshot_date === "2026-07-24"),
 });
-assert.match(incompleteDaily.summary, /unavailable daily additions/);
-assert.match(incompleteDaily.summary, /Month-to-date totals are 170 EV and 780 ICE/);
-assert.match(incompleteDaily.payload.quality.warnings.join(" "), /previous-day MTD boundary is missing/);
+assert.match(incompleteDaily.summary, /unavailable daily net stock movement/);
+assert.match(incompleteDaily.summary, /Current active stock is 170 EV and 780 ICE/);
+assert.match(incompleteDaily.payload.quality.warnings.join(" "), /baseline stock snapshot is missing/);
 const incompleteHtml = renderRtoReportHtml(incompleteDaily.payload);
-assert.match(incompleteHtml, /Fetched MTD; daily addition unavailable/);
+assert.match(incompleteHtml, /Active EV stock/);
 assert.match(incompleteHtml, /<strong>170<\/strong>/);
 assert.match(incompleteHtml, /<strong>780<\/strong>/);
 
@@ -182,37 +170,39 @@ const dailyRanking = buildRtoReportPayloads({
   cohort: rankingCohort,
   totalRows: rankingRows,
 });
-assert.equal(dailyRanking.find((report) => report.state === "Alpha").cohortRank, 1);
-assert.equal(dailyRanking.find((report) => report.state === "Beta").cohortRank, 2);
+assert.equal(dailyRanking.find((report) => report.state === "Beta").cohortRank, 1, "cohort rank should use current active EV stock");
+assert.equal(dailyRanking.find((report) => report.state === "Alpha").cohortRank, 2);
 
 const csv = renderRtoReportCsv({ ...daily, cadence: "daily", periodStart: "2026-07-24", periodEnd: "2026-07-24" });
 assert.match(csv, /Example Motors/);
 assert.match(csv, /Other \/ untracked/);
 
 const html = renderRtoReportHtml(daily.payload);
-assert.match(html, /OEM performance/);
-assert.match(html, /rto_daily_scrape_reports\.report_total/);
+assert.match(html, /Dynamic top-maker stock/);
+assert.match(html, /VAHAN Public Dashboard/);
 assert.match(html, /trend-chart-bg/);
 const categoryOemHtml = renderRtoReportHtml({
   ...daily.payload,
   oems: [
     {
       oem: "Hero MotoCorp",
-      categories: ["2W", "3W", "4W"].map((vehicleCategory) => ({
-        vehicleCategory,
+      categories: [{
+        vehicleCategory: "2W",
         period: { ev: 1, ice: 2, total: 3 },
         previousPeriod: { total: 2 },
+        stock: { ev: 10, ice: 20, total: 30 },
         change: { total: { absolute: 1 } },
-      })),
+      }],
     },
     {
       oem: "Maruti Suzuki",
-      categories: ["2W", "3W", "4W"].map((vehicleCategory) => ({
-        vehicleCategory,
+      categories: [{
+        vehicleCategory: "4W",
         period: { ev: 4, ice: 5, total: 9 },
         previousPeriod: { total: 7 },
+        stock: { ev: 40, ice: 50, total: 90 },
         change: { total: { absolute: 2 } },
-      })),
+      }],
     },
   ],
 });
@@ -253,7 +243,7 @@ const contextUnavailable = await loadRtoReportWithOptionalFactorContext({
 assert.equal(contextUnavailable.payload.metrics.mtd.ev, 12, "factor context failure must not remove validated report facts");
 assert.deepEqual(contextUnavailable.explanations, []);
 assert.equal(contextUnavailable.factorContext.status, "unavailable");
-assert.match(contextUnavailable.factorContext.message, /Registration facts remain available/);
+assert.match(contextUnavailable.factorContext.message, /Active-stock facts remain available/);
 
 const contextDisabled = await loadRtoReportWithOptionalFactorContext({
   reportId: 42,
@@ -265,9 +255,9 @@ assert.equal(contextDisabled.factorContext.status, "disabled");
 
 const reportPageSource = fs.readFileSync(new URL("../public/rto-reports.js", import.meta.url), "utf8");
 assert.match(reportPageSource, /Possible-driver context unavailable/);
-assert.match(reportPageSource, /Registration facts remain available/);
-assert.match(reportPageSource, /function registrationComparison/);
+assert.match(reportPageSource, /Active-stock facts remain available/);
+assert.doesNotMatch(reportPageSource, /Fetched MTD/);
 assert.match(reportPageSource, /function reportEvLabel/);
-assert.match(reportPageSource, /Fetched MTD; daily N\/A/);
+assert.match(reportPageSource, /Active EV stock/);
 
 console.log("RTO report system checks passed.");

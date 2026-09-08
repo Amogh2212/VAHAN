@@ -5,6 +5,7 @@ import {
   RTO_DAILY_FUEL_GROUPS,
   RTO_DAILY_QUEUE_PRIORITIES,
   RTO_DAILY_OEMS,
+  buildRankedStockSnapshotRows,
   countForOem,
   rtoDailyCombinationMatrix,
   rtoDailyExpectedRowCount,
@@ -15,11 +16,42 @@ import {
 } from "../lib/rto-daily-snapshots.mjs";
 import { resolveRtoWithCatalog, searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
 import { createTerminalProgress, formatRtoDailyProgress } from "../lib/terminal-progress.mjs";
-import { createAdaptiveController } from "./run-rto-daily-snapshots.mjs";
+import { validateRtoDailyLoadTestCohort } from "../lib/rto-daily-cohort.mjs";
+import { createAdaptiveController, requireCompleteFailureReasons } from "./run-rto-daily-snapshots.mjs";
 
 const matrix = rtoDailyCombinationMatrix();
+const loadTestCohort = JSON.parse(fs.readFileSync(new URL("../data/vahan/rto-top-100-cohort.json", import.meta.url), "utf8"));
+const validatedLoadTestCohort = validateRtoDailyLoadTestCohort(loadTestCohort);
+assert.equal(validatedLoadTestCohort.length, 100, "hosted load-test cohort must have exactly 100 members");
+assert.deepEqual(validatedLoadTestCohort.map((member) => member.rank), Array.from({ length: 100 }, (_, index) => index + 1), "hosted load-test cohort ranks must be contiguous");
+assert.throws(
+  () => validateRtoDailyLoadTestCohort({ members: [...validatedLoadTestCohort.slice(0, 99), { ...validatedLoadTestCohort[0], rank: 100 }] }),
+  /duplicate member/i,
+  "hosted load-test cohort must reject duplicate RTOs",
+);
+assert.throws(
+  () => validateRtoDailyLoadTestCohort({ members: validatedLoadTestCohort.slice(0, 99) }),
+  /exactly 100/i,
+  "hosted load-test cohort must reject incomplete seeds",
+);
+assert.deepEqual(
+  requireCompleteFailureReasons({
+    finalized: { complete: true, summary: { total: 100, succeeded: 100, failed: 0, queued: 0, running: 0, retrying: 0, deferred: 0 } },
+    readiness: { eligible: true, cohortSize: 100, completeRtos: 100 },
+  }),
+  [],
+  "strict hosted completion should accept a fully evidenced 100-RTO run",
+);
+assert.match(
+  requireCompleteFailureReasons({
+    finalized: { complete: false, summary: { total: 100, succeeded: 99, failed: 0, queued: 1, running: 0, retrying: 0, deferred: 0 } },
+    readiness: { eligible: false, reason: "cohort_incomplete", cohortSize: 100, completeRtos: 99 },
+  }).join(" | "),
+  /cycle did not finish|expected 100 successful|queued|not eligible|complete evidence/i,
+  "strict hosted completion should reject partial cycles and missing evidence",
+);
 assert.equal(matrix.length, 90, "daily RTO matrix should produce exactly 90 rows per RTO");
-assert.equal(rtoDailyExpectedRowCount(), 90, "expected row count helper should return 90");
+assert.equal(rtoDailyExpectedRowCount(), 30, "Public Dashboard top-five collection should store at most 30 rows per RTO");
 
 for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
   for (const category of RTO_DAILY_CATEGORIES) {
@@ -38,6 +70,14 @@ assert.equal(
   18,
   "OEM alias matching should sum known aliases only",
 );
+
+const rankedRows = buildRankedStockSnapshotRows({
+  sourceRows: [{ maker: "Maker A", count: 12, rank: 1 }, { maker: "Maker B", count: 7, rank: 2 }],
+  state: "Uttarakhand", rto: "Haridwar RTO", snapshotDate: "2026-09-07", targetMonth: "2026-09",
+  fuelGroup: "EV", vehicleCategory: "2W",
+});
+assert.deepEqual(rankedRows.map((row) => [row.oem, row.vehicleCount, row.sourceRank]), [["Maker A", 12, 1], ["Maker B", 7, 2]]);
+assert.ok(rankedRows.every((row) => row.metricKind === "active_stock" && row.source === "vahan-public-dashboard"));
 
 assert.equal(snapshotDateKey(new Date(Date.UTC(2026, 5, 14))), "2026-06-14");
 assert.equal(targetMonthForDate(new Date(Date.UTC(2026, 5, 14))), "2026-06");
@@ -146,6 +186,7 @@ const taskUnregister = fs.readFileSync(new URL("./unregister-local-db-tasks.ps1"
 const postgresPreflight = fs.readFileSync(new URL("./ensure-local-postgres.ps1", import.meta.url), "utf8");
 const scraperSource = fs.readFileSync(new URL("./vahan-scraper.mjs", import.meta.url), "utf8");
 const dailyRunnerSource = fs.readFileSync(new URL("./run-rto-daily-snapshots.mjs", import.meta.url), "utf8");
+const hostedLoadTestWorkflow = fs.readFileSync(new URL("../.github/workflows/rto-daily-hosted-load-test.yml", import.meta.url), "utf8");
 const packageJson = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 assert.match(taskRegistration, /New-TimeSpan -Minutes 15/, "the local RTO worker should repeat every 15 minutes");
 assert.match(taskRegistration, /New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2:00AM/, "the OSM refresh should run once a week on Sunday");
@@ -153,7 +194,7 @@ assert.match(taskRegistration, /VahanEY-RtoInsightsOsm/, "the OSM refresh should
 assert.match(taskRegistration, /run-hidden-local-db-task\.vbs/, "the scheduled RTO worker should use the windowless launcher");
 assert.match(taskRegistration, /\$settings\.Hidden = \$true/, "the scheduled RTO worker should be hidden in Task Scheduler");
 assert.doesNotMatch(taskRegistration, /VahanEY-(Postgres|TrackedQueries|PostgresBackup|RtoCatalog)/, "registration should create only the daily RTO task");
-assert.match(taskUnregister, /VahanEY-Postgres[\s\S]+VahanEY-RtoDaily[\s\S]+VahanEY-TrackedQueries/, "cleanup should remove all old local Vahan tasks");
+assert.match(taskUnregister, /VahanEY-Postgres[\s\S]+VahanEY-RtoDaily[\s\S]+VahanEY-RtoFactorDaily/, "cleanup should remove the remaining local Vahan tasks");
 assert.match(taskRunner, /ensure-local-postgres\.ps1/, "the scheduled RTO worker should run the local Postgres preflight");
 assert.match(postgresPreflight, /Start-HiddenLocalPostgres[\s\S]+"-Job"[\s\S]+"postgres"/, "the preflight should start local Postgres hidden when needed");
 assert.match(taskRunner, /rto-daily[\s\S]+--work-queue/, "the scheduled RTO worker must use bounded work-queue mode");
@@ -171,6 +212,14 @@ assert.match(dailyRunnerSource, /stopReason[\s\S]+time_budget_reached/, "bounded
 assert.match(dailyRunnerSource, /RTO_DAILY_PROGRESS_LOG_INTERVAL_MS[\s\S]+30_000/, "RTO progress summaries should be throttled instead of printed after every completed job");
 assert.match(dailyRunnerSource, /args\.neon[\s\S]+assertNeonDatabaseUrl/, "Neon mode should validate the configured database before scraping");
 assert.match(dailyRunnerSource, /storage: args\.neon \? \"neon\"/, "Neon runs should identify their persistence target in output");
+assert.match(dailyRunnerSource, /--require-complete/, "the RTO worker should expose strict hosted-load-test completion gating");
+assert.match(dailyRunnerSource, /fetchPublicRtoStockSegment/, "the fixed RTO worker should use the Public Dashboard stock endpoints");
+assert.doesNotMatch(dailyRunnerSource, /createVahanMakerSession/, "the fixed RTO worker should not depend on the retired legacy dashboard session");
+assert.match(hostedLoadTestWorkflow, /workflow_dispatch:/, "the hosted load test must be manually triggered");
+assert.doesNotMatch(hostedLoadTestWorkflow, /schedule:/, "the hosted load test must not be scheduled");
+assert.match(hostedLoadTestWorkflow, /postgres:17/, "the hosted load test must use an ephemeral PostgreSQL service");
+assert.match(hostedLoadTestWorkflow, /--require-complete/, "the hosted load test must enforce full report readiness");
+assert.doesNotMatch(hostedLoadTestWorkflow, /NEON|neon\.tech|secrets\./i, "the hosted load test must not connect to Neon or use database secrets");
 assert.equal(
   packageJson.scripts["rto-daily:neon"],
   "node --env-file=.env.neon scripts/run-rto-daily-snapshots.mjs --neon --work-queue",
@@ -235,5 +284,23 @@ assert.throws(
   /empty report was not explicitly confirmed as zero/,
   "unexplained empty reports must never become trusted zero snapshots",
 );
+
+assert.equal(validateRtoDailyReport({
+  status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
+  filtersConfirmed: true, reportTotal: 20, explicitZero: false,
+  rows: [{ maker: "Maker A", vehicle_count: 12, rank: 1 }, { maker: "Maker B", vehicle_count: 7, rank: 2 }],
+}), true);
+assert.throws(() => validateRtoDailyReport({
+  status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
+  filtersConfirmed: true, reportTotal: 10, rows: [{ maker: "Maker A", vehicle_count: 11, rank: 1 }],
+}), /top-maker total exceeds report total/);
+assert.throws(() => validateRtoDailyReport({
+  status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
+  filtersConfirmed: true, reportTotal: null, explicitZero: true, rows: [],
+}), /report total is invalid/);
+assert.throws(() => validateRtoDailyReport({
+  status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
+  filtersConfirmed: true, reportTotal: 10, rows: [{ maker: "Maker A", vehicle_count: 1.5, rank: 1 }],
+}), /maker count is invalid/);
 
 console.log("RTO daily unit checks passed.");

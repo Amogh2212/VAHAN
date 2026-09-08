@@ -4,7 +4,7 @@ import { closePool, query } from "../lib/db.mjs";
 import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_GROUPS,
-  buildSnapshotRows,
+  buildRankedStockSnapshotRows,
   claimRtoDailyJob,
   completeRtoDailyJob,
   createRtoDailyPin,
@@ -91,8 +91,9 @@ async function main() {
           status: "success", state: STATE, rto: RTO, fuelGroup, vehicleCategory,
           filtersConfirmed: true, reportTotal: 0, explicitZero: true, rows: [],
           attempts: 1, scrapedAt: new Date().toISOString(), evidence: { fixture: true },
+          metricKind: "active_stock", source: "vahan-public-dashboard",
         });
-        rows.push(...buildSnapshotRows({
+        rows.push(...buildRankedStockSnapshotRows({
           sourceRows: [], state: STATE, rto: RTO, snapshotDate: DATE, targetMonth: "2099-12",
           fuelGroup, vehicleCategory,
           metadata: { scrapeRunId: run.id, scrapeStatus: "late_fill", scrapedAt: new Date().toISOString() },
@@ -100,7 +101,7 @@ async function main() {
       }
     }
     const completed = await completeRtoDailyJob({ job: reclaimed, workerId: "integration-d", reports, rows });
-    assert.deepEqual(completed, { reports: 6, rows: 90 });
+    assert.deepEqual(completed, { reports: 6, rows: 0 });
     const finalized = await finalizeRtoDailyCycle(run.id);
     assert.equal(finalized.run.status, "success");
     const coverage = await getRtoDailyCoverage({ date: DATE });
