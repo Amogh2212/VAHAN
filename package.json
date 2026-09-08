@@ -93,6 +93,7 @@
     "rto-daily:neon": "node --env-file=.env.neon scripts/run-rto-daily-snapshots.mjs --neon --work-queue",
     "rto-daily:dry-run": "node --env-file=.env scripts/run-rto-daily-snapshots.mjs --dry-run",
     "rto-daily:load-test:seed": "node --env-file=.env scripts/seed-rto-daily-load-test-cohort.mjs --confirm-ephemeral",
+    "rto-daily:production:seed": "node --env-file=.env scripts/seed-rto-daily-load-test-cohort.mjs --confirm-neon",
     "rto-daily:load-test:summary": "node --env-file=.env scripts/rto-daily-load-test-summary.mjs",
     "rto-daily:catalog": "node --env-file=.env scripts/vahan-scraper.mjs --mode rto-catalog",
     "rto-daily:top-ev:dry-run": "node --env-file=.env scripts/apply-rto-daily-top-ev-cohort.mjs --dry-run",
