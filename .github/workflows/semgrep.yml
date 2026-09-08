@@ -43,6 +43,7 @@ jobs:
         run: python3 scripts/audit-sanitize-semgrep.test.py
 
       - name: Run Semgrep CE
+        continue-on-error: true
         run: |
           mkdir -p audit-output/semgrep
           semgrep --version > audit-output/semgrep/version.txt

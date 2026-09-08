@@ -153,7 +153,7 @@ assert.match(taskRegistration, /VahanEY-RtoInsightsOsm/, "the OSM refresh should
 assert.match(taskRegistration, /run-hidden-local-db-task\.vbs/, "the scheduled RTO worker should use the windowless launcher");
 assert.match(taskRegistration, /\$settings\.Hidden = \$true/, "the scheduled RTO worker should be hidden in Task Scheduler");
 assert.doesNotMatch(taskRegistration, /VahanEY-(Postgres|TrackedQueries|PostgresBackup|RtoCatalog)/, "registration should create only the daily RTO task");
-assert.match(taskUnregister, /VahanEY-Postgres[\s\S]+VahanEY-RtoDaily[\s\S]+VahanEY-TrackedQueries/, "cleanup should remove all old local Vahan tasks");
+assert.match(taskUnregister, /VahanEY-Postgres[\s\S]+VahanEY-RtoDaily[\s\S]+VahanEY-RtoFactorDaily/, "cleanup should remove the remaining local Vahan tasks");
 assert.match(taskRunner, /ensure-local-postgres\.ps1/, "the scheduled RTO worker should run the local Postgres preflight");
 assert.match(postgresPreflight, /Start-HiddenLocalPostgres[\s\S]+"-Job"[\s\S]+"postgres"/, "the preflight should start local Postgres hidden when needed");
 assert.match(taskRunner, /rto-daily[\s\S]+--work-queue/, "the scheduled RTO worker must use bounded work-queue mode");
