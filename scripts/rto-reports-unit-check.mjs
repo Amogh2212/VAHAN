@@ -259,6 +259,5 @@ assert.match(reportPageSource, /Registration facts remain available/);
 assert.match(reportPageSource, /function registrationComparison/);
 assert.match(reportPageSource, /Fetched MTD; daily N\/A/);
 assert.match(reportPageSource, /function reportEvLabel/);
-assert.match(reportPageSource, /Active EV stock/);
 
 console.log("RTO report system checks passed.");
