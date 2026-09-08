@@ -66,10 +66,11 @@ def run_semgrep(workspace: pathlib.Path, targets: list[str]) -> list[dict]:
 
 
 def finding_key(result: dict) -> tuple[str, int, str]:
+    rule_id = str(result.get("check_id", ""))
     return (
         str(result.get("path", "")).replace("\\", "/"),
         int((result.get("start") or {}).get("line", 0)),
-        str(result.get("check_id", "")),
+        rule_id.removeprefix("audit."),
     )
 
 
