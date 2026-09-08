@@ -243,7 +243,7 @@ const contextUnavailable = await loadRtoReportWithOptionalFactorContext({
 assert.equal(contextUnavailable.payload.metrics.mtd.ev, 12, "factor context failure must not remove validated report facts");
 assert.deepEqual(contextUnavailable.explanations, []);
 assert.equal(contextUnavailable.factorContext.status, "unavailable");
-assert.match(contextUnavailable.factorContext.message, /Registration facts remain available/);
+assert.match(contextUnavailable.factorContext.message, /Active-stock facts remain available/);
 
 const contextDisabled = await loadRtoReportWithOptionalFactorContext({
   reportId: 42,
