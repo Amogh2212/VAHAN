@@ -76,6 +76,7 @@ async function main() {
     assert.match(await emptyPage.locator(".rto-report-empty p").innerText(), /at most 30 maker rows/);
     await assertTabsContained(emptyPage);
     await assertReadinessPillAligned(emptyPage);
+    await assertReadinessContentsContained(emptyPage);
     await assertNoPageOverflow(emptyPage);
     await emptyPage.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-empty.png"), fullPage: true });
     await emptyPage.close();
@@ -139,6 +140,7 @@ async function main() {
     assert.equal(await page.locator("#rtoReportBatchCsv").getAttribute("href"), "/api/rto-reports/batches/901.csv");
     await assertTabsContained(page);
     await assertReadinessPillAligned(page);
+    await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-desktop.png"), fullPage: true });
 
@@ -165,6 +167,7 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("#rtoReportStatusFilter").selectOption("");
     await page.waitForFunction(() => document.querySelectorAll(".rto-report-list-item").length === 100);
+    await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
     const metricColumns = await page.locator(".rto-report-metrics").evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").length);
@@ -298,6 +301,26 @@ async function assertReadinessPillAligned(page) {
   assert.equal(style.alignSelf, "center");
   assert.equal(style.justifySelf, "end");
   assert.notEqual(style.lineHeight, "normal");
+}
+
+async function assertReadinessContentsContained(page) {
+  const geometry = await page.locator(".rto-report-readiness").evaluate((panel) => {
+    const panelRect = panel.getBoundingClientRect();
+    const children = [...panel.children]
+      .filter((child) => !child.hidden)
+      .map((child) => {
+        const rect = child.getBoundingClientRect();
+        return { left: rect.left, right: rect.right };
+      });
+    return {
+      panel: { left: panelRect.left, right: panelRect.right },
+      children,
+    };
+  });
+  for (const child of geometry.children) {
+    assert.ok(child.left >= geometry.panel.left - 1, "readiness content must not extend past the left edge");
+    assert.ok(child.right <= geometry.panel.right + 1, "readiness content must not extend past the right edge");
+  }
 }
 
 function batch(id, cadence, periodStart, periodEnd) {
