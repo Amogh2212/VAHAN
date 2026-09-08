@@ -243,7 +243,7 @@ const contextUnavailable = await loadRtoReportWithOptionalFactorContext({
 assert.equal(contextUnavailable.payload.metrics.mtd.ev, 12, "factor context failure must not remove validated report facts");
 assert.deepEqual(contextUnavailable.explanations, []);
 assert.equal(contextUnavailable.factorContext.status, "unavailable");
-assert.match(contextUnavailable.factorContext.message, /Active-stock facts remain available/);
+assert.match(contextUnavailable.factorContext.message, /Registration facts remain available/);
 
 const contextDisabled = await loadRtoReportWithOptionalFactorContext({
   reportId: 42,
@@ -255,8 +255,9 @@ assert.equal(contextDisabled.factorContext.status, "disabled");
 
 const reportPageSource = fs.readFileSync(new URL("../public/rto-reports.js", import.meta.url), "utf8");
 assert.match(reportPageSource, /Possible-driver context unavailable/);
-assert.match(reportPageSource, /Active-stock facts remain available/);
-assert.doesNotMatch(reportPageSource, /Fetched MTD/);
+assert.match(reportPageSource, /Registration facts remain available/);
+assert.match(reportPageSource, /function registrationComparison/);
+assert.match(reportPageSource, /Fetched MTD; daily N\/A/);
 assert.match(reportPageSource, /function reportEvLabel/);
 assert.match(reportPageSource, /Active EV stock/);
 
