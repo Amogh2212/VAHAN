@@ -44,7 +44,7 @@
     "check:vahan-final-comparison": "node scripts/final-vahan-comparison-unit-check.mjs && node scripts/final-vahan-comparison-browser-check.mjs",
     "check:vahan-final-comparison:browser": "node scripts/final-vahan-comparison-browser-check.mjs",
     "check:oem": "node scripts/monthly-oem-unit-check.mjs",
-    "check:rto-daily": "node scripts/rto-daily-unit-check.mjs",
+    "check:rto-daily": "node scripts/rto-daily-unit-check.mjs && node scripts/rto-source-unit-check.mjs",
     "check:rto-reports": "node scripts/rto-reports-unit-check.mjs",
     "check:rto-reports:integration": "node --env-file=.env scripts/rto-reports-integration-check.mjs",
     "check:rto-reports:browser": "node --env-file=.env scripts/rto-reports-browser-check.mjs",

@@ -11,12 +11,13 @@ import {
   renderRtoReportCsv,
   renderRtoReportHtml,
   rtoReportExportRevision,
+  quarantineUnverifiedRtoReport,
 } from "../lib/rto-reports.mjs";
 import { loadRtoReportWithOptionalFactorContext } from "../lib/rto-report-context.mjs";
 
 assert.equal(RTO_REPORT_EXPECTED_OEMS, 5);
 assert.equal(RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO, 30);
-assert.equal(rtoReportExportRevision({ revision: 3 }, "csv"), 3);
+assert.ok(rtoReportExportRevision({ revision: 3 }, "csv") > 3, "old CSV caches must not bypass source quarantine");
 assert.ok(rtoReportExportRevision({ revision: 3 }, "pdf") > 3);
 const weeklySeries = new Map([
   ["2026-06-28", { value: 90 }],
@@ -233,14 +234,14 @@ assert.match(contextHtml, /Possible drivers behind the numbers/);
 assert.match(contextHtml, /association, not proof of causation/);
 assert.match(contextHtml, /https:\/\/example\.com\/source/);
 
-const factOnlyReport = { id: 42, revision: 3, payload: { metrics: { mtd: { ev: 12 } } } };
+const factOnlyReport = { id: 42, revision: 3, payload: { source: { validationContract: "public-stock-v2" }, metrics: { stock: { ev: 12 } } } };
 const contextUnavailable = await loadRtoReportWithOptionalFactorContext({
   reportId: 42,
   factorAgentEnabled: true,
   loadReport: async () => factOnlyReport,
   loadApprovedExplanations: async () => { throw new Error("context store unavailable"); },
 });
-assert.equal(contextUnavailable.payload.metrics.mtd.ev, 12, "factor context failure must not remove validated report facts");
+assert.equal(contextUnavailable.payload.metrics.stock.ev, 12, "factor context failure must not remove validated report facts");
 assert.deepEqual(contextUnavailable.explanations, []);
 assert.equal(contextUnavailable.factorContext.status, "unavailable");
 assert.match(contextUnavailable.factorContext.message, /Active-stock facts remain available/);
@@ -255,9 +256,30 @@ assert.equal(contextDisabled.factorContext.status, "disabled");
 
 const reportPageSource = fs.readFileSync(new URL("../public/rto-reports.js", import.meta.url), "utf8");
 assert.match(reportPageSource, /Possible-driver context unavailable/);
-assert.match(reportPageSource, /Registration facts remain available/);
-assert.match(reportPageSource, /function registrationComparison/);
-assert.match(reportPageSource, /Fetched MTD; daily N\/A/);
+assert.match(reportPageSource, /Active-stock facts remain available/);
+assert.match(reportPageSource, /Active EV stock/);
+assert.match(reportPageSource, /Active ICE stock/);
+assert.match(reportPageSource, /Observed active stock/);
+assert.doesNotMatch(reportPageSource, /registrationMetricValue|Fetched MTD; daily N\/A/);
+const invalidHistorical = { status: "ready", mtdEv: 1405015, payload: { metrics: { stock: { ev: 1405015 } }, trend: [{ ev: 1405015 }], oems: [{ oem: "Bogus" }] } };
+const quarantined = quarantineUnverifiedRtoReport(invalidHistorical);
+assert.equal(quarantined.mtdEv, null);
+assert.equal(quarantined.status, "needs_review");
+assert.deepEqual(quarantined.payload.metrics, {});
+assert.deepEqual(quarantined.payload.trend, []);
+assert.deepEqual(quarantined.payload.oems, []);
+assert.equal(invalidHistorical.mtdEv, 1405015, "quarantine must not mutate archived evidence");
+const historicalContext = await loadRtoReportWithOptionalFactorContext({ reportId: 42, factorAgentEnabled: true,
+  loadReport: async () => quarantined, loadApprovedExplanations: async () => { throw new Error("must not load invalid historical explanations"); } });
+assert.deepEqual(historicalContext.explanations, []);
+assert.match(historicalContext.factorContext.message, /unverified/);
+const [partialOem] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-07-24"), cohort, totalRows,
+  oemRows: oemRows.filter(row => row.fuel_group === "EV") });
+const partialCategory = partialOem.payload.oems.find(row => row.oem === "Example Motors").categories[0];
+assert.ok(partialCategory.stock.ev > 0);
+assert.equal(partialCategory.stock.ice, null);
+assert.equal(partialCategory.stock.total, null, "missing top-five membership is unknown, not zero ICE stock");
+assert.equal(partialCategory.change.total.absolute, null, "different observed OEM scopes must not produce net movement");
 assert.match(reportPageSource, /function reportEvLabel/);
 
 console.log("RTO report system checks passed.");

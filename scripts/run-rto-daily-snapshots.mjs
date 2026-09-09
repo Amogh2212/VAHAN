@@ -234,7 +234,7 @@ async function scrapeJob({ job, workerId, rateLimit }) {
         rto: job.rto,
         fuelGroup,
         vehicleCategory,
-        filtersConfirmed: true,
+        filtersConfirmed: Boolean(segment.validation),
         reportTotal: segment.total,
         explicitZero: segment.explicitZero,
         rows: segment.makers.map((maker) => ({
@@ -247,11 +247,13 @@ async function scrapeJob({ job, workerId, rateLimit }) {
         metricKind: segment.metricKind,
         source: segment.source,
         evidence: {
+          validation: segment.validation,
           source: segment.source,
           metricKind: segment.metricKind,
           filters: segment.filters,
           categories: segment.categories,
           topFiveTotal: segment.topFiveTotal,
+          topMakerRows: segment.makers.map((maker) => ({ maker: maker.maker, vehicle_count: maker.count, rank: maker.rank })),
         },
       };
       validateRtoDailyReport(report, { state: job.state, rto: job.rto });

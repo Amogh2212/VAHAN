@@ -11,11 +11,7 @@ const state = {
   searchTimer: null,
 };
 
-const CATEGORY_OEMS = Object.freeze({
-  "2W": ["Hero MotoCorp", "Honda Motorcycle", "TVS Motor (2W)", "Bajaj Auto (2W)", "Suzuki Motorcycle"],
-  "3W": ["Bajaj Auto (3W)", "Mahindra Last Mile Mobility", "TVS Motor (3W)", "Piaggio Vehicles", "Atul Auto"],
-  "4W": ["Maruti Suzuki", "Tata Motors", "Mahindra & Mahindra", "Hyundai Motor India", "JSW MG Motor India"],
-});
+const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
 
 const batchDateInput = document.querySelector("#rtoReportBatchDate");
 const periodStatus = document.querySelector("#rtoReportPeriodStatus");
@@ -101,7 +97,7 @@ function renderReadiness(readiness) {
       : "status-needs-review"}`;
   if (readiness.eligible) {
     title.textContent = `${readiness.run?.snapshotDate ?? "Current cycle"} ready for reporting`;
-    status.textContent = "100 / 100";
+    status.textContent = `${fmt(complete)} / ${fmt(expected)}`;
     return;
   }
   if (readiness.reason === "cohort_incomplete") {
@@ -323,11 +319,12 @@ function renderReportDetail(report) {
     </header>
 
     <section class="rto-report-metrics" aria-label="Headline metrics">
-      ${metricBlock("EV registrations", registrationMetricValue(metrics.period?.ev, metrics.mtd?.ev), registrationComparison(metrics.period?.ev, metrics.mtd?.ev, metrics.change?.ev))}
-      ${metricBlock("ICE registrations", registrationMetricValue(metrics.period?.ice, metrics.mtd?.ice), registrationComparison(metrics.period?.ice, metrics.mtd?.ice, metrics.change?.ice))}
-      ${metricBlock("EV share", registrationMetricValue(percent(metrics.period?.evShare), percent(metrics.mtd?.evShare)), evShareComparison(metrics.period?.evShare, metrics.mtd?.evShare))}
-      ${metricBlock("Daily EV rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}
+      ${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
+      ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
+      ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
+      ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}
     </section>
+    <p class="rto-report-quality">${escapeHtml(payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness.")}</p>
 
     ${warnings.length ? `
       <section class="rto-report-quality">
@@ -342,7 +339,7 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>Daily registrations</h3><span>EV and ICE period additions</span></div>
+        <div><h3>Observed active stock</h3><span>EV and ICE snapshot totals; gaps mean no verified observation</span></div>
       </div>
       <div class="rto-report-trend">${trendSvg(payload.trend ?? [])}</div>
     </section>
@@ -356,20 +353,20 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>OEM performance</h3><span>The five tracked ${state.oemCategory} OEMs only</span></div>
+        <div><h3>OEM stock</h3><span>Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero.</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
-          ${Object.keys(CATEGORY_OEMS).map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
+          ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
       </div>
       <div class="rto-report-table-wrap">
         <table class="rto-report-table">
-          <thead><tr><th>OEM</th><th>EV</th><th>ICE</th><th>Total</th><th>Previous</th><th>Change</th></tr></thead>
+          <thead><tr><th>OEM</th><th>EV stock</th><th>ICE stock</th><th>Reported stock</th><th>Previous stock</th><th>Net change</th></tr></thead>
           <tbody>${selectedOemRows.length ? selectedOemRows.map((row) => `
             <tr>
               <td>${escapeHtml(row.oem)}</td>
-              <td>${fmt(row.period?.ev)}</td>
-              <td>${fmt(row.period?.ice)}</td>
-              <td>${fmt(row.period?.total)}</td>
+              <td>${fmt(row.stock?.ev)}</td>
+              <td>${fmt(row.stock?.ice)}</td>
+              <td>${fmt(row.stock?.total)}</td>
               <td>${fmt(row.previousPeriod?.total)}</td>
               <td class="${movementClass(row.change?.total?.absolute)}">${signed(row.change?.total?.absolute)}</td>
             </tr>
@@ -403,7 +400,7 @@ function renderFactorContextAvailability(context = {}) {
   return `
     <section class="rto-report-quality" aria-live="polite">
       <div class="rto-report-section-head"><h3>Possible-driver context unavailable</h3></div>
-      <p>${escapeHtml(context.message ?? "Reviewed context is temporarily unavailable. Registration facts remain available.")}</p>
+      <p>${escapeHtml(context.message ?? "Reviewed context is temporarily unavailable. Active-stock facts remain available.")}</p>
     </section>
   `;
 }
@@ -543,50 +540,20 @@ function metricBlock(label, value, comparison) {
 }
 
 function reportEvLabel(report) {
-  if (report.periodEv === null && Number.isFinite(report.mtdEv)) return `EV MTD ${fmt(report.mtdEv)}`;
-  return `EV ${fmt(report.periodEv)}`;
-}
-
-function registrationMetricValue(periodValue, mtdValue) {
-  if (isUnavailableDisplayValue(periodValue) && !isUnavailableDisplayValue(mtdValue)) return mtdValue;
-  return periodValue;
-}
-
-function registrationComparison(periodValue, mtdValue, change) {
-  if (isUnavailableDisplayValue(periodValue) && !isUnavailableDisplayValue(mtdValue)) {
-    return `Fetched MTD; daily N/A`;
-  }
-  return changeText(change);
-}
-
-function evShareComparison(periodValue, mtdValue) {
-  if (isUnavailableDisplayValue(periodValue) && !isUnavailableDisplayValue(mtdValue)) {
-    return "Fetched MTD; daily N/A";
-  }
-  return `MTD ${percent(mtdValue)}`;
-}
-
-function isUnavailableDisplayValue(value) {
-  return value === null || value === undefined || value === "N/A";
+  return `EV stock ${fmt(report.mtdEv)}`;
 }
 
 function oemRowsForCategory(oems, category) {
-  const byOem = new Map(oems.map((oem) => [oem.oem, oem]));
-  return (CATEGORY_OEMS[category] ?? []).map((oem) => {
-    const source = byOem.get(oem);
-    return {
-      oem,
-      ...(source?.categories?.find((item) => item.vehicleCategory === category) ?? {
-        period: {},
-        previousPeriod: {},
-        change: {},
-      }),
-    };
+  return oems.flatMap((source) => {
+    const row = source.categories?.find((item) => item.vehicleCategory === category);
+    if (!row || ![row.stock?.ev, row.stock?.ice].some(Number.isFinite)) return [];
+    return [{ oem: source.oem, ...row }];
   });
 }
 
 function categoryBars(categories) {
-  return categories.map((row) => {
+  return categories.map((category) => {
+    const row = { ...category, period: category.stock };
     const values = [row.period?.ev, row.period?.ice].filter(Number.isFinite);
     const max = Math.max(1, ...values);
     return `
@@ -660,7 +627,7 @@ function trendSvg(rows) {
     return `<g class="trend-date-group" tabindex="-1"><rect class="trend-date-hit" x="${Math.max(pad.left, pointX - 14)}" y="${pad.top}" width="${Math.min(28, width - pad.right - Math.max(pad.left, pointX - 14))}" height="${chartHeight}"></rect><line class="trend-hover-guide" x1="${pointX}" x2="${pointX}" y1="${guideTop}" y2="${guideBottom}"></line>${pointMarkup}${tooltipMarkup}</g>`;
   }).join("");
   return `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily EV and ICE registration trend">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Observed EV and ICE active-stock trend">
       <rect class="trend-chart-bg" x="${pad.left}" y="${pad.top}" width="${chartWidth}" height="${chartHeight}" rx="8"></rect>
       ${yTicks.join("")}
       <line class="trend-axis" x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${pad.top + chartHeight}"></line>

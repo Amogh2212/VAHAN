@@ -83,6 +83,7 @@ jobs:
           --work-queue --retry-failed --time-budget-minutes 315 --workers 2 --require-complete
 
       - name: Create sanitized load-test summary
+        id: summary
         if: always()
         continue-on-error: true
         run: node --env-file=.env scripts/rto-daily-load-test-summary.mjs --output artifacts/rto-daily-hosted-load-test-summary.json
@@ -93,9 +94,9 @@ jobs:
         with:
           name: rto-daily-hosted-load-test-${{ github.run_id }}
           path: artifacts/rto-daily-hosted-load-test-summary.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
       - name: Enforce complete collection
         if: always()
-        run: test "${{ steps.collect.outcome }}" = "success"
+        run: test "${{ steps.collect.outcome }}" = "success" && test "${{ steps.summary.outcome }}" = "success"
