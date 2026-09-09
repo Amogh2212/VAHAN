@@ -12,6 +12,11 @@ const catalog = [{ stateCode: "OR", rtoCode: 1, rtoName: "BALASORE RTO - OR1" },
 const rto = "BALASORE RTO - OD1( 07-NOV-2017 )";
 const options = { state: "Odisha", rto, vehicleCategories: ["TWO WHEELER(NT)", "TWO WHEELER(T)"], vehicleClasses: [], fuels: ["PURE EV", "ELECTRIC(BOV)"] };
 assert.equal(resolvePublicState(publicSelectOptions(html, "stateCode"), "Odisha").value, "OR");
+assert.deepEqual(publicSelectOptions('<select id="x"><option value="A&amp;quot;">Jammu &amp; Kashmir &amp;lt;</option></select>', "x"),
+  [{ value: "A&quot;", label: "Jammu & Kashmir &lt;" }], "decode entities once, never recursively");
+for (const label of ['<script>alert(1)</script>', '<scr<script>ipt>', '<b>Odisha</b>']) {
+  assert.throws(() => publicSelectOptions(`<select id="x"><option value="OR">${label}</option></select>`, "x"), /unexpected markup/);
+}
 assert.equal(resolvePublicRto(catalog, rto, "OR").rtoCode, 1);
 assert.equal(resolvePublicRto([{ ...catalog[0], rtoCode: 501 }], rto, "OR").rtoCode, 501, "use the actual dropdown value, not the label's numeric prefix");
 assert.throws(() => resolvePublicRto(catalog, "UNKNOWN OFFICE - OD1", "OR"), /exact RTO mapping/);
