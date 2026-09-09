@@ -134,6 +134,19 @@ const incompleteHtml = renderRtoReportHtml(incompleteDaily.payload);
 assert.match(incompleteHtml, /Active EV stock/);
 assert.match(incompleteHtml, /<strong>170<\/strong>/);
 assert.match(incompleteHtml, /<strong>780<\/strong>/);
+assert.match(incompleteHtml, /Net N\/A/);
+assert.doesNotMatch(incompleteHtml, /Net 0/);
+const unavailableMetricsHtml = renderRtoReportHtml({
+  ...incompleteDaily.payload,
+  metrics: { stock: { ev: null, ice: null, evShare: null }, period: { ev: null, ice: null } },
+});
+assert.doesNotMatch(unavailableMetricsHtml, /0\.0%|Net 0/);
+const zeroMetricsHtml = renderRtoReportHtml({
+  ...incompleteDaily.payload,
+  metrics: { stock: { ev: 0, ice: 100, evShare: 0 }, period: { ev: 0, ice: 0 } },
+});
+assert.match(zeroMetricsHtml, /0\.0%/);
+assert.match(zeroMetricsHtml, /Net 0/);
 
 const [unavailableDaily] = buildRtoReportPayloads({
   period: reportPeriod("daily", "2026-07-24"),

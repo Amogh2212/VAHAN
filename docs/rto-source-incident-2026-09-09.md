@@ -137,6 +137,33 @@ preview results, not evidence of a production deployment or a full hosted run.
 
 ## Reproduction
 
+### Latest release checkpoint (10 September IST)
+
+This checkpoint supersedes the earlier pending-work notes above.
+
+- Repair PR: `https://github.com/Amogh2212/VAHAN/pull/24`.
+- Hosted run `34364904314` on `503b9c7` passed in 42m 36s of collection.
+  Independent inspection of its downloaded artifact verified 100 distinct RTO
+  scopes, 600 segment reports, 2,925 exact source/stored OEM rows, 11 corroborated
+  zero reports, and 100 distinct positive six-segment response fingerprints.
+  All 18 segment totals for the three browser/pilot offices matched the pilot.
+  There were no failed or pending jobs; report readiness was 100/100.
+- CodeQL identified two parser issues. Commit `7c1c4cf` decodes entities once
+  and rejects unexpected option markup, with regression tests. All five PR
+  checks passed on that commit. A new isolated hosted run `34391244296` is
+  testing that collector revision; its final artifact still needs review.
+- A single uninterrupted local `npm.cmd test` passed on `7c1c4cf`.
+- A real browser check of the print renderer then found missing baselines
+  displayed as `Net 0`. Signed and percentage formatting now preserves unknown
+  values as `N/A`, with regression tests distinguishing genuine zeroes and a
+  PDF renderer cache-version bump. The refreshed browser showed `Net N/A` and
+  all 30 category/OEM net cells as `N/A` for the first-day Pune pilot report.
+  Report checks passed after this export-only fix. Screenshot:
+  `output/playwright/rto-source-print-preview-fixed.png`.
+- Production remains disabled. No merge, deployment, Neon writes, historical
+  cleanup, or production reenable has been performed. These need separate
+  approval after final evidence review; the full production recovery is not done.
+
 - Offline contract/worker checks: `npm.cmd run check:rto-daily`.
 - Report contract checks: `npm.cmd run check:rto-reports`.
 - Isolated database checks: `node scripts/rto-source-db-check.mjs`. This creates a
