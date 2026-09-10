@@ -138,7 +138,7 @@ function selectCadence(cadence) {
       state.batches.length ? `No ${cadence} reports yet` : "No reports generated yet",
       state.batches.length
         ? `Choose another cadence to view an available batch.`
-        : "Reports appear after all six EV/ICE and 2W/3W/4W queries are complete for every frozen RTO. Each query retains 15 tracked OEMs: 90 OEM rows per RTO and 9,000 per top-100 cycle.",
+        : "Reports appear after all six EV/ICE and 2W/3W/4W stock queries are complete for every frozen RTO. Each query retains the Public Dashboard's current top five makers, so a complete RTO has at most 30 maker rows.",
     );
     return;
   }
