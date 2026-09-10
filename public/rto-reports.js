@@ -330,9 +330,9 @@ function renderReportDetail(report) {
            ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
            ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`}
     </section>
-    <p class="rto-report-quality">${escapeHtml(payload.source?.limitation ?? (isDaily
+    <p class="rto-report-quality">${escapeHtml(isDaily
       ? "Daily registration evidence requires consecutive source observations. Missing prior-day data can leave the daily value unavailable; the current snapshot is retained for context."
-      : "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness."))}</p>
+      : (payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness."))}</p>
 
     ${warnings.length ? `
       <section class="rto-report-quality">
