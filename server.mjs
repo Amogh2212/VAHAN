@@ -6962,7 +6962,7 @@ const server = http.createServer(async (request, response) => {
         scopeType: "batch",
         scopeId: batch.id,
         format: "csv",
-        revision: batch.revision,
+        revision: rtoReportExportRevision(batch, "csv"),
       });
       let content = cached?.content;
       if (!content) {
@@ -6972,7 +6972,7 @@ const server = http.createServer(async (request, response) => {
           scopeType: "batch",
           scopeId: batch.id,
           format: "csv",
-          revision: batch.revision,
+          revision: rtoReportExportRevision(batch, "csv"),
           content,
         });
       }

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { withStockEvidence } from "./fixtures/rto-stock-evidence.mjs";
 import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_GROUPS,
@@ -257,7 +258,7 @@ const resolvedMh12WithDuplicateCatalogLabel = resolveRtoWithCatalog({ state: "Ma
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.rtoResolution.status, "resolved", "an exact code should resolve even if the catalog contains duplicate labels");
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.ambiguousRtos, null, "duplicate labels for one exact code must not produce an ambiguity prompt");
 
-assert.equal(validateRtoDailyReport({
+assert.equal(validateRtoDailyReport(withStockEvidence({
   status: "success",
   state: "Uttarakhand",
   rto: "Haridwar RTO",
@@ -267,7 +268,7 @@ assert.equal(validateRtoDailyReport({
   reportTotal: 0,
   explicitZero: true,
   rows: [],
-}, { state: "Uttarakhand", rto: "Haridwar RTO" }), true);
+}), { state: "Uttarakhand", rto: "Haridwar RTO" }), true);
 
 assert.throws(
   () => validateRtoDailyReport({
@@ -285,11 +286,11 @@ assert.throws(
   "unexplained empty reports must never become trusted zero snapshots",
 );
 
-assert.equal(validateRtoDailyReport({
+assert.equal(validateRtoDailyReport(withStockEvidence({
   status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
   filtersConfirmed: true, reportTotal: 20, explicitZero: false,
   rows: [{ maker: "Maker A", vehicle_count: 12, rank: 1 }, { maker: "Maker B", vehicle_count: 7, rank: 2 }],
-}), true);
+})), true);
 assert.throws(() => validateRtoDailyReport({
   status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
   filtersConfirmed: true, reportTotal: 10, rows: [{ maker: "Maker A", vehicle_count: 11, rank: 1 }],
