@@ -302,7 +302,7 @@ function renderReportDetail(report) {
   const isDaily = payload.cadence === "daily";
   const categories = payload.categories ?? [];
   const oems = payload.oems ?? [];
-  const selectedOemRows = oemRowsForCategory(oems, state.oemCategory);
+  const selectedOemRows = oemRowsForCategory(oems, state.oemCategory, isDaily);
   const warnings = payload.quality?.warnings ?? [];
   const explanations = report.explanations ?? [];
   reportDetail.innerHTML = `
@@ -345,36 +345,36 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>Observed active stock</h3><span>EV and ICE snapshot totals; gaps mean no verified observation</span></div>
+        <div><h3>${isDaily ? "Daily registrations" : "Observed active stock"}</h3><span>${isDaily ? "EV and ICE additions versus the previous day" : "EV and ICE snapshot totals; gaps mean no verified observation"}</span></div>
       </div>
-      <div class="rto-report-trend">${trendSvg(payload.trend ?? [])}</div>
+      <div class="rto-report-trend">${trendSvg(payload.trend ?? [], isDaily)}</div>
     </section>
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>Vehicle categories</h3><span>2W, 3W, and 4W contribution</span></div>
+        <div><h3>Vehicle categories</h3><span>${isDaily ? "Daily registration contribution" : "2W, 3W, and 4W stock contribution"}</span></div>
       </div>
-      <div class="rto-report-category-bars">${categoryBars(categories)}</div>
+      <div class="rto-report-category-bars">${categoryBars(categories, isDaily)}</div>
     </section>
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>OEM stock</h3><span>Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero.</span></div>
+        <div><h3>${isDaily ? "OEM registrations" : "OEM stock"}</h3><span>${isDaily ? "Daily registration contribution by source maker" : "Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero."}</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
           ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
       </div>
       <div class="rto-report-table-wrap">
         <table class="rto-report-table">
-          <thead><tr><th>OEM</th><th>EV stock</th><th>ICE stock</th><th>Reported stock</th><th>Previous stock</th><th>Net change</th></tr></thead>
+          <thead><tr><th>OEM</th><th>${isDaily ? "EV registrations" : "EV stock"}</th><th>${isDaily ? "ICE registrations" : "ICE stock"}</th><th>${isDaily ? "Reported registrations" : "Reported stock"}</th><th>${isDaily ? "Previous period" : "Previous stock"}</th><th>${isDaily ? "Change" : "Net change"}</th></tr></thead>
           <tbody>${selectedOemRows.length ? selectedOemRows.map((row) => `
             <tr>
               <td>${escapeHtml(row.oem)}</td>
-              <td>${fmt(row.stock?.ev)}</td>
-              <td>${fmt(row.stock?.ice)}</td>
-              <td>${fmt(row.stock?.total)}</td>
+              <td>${fmt((isDaily ? row.period : row.stock)?.ev)}</td>
+              <td>${fmt((isDaily ? row.period : row.stock)?.ice)}</td>
+              <td>${fmt((isDaily ? row.period : row.stock)?.total)}</td>
               <td>${fmt(row.previousPeriod?.total)}</td>
-              <td class="${movementClass(row.change?.total?.absolute)}">${signed(row.change?.total?.absolute)}</td>
+              <td class="${movementClass(isDaily ? row.period?.total : row.change?.total?.absolute)}">${signed(isDaily ? row.period?.total : row.change?.total?.absolute)}</td>
             </tr>
           `).join("") : `<tr><td colspan="6" class="result-empty">No OEM activity is available for ${escapeHtml(state.oemCategory)} in this period.</td></tr>`}</tbody>
         </table>
@@ -549,17 +549,18 @@ function reportEvLabel(report) {
   return `EV stock ${fmt(report.mtdEv)}`;
 }
 
-function oemRowsForCategory(oems, category) {
+function oemRowsForCategory(oems, category, isDaily = false) {
   return oems.flatMap((source) => {
     const row = source.categories?.find((item) => item.vehicleCategory === category);
-    if (!row || ![row.stock?.ev, row.stock?.ice].some(Number.isFinite)) return [];
+    const values = isDaily ? row?.period : row?.stock;
+    if (!row || ![values?.ev, values?.ice].some(Number.isFinite)) return [];
     return [{ oem: source.oem, ...row }];
   });
 }
 
-function categoryBars(categories) {
+function categoryBars(categories, isDaily = false) {
   return categories.map((category) => {
-    const row = { ...category, period: category.stock };
+    const row = { ...category, period: isDaily ? category.period : category.stock };
     const values = [row.period?.ev, row.period?.ice].filter(Number.isFinite);
     const max = Math.max(1, ...values);
     return `
@@ -575,7 +576,14 @@ function categoryBars(categories) {
   }).join("");
 }
 
-function trendSvg(rows) {
+function trendSvg(rows, isDaily = false) {
+  if (isDaily) {
+    rows = rows.map((row, index) => ({
+      ...row,
+      ev: index ? delta(row.ev, rows[index - 1].ev) : null,
+      ice: index ? delta(row.ice, rows[index - 1].ice) : null,
+    }));
+  }
   const usable = rows.filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice));
   if (usable.length < 2) return `<p class="result-empty">Not enough comparable dates.</p>`;
   const width = 760;
@@ -645,6 +653,10 @@ function trendSvg(rows) {
     </svg>
     <div class="rto-report-legend"><span><i class="ev"></i>EV</span><span><i class="ice"></i>ICE</span></div>
   `;
+}
+
+function delta(current, previous) {
+  return Number.isFinite(current) && Number.isFinite(previous) ? current - previous : null;
 }
 
 function renderEmptyDetail(
