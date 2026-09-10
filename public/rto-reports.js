@@ -299,6 +299,7 @@ async function selectReport(reportId) {
 function renderReportDetail(report) {
   const payload = report.payload ?? {};
   const metrics = payload.metrics ?? {};
+  const isDaily = payload.cadence === "daily";
   const categories = payload.categories ?? [];
   const oems = payload.oems ?? [];
   const selectedOemRows = oemRowsForCategory(oems, state.oemCategory);
@@ -319,10 +320,15 @@ function renderReportDetail(report) {
     </header>
 
     <section class="rto-report-metrics" aria-label="Headline metrics">
-      ${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
-      ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
-      ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
-      ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}
+      ${isDaily
+        ? `${metricBlock("Daily EV registrations", metrics.period?.ev, "Current day vs previous day")}
+           ${metricBlock("Daily ICE registrations", metrics.period?.ice, "Current day vs previous day")}
+           ${metricBlock("EV share of daily registrations", percent(metrics.period?.evShare), "EV / all daily registrations")}
+           ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`
+        : `${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
+           ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
+           ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
+           ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`}
     </section>
     <p class="rto-report-quality">${escapeHtml(payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness.")}</p>
 
