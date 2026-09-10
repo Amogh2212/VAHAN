@@ -46,7 +46,7 @@ const DEFAULT_WORK_BUDGET_MINUTES = Number(process.env.RTO_DAILY_WORK_BUDGET_MIN
 const DEFAULT_PROGRESS_LOG_INTERVAL_MS = Number(process.env.RTO_DAILY_PROGRESS_LOG_INTERVAL_MS ?? 30_000);
 const CATALOG_FILE = path.join("data", "vahan", "rto_catalog.json");
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {
     dryRun: false,
     bootstrapConfigs: false,
@@ -64,6 +64,7 @@ function parseArgs(argv) {
     timeBudgetMinutes: null,
     dateExplicit: false,
     requireComplete: false,
+    preserveHistory: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -72,6 +73,7 @@ function parseArgs(argv) {
     else if (arg === "--retry-failed") args.retryFailed = true;
     else if (arg === "--work-queue") args.workQueue = true;
     else if (arg === "--require-complete") args.requireComplete = true;
+    else if (arg === "--preserve-history") args.preserveHistory = true;
     else if (arg === "--neon") args.neon = true;
     else if (arg === "--workers") args.workers = argv[++index];
     else if (arg.startsWith("--workers=")) args.workers = arg.slice("--workers=".length);
@@ -109,6 +111,7 @@ function parseArgs(argv) {
     : Math.max(1, Number(args.timeBudgetMinutes) || DEFAULT_WORK_BUDGET_MINUTES);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(args.date)) throw new Error("--date must use YYYY-MM-DD format.");
   if (!/^\d{4}-\d{2}$/.test(args.targetMonth)) throw new Error("--target-month must use YYYY-MM format.");
+  if (args.preserveHistory && args.date !== snapshotDateKey()) throw new Error("--preserve-history requires today's IST snapshot date; historical reruns are forbidden.");
   return args;
 }
 
@@ -122,6 +125,7 @@ function usage() {
     "  --retry-failed         Requeue terminal failures in the selected cycle/scope.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
     "  --require-complete     Exit non-zero unless the run finishes with complete 100-RTO report readiness.",
+    "  --preserve-history    Today's run only; skip prior-cycle edits, history rematerialization and retention cleanup.",
     "  --neon                 Require the configured DATABASE_URL to point to Neon.",
     "  --time-budget-minutes N Stop claiming new RTOs after N minutes (work-queue default 10).",
     "  --workers N            Concurrent Public Dashboard workers (1-4, default 2).",
@@ -339,7 +343,7 @@ async function main() {
 
   const releaseLock = await acquireVahanScrapeLock("rto-daily");
   try {
-    if (args.workQueue && !args.dateExplicit) {
+    if (!args.preserveHistory && args.workQueue && !args.dateExplicit) {
       const deferred = await deferStaleRtoDailyCycles({
         beforeDate: args.date,
         state: args.state,
@@ -347,7 +351,7 @@ async function main() {
       });
       if (deferred.runs) console.log(JSON.stringify({ skippedPriorDay: deferred }, null, 2));
     }
-    if (args.dateExplicit) {
+    if (!args.preserveHistory && args.dateExplicit) {
       const deferred = await deferStaleRtoDailyCycles({ beforeDate: args.date });
       if (deferred.runs) console.log(JSON.stringify({ deferred }, null, 2));
     }
@@ -391,13 +395,7 @@ async function main() {
     await Promise.all(Array.from({ length: args.workers }, (_, index) =>
       workerLoop({ index, runId: run.id, args, controller, rateLimit, deadline, progress })));
     const finalized = await finalizeRtoDailyCycle(run.id);
-    const reportSystem = await reconcileRtoReportsForRun({
-      runId: run.id,
-      includeAvailableHistory: true,
-      historyFrom: reportHistoryStartDate(run.snapshotDate),
-    });
-    const reportRetention = await pruneRtoReportingData();
-    const retention = await rollupAndPruneRtoDailySnapshots({ retentionDays: args.retentionDays });
+    const { reportSystem, reportRetention, retention } = await finishRtoDailyReports({ run, args });
     progress.finish(finalized.summary);
     const stopReason = finalized.complete
       ? "cycle_complete"
@@ -423,6 +421,22 @@ async function main() {
   } finally {
     await releaseLock();
   }
+}
+
+export async function finishRtoDailyReports({ run, args }, services = {
+  reconcile: reconcileRtoReportsForRun,
+  pruneReports: pruneRtoReportingData,
+  pruneSnapshots: rollupAndPruneRtoDailySnapshots,
+}) {
+  const reportSystem = await services.reconcile({
+    runId: run.id,
+    includeAvailableHistory: !args.preserveHistory,
+    historyFrom: args.preserveHistory ? null : reportHistoryStartDate(run.snapshotDate),
+  });
+  const skipped = { skipped: "preserve_history" };
+  const reportRetention = args.preserveHistory ? skipped : await services.pruneReports();
+  const retention = args.preserveHistory ? skipped : await services.pruneSnapshots({ retentionDays: args.retentionDays });
+  return { reportSystem, reportRetention, retention };
 }
 
 function assertNeonDatabaseUrl() {

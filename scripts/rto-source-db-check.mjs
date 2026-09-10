@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
 import { withStockEvidence } from "./fixtures/rto-stock-evidence.mjs";
+import { finishRtoDailyReports } from "./run-rto-daily-snapshots.mjs";
 import { closePool, query } from "../lib/db.mjs";
 import { upsertRtoDailyConfigs, ensureRtoDailyCycle, claimRtoDailyJob, completeRtoDailyJob, buildRankedStockSnapshotRows, finalizeRtoDailyCycle } from "../lib/rto-daily-snapshots.mjs";
 import { getRtoReportReadiness, reconcileRtoReportsForRun, listRtoReportsForBatch, getRtoReport, getRtoReportBatch, listRtoReportBatches } from "../lib/rto-reports.mjs";
@@ -85,6 +86,13 @@ try {
   assert.equal(historicalBatch.status, "needs_review");
   assert.equal((await listRtoReportsForBatch(fresh.batchId, { status: "needs_review" })).length, 1);
   assert.equal((await listRtoReportBatches({ status: "needs_review" })).length, 1);
+  const retainedExport = (await query(`insert into rto_report_exports
+    (scope_type, scope_id, format, revision, storage_path, checksum, byte_size, expires_at)
+    values ('batch', $1, 'csv', 1, 'synthetic-preservation-check.csv', 'synthetic-fixture', 0, '2000-01-01') returning id`, [fresh.batchId])).rows[0];
+  const preserved = await finishRtoDailyReports({ run, args: { preserveHistory: true, retentionDays: 30 } });
+  assert.equal(preserved.reportRetention.skipped, "preserve_history");
+  assert.equal(preserved.retention.skipped, "preserve_history");
+  assert.equal((await query("select count(*)::int as count from rto_report_exports where id = $1", [retainedExport.id])).rows[0].count, 1, "even expired historical export records must remain during preserved collection");
   console.log(JSON.stringify({ passed: true, syntheticRtos: 100, syntheticReports: 600, runId: run.id, databaseDir, checks: ["full_readiness", "explicit_zero", "OEM_tampering", "OEM_missing", "legacy_evidence", "materialization", "no_false_registrations", "historical_quarantine"] }));
 } finally {
   await closePool();

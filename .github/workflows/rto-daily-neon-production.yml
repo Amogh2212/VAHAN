@@ -76,7 +76,7 @@ jobs:
         continue-on-error: true
         run: >-
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
-          --neon --work-queue --retry-failed --time-budget-minutes 315 --workers 2 --require-complete
+          --neon --work-queue --retry-failed --time-budget-minutes 315 --workers 2 --require-complete --preserve-history
 
       - name: Create sanitized production summary
         if: always()
