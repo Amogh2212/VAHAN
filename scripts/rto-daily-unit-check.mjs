@@ -18,7 +18,26 @@ import {
 import { resolveRtoWithCatalog, searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
 import { createTerminalProgress, formatRtoDailyProgress } from "../lib/terminal-progress.mjs";
 import { validateRtoDailyLoadTestCohort } from "../lib/rto-daily-cohort.mjs";
-import { createAdaptiveController, requireCompleteFailureReasons } from "./run-rto-daily-snapshots.mjs";
+import { createAdaptiveController, requireCompleteFailureReasons, parseArgs, finishRtoDailyReports } from "./run-rto-daily-snapshots.mjs";
+
+assert.equal(parseArgs(["--preserve-history"]).preserveHistory, true);
+assert.equal(parseArgs([]).preserveHistory, false);
+assert.throws(() => parseArgs(["--preserve-history", "--date=2000-01-01"]), /historical reruns are forbidden/);
+for (const preserveHistory of [true, false]) {
+  const calls = [];
+  const result = await finishRtoDailyReports({ run: { id: 1, snapshotDate: snapshotDateKey() }, args: { preserveHistory, retentionDays: 30 } }, {
+    reconcile: async options => { calls.push(["reconcile", options]); return { verified: true }; },
+    pruneReports: async () => { calls.push(["pruneReports"]); return {}; },
+    pruneSnapshots: async options => { calls.push(["pruneSnapshots", options]); return {}; },
+  });
+  assert.equal(calls[0][1].includeAvailableHistory, !preserveHistory);
+  assert.equal(calls.length, preserveHistory ? 1 : 3, "preservation must never invoke either destructive cleanup");
+  if (preserveHistory) {
+    assert.equal(calls[0][1].historyFrom, null);
+    assert.equal(result.reportRetention.skipped, "preserve_history");
+    assert.equal(result.retention.skipped, "preserve_history");
+  }
+}
 
 const matrix = rtoDailyCombinationMatrix();
 const loadTestCohort = JSON.parse(fs.readFileSync(new URL("../data/vahan/rto-top-100-cohort.json", import.meta.url), "utf8"));
