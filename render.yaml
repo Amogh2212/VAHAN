@@ -6,12 +6,14 @@ services:
     region: singapore
     branch: main
     autoDeploy: true
-    buildCommand: npm ci && npx playwright install chromium
+    buildCommand: npm ci && PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install --with-deps chromium
     startCommand: npm start
     healthCheckPath: /ready
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
       - key: DATABASE_URL
         sync: false
       - key: PGSSL
