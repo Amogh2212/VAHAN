@@ -6,7 +6,7 @@ services:
     region: singapore
     branch: main
     autoDeploy: true
-    buildCommand: npm ci
+    buildCommand: npm ci && npx playwright install chromium
     startCommand: npm start
     healthCheckPath: /ready
     envVars:
