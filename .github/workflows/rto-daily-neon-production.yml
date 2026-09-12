@@ -95,3 +95,7 @@ jobs:
       - name: Enforce complete collection
         if: always()
         run: test "${{ steps.collect.outcome }}" = "success"
+
+      - name: Require usable Daily registration evidence
+        if: always()
+        run: node scripts/check-daily-registration-availability.mjs artifacts/rto-daily-neon-production-summary.json

@@ -31,6 +31,10 @@ async function main() {
     run: coverage.run,
     cycle: coverage.summary,
     reportReadiness: readiness,
+    dailyRegistrations: { status: readiness.dailyRegistrationEligible ? "available" : "unavailable",
+      baselineEligible: readiness.dailyRegistrationEligible === true,
+      reason: readiness.dailyRegistrationReason ?? "No verified daily registration source.",
+      coverage: readiness.dailyRegistrationCoverage ?? 0 },
     failures: failures.rows.map((row) => ({ state: row.state, rto: row.rto, attempts: Number(row.attempts), error: row.last_error ?? null })),
     durationMs,
   };
@@ -49,7 +53,7 @@ async function main() {
     .replace(/(?:postgres(?:ql)?|https?):\/\/[^\s"<>]+/gi, "[redacted-url]")
     .replace(/((?:password|token|secret|api[_-]?key)\s*[=:]\s*)[^\s"<>]+/gi, "$1[redacted]");
   await fs.writeFile(file, `${sanitized}\n`, "utf8");
-  console.log(JSON.stringify({ summaryFile: file, runId, status: coverage.run?.status ?? "no_run", durationMs, readiness: { eligible: readiness.eligible, cohortSize: readiness.cohortSize, completeRtos: readiness.completeRtos } }, null, 2));
+  console.log(JSON.stringify({ summaryFile: file, runId, collectionStatus: coverage.run?.status ?? "no_run", dailyRegistrations: summary.dailyRegistrations, durationMs, readiness: { eligible: readiness.eligible, cohortSize: readiness.cohortSize, completeRtos: readiness.completeRtos } }, null, 2));
 }
 
 main().catch((error) => {

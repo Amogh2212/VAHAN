@@ -9,6 +9,9 @@ const state = {
   draftExplanations: [],
   oemCategory: "2W",
   searchTimer: null,
+  readiness: null,
+  requestId: 0,
+  detailRequestId: 0,
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
@@ -64,6 +67,7 @@ async function loadInitialState() {
     state.currentUser = me.user ?? null;
     state.csrfToken = me.csrfToken ?? null;
     state.batches = batchesBody.batches ?? [];
+    state.readiness = readiness;
     renderReadiness(readiness);
     selectCadence(state.cadence);
   } catch (error) {
@@ -95,6 +99,14 @@ function renderReadiness(readiness) {
     : readiness.reason === "cohort_incomplete"
       ? "status-ready-with-warnings"
       : "status-needs-review"}`;
+  if (state.cadence === "daily" && readiness.dailyRegistrationEligible !== true) {
+    title.textContent = "Daily registrations unavailable";
+    status.className = "status-pill status-needs-review";
+    status.textContent = "Source unsuitable";
+    metrics.innerHTML = `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} stock observations collected</span><span>Daily registration coverage: unavailable</span>`;
+    if (message) { message.hidden = false; message.textContent = readiness.dailyRegistrationReason || "The source does not provide verified registrations for an exact day."; }
+    return;
+  }
   if (readiness.eligible) {
     title.textContent = `${readiness.run?.snapshotDate ?? "Current cycle"} ready for reporting`;
     status.textContent = `${fmt(complete)} / ${fmt(expected)}`;
@@ -120,6 +132,9 @@ function renderReadiness(readiness) {
 
 function selectCadence(cadence) {
   state.cadence = cadence;
+  if (state.readiness) renderReadiness(state.readiness);
+  ++state.requestId;
+  ++state.detailRequestId;
   for (const tab of document.querySelectorAll(".rto-report-tab")) {
     const active = tab.dataset.cadence === cadence;
     tab.classList.toggle("active", active);
@@ -161,6 +176,9 @@ async function selectBatch(batchId) {
 
 async function loadReports() {
   if (!state.batch) return;
+  const requestId = ++state.requestId;
+  const batchId = state.batch.id;
+  ++state.detailRequestId;
   reportList.innerHTML = `<p class="result-empty">Loading ${escapeHtml(state.cadence)} reports.</p>`;
   const params = new URLSearchParams({ limit: "100" });
   const q = searchInput.value.trim();
@@ -169,6 +187,7 @@ async function loadReports() {
   if (status) params.set("status", status);
   try {
     const body = await apiJson(`/api/rto-reports/batches/${state.batch.id}/reports?${params}`);
+    if (requestId !== state.requestId || batchId !== state.batch?.id) return;
     state.reports = body.reports ?? [];
     renderReportList();
     const stillSelected = state.reports.find((report) => report.id === state.report?.id);
@@ -179,6 +198,7 @@ async function loadReports() {
       "Try a different RTO name or clear the status filter.",
     );
   } catch (error) {
+    if (requestId !== state.requestId || batchId !== state.batch?.id) return;
     renderError(error.message);
   }
 }
@@ -280,6 +300,8 @@ function renderReportList() {
 }
 
 async function selectReport(reportId) {
+  const requestId = ++state.detailRequestId;
+  const batchId = state.batch?.id;
   try {
     const [body, draftsBody] = await Promise.all([
       apiJson(`/api/rto-reports/${reportId}`),
@@ -287,11 +309,13 @@ async function selectReport(reportId) {
         ? apiJson(`/api/admin/rto-factor-explanations?reportId=${encodeURIComponent(reportId)}&status=draft`)
         : Promise.resolve({ explanations: [] }),
     ]);
+    if (requestId !== state.detailRequestId || batchId !== state.batch?.id) return;
     state.report = body.report;
     state.draftExplanations = draftsBody.explanations ?? [];
     renderReportList();
     renderReportDetail(state.report);
   } catch (error) {
+    if (requestId !== state.detailRequestId || batchId !== state.batch?.id) return;
     renderError(error.message);
   }
 }
@@ -300,6 +324,7 @@ function renderReportDetail(report) {
   const payload = report.payload ?? {};
   const metrics = payload.metrics ?? {};
   const isDaily = payload.cadence === "daily";
+  const daily = payload.dailyRegistration;
   const categories = payload.categories ?? [];
   const oems = payload.oems ?? [];
   const selectedOemRows = oemRowsForCategory(oems, state.oemCategory, isDaily);
@@ -321,17 +346,18 @@ function renderReportDetail(report) {
 
     <section class="rto-report-metrics" aria-label="Headline metrics">
       ${isDaily
-        ? `${metricBlock("Daily EV registrations", metrics.period?.ev, "Current day vs previous day")}
-           ${metricBlock("Daily ICE registrations", metrics.period?.ice, "Current day vs previous day")}
-           ${metricBlock("EV share of daily registrations", percent(metrics.period?.evShare), "EV / all daily registrations")}
-           ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`
+        ? `${dailyMetricBlock("Previous-day registrations", daily?.previousDayRegistrations)}
+           ${dailyMetricBlock("Today's EV registrations", daily?.evRegistrations)}
+           ${dailyMetricBlock("Today's ICE registrations", daily?.iceRegistrations)}
+           ${dailyMetricBlock("Today's EV share", daily?.evShare)}
+           ${dailyMetricBlock("Today's rank", daily?.rank)}`
         : `${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
            ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
            ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
            ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`}
     </section>
     <p class="rto-report-quality">${escapeHtml(isDaily
-      ? "Daily registration evidence requires consecutive source observations. Missing prior-day data can leave the daily value unavailable; the current snapshot is retained for context."
+      ? (daily?.reason ?? "Daily registration evidence is unavailable for this date.")
       : (payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness."))}</p>
 
     ${warnings.length ? `
@@ -347,7 +373,7 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>${isDaily ? "Daily registrations" : "Observed active stock"}</h3><span>${isDaily ? "EV and ICE additions versus the previous day" : "EV and ICE snapshot totals; gaps mean no verified observation"}</span></div>
+        <div><h3>${isDaily ? "Daily registrations" : "Observed active stock"}</h3><span>${isDaily ? "Verified registrations for each calendar day (IST)" : "EV and ICE snapshot totals; gaps mean no verified observation"}</span></div>
       </div>
       <div class="rto-report-trend">${trendSvg(payload.trend ?? [], isDaily)}</div>
     </section>
@@ -361,7 +387,7 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>${isDaily ? "OEM registrations" : "OEM stock"}</h3><span>${isDaily ? "Daily registration contribution by source maker" : "Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero."}</span></div>
+        <div><h3>${isDaily ? "OEM registrations" : "OEM stock"}</h3><span>${isDaily ? "Unavailable: source top-five stock makers cannot establish daily OEM registrations." : "Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero."}</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
           ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
@@ -378,12 +404,13 @@ function renderReportDetail(report) {
               <td>${fmt(row.previousPeriod?.total)}</td>
               <td class="${movementClass(isDaily ? row.period?.total : row.change?.total?.absolute)}">${signed(isDaily ? row.period?.total : row.change?.total?.absolute)}</td>
             </tr>
-          `).join("") : `<tr><td colspan="6" class="result-empty">No OEM activity is available for ${escapeHtml(state.oemCategory)} in this period.</td></tr>`}</tbody>
+          `).join("") : `<tr><td colspan="6" class="result-empty">${isDaily ? "OEM registrations unavailable: no verified daily source." : `No OEM observation is available for ${escapeHtml(state.oemCategory)} in this period.`}</td></tr>`}</tbody>
         </table>
       </div>
     </section>
 
     <footer class="rto-report-source">
+      ${isDaily ? `<span>Report date: ${escapeHtml(daily?.date ?? payload.period?.end)} · Asia/Kolkata</span><span>${escapeHtml(payload.source?.freshnessReason ?? "Upstream freshness is unverified.")}</span>` : ""}
       <span>Totals: rto_daily_scrape_reports.report_total</span>
       <span>OEMs: rto_daily_snapshots.vehicle_count</span>
       <span>Cohort ${escapeHtml(report.cohortHash?.slice(0, 10) ?? "unknown")} | revision ${fmt(report.revision)}</span>
@@ -547,7 +574,15 @@ function metricBlock(label, value, comparison) {
   return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(display)}</strong><small>${escapeHtml(comparison ?? "")}</small></article>`;
 }
 
+function dailyMetricBlock(label, field) {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  if (field?.date !== today) label = label.replace("Today's ", "");
+  const reason = /rank/i.test(label) ? "Requires daily EV coverage for all 100 RTOs." : "Source does not provide daily registrations.";
+  return metricBlock(label, "Unavailable", `${field?.date ?? "Selected date"} (IST) · ${reason}`);
+}
+
 function reportEvLabel(report) {
+  if (state.cadence === "daily") return "Daily registrations unavailable";
   return `EV stock ${fmt(report.mtdEv)}`;
 }
 
@@ -579,13 +614,7 @@ function categoryBars(categories, isDaily = false) {
 }
 
 function trendSvg(rows, isDaily = false) {
-  if (isDaily) {
-    rows = rows.map((row, index) => ({
-      ...row,
-      ev: index ? delta(row.ev, rows[index - 1].ev) : null,
-      ice: index ? delta(row.ice, rows[index - 1].ice) : null,
-    }));
-  }
+  if (isDaily) return `<p class="result-empty">Daily trend unavailable: no verified daily registration source. Stock observations cannot supply this chart.</p>`;
   const usable = rows.filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice));
   if (usable.length < 2) return `<p class="result-empty">Not enough comparable dates.</p>`;
   const width = 760;

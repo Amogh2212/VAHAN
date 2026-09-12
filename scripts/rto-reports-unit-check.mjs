@@ -97,66 +97,33 @@ const [daily] = buildRtoReportPayloads({
   generatedAt: new Date("2026-07-24T18:00:00.000Z"),
 });
 
-assert.equal(daily.periodEv, 30, "daily EV movement must be current stock minus prior-day stock");
-assert.equal(daily.periodIce, 30);
-assert.equal(daily.mtdEv, 170);
-assert.equal(daily.cohortRank, 1);
-assert.equal(daily.payload.categories.find((row) => row.vehicleCategory === "2W").period.ev, 20);
-assert.ok(daily.payload.oems.some((row) => row.oem === "Example Motors"));
-assert.ok(daily.payload.oems.some((row) => row.oem === "Other / untracked"));
-assert.match(daily.summary, /30 EV and 30 ICE/);
-
-const correctionRows = totalRows.map((row) =>
-  row.snapshot_date === "2026-07-24" && row.fuel_group === "EV"
-    ? { ...row, report_total: row.report_total - 40 }
-    : row,
-);
-const [correctionDaily] = buildRtoReportPayloads({
-  period: reportPeriod("daily", "2026-07-24"),
-  cohort,
-  totalRows: correctionRows,
+assert.equal(daily.periodEv, null, "stock movement must never become daily registrations");
+assert.equal(daily.periodIce, null);
+assert.equal(daily.cohortRank, null);
+assert.equal(daily.evShare, null);
+assert.equal(daily.status, "needs_review");
+assert.equal(daily.payload.dailyRegistration.previousDayRegistrations.date, "2026-07-23");
+assert.equal(daily.payload.dailyRegistration.evRegistrations.date, "2026-07-24");
+assert.equal(daily.payload.dailyRegistration.baselineEligible, false);
+assert.equal(daily.payload.categories[0].period.ev, null);
+assert.deepEqual(daily.payload.oems, []);
+assert.deepEqual(daily.payload.trend, []);
+assert.match(daily.summary, /Daily registrations unavailable/);
+const dailyHtml = renderRtoReportHtml(daily.payload);
+assert.match(dailyHtml, /Previous-day registrations/);
+assert.doesNotMatch(dailyHtml, /<strong>0<|>170</);
+const dailyCsv = renderRtoReportCsv(daily);
+assert.match(dailyCsv, /previousDayRegistrations/);
+assert.match(dailyCsv, /unavailable/);
+assert.doesNotMatch(dailyCsv, /Example Motors/);
+// Stock rendering remains independently supported for the weekly cadence.
+const [weeklyStock] = buildRtoReportPayloads({
+  period: reportPeriod("weekly", "2026-07-24"), cohort,
+  totalRows: totalRows.map(row => ({ ...row, snapshot_date: row.snapshot_date === "2026-07-23" ? "2026-07-17" : row.snapshot_date })),
+  oemRows: oemRows.map(row => ({ ...row, snapshot_date: row.snapshot_date === "2026-07-23" ? "2026-07-17" : row.snapshot_date })),
 });
-assert.equal(correctionDaily.periodEv, -90, "negative net stock movement is a valid observation");
-assert.equal(correctionDaily.payload.metrics.period.ev, -90);
-assert.equal(correctionDaily.payload.metrics.change.ev.absolute, -90);
-assert.doesNotMatch(correctionDaily.payload.quality.warnings.join(" "), /registrations/);
-
-const [incompleteDaily] = buildRtoReportPayloads({
-  period: reportPeriod("daily", "2026-07-24"),
-  cohort,
-  totalRows: totalRows.filter((row) => row.snapshot_date === "2026-07-24"),
-  oemRows: oemRows.filter((row) => row.snapshot_date === "2026-07-24"),
-});
-assert.match(incompleteDaily.summary, /unavailable daily net stock movement/);
-assert.match(incompleteDaily.summary, /Current active stock is 170 EV and 780 ICE/);
-assert.match(incompleteDaily.payload.quality.warnings.join(" "), /baseline stock snapshot is missing/);
-const incompleteHtml = renderRtoReportHtml(incompleteDaily.payload);
-assert.match(incompleteHtml, /Active EV stock/);
-assert.match(incompleteHtml, /<strong>170<\/strong>/);
-assert.match(incompleteHtml, /<strong>780<\/strong>/);
-assert.match(incompleteHtml, /Net N\/A/);
-assert.doesNotMatch(incompleteHtml, /Net 0/);
-const unavailableMetricsHtml = renderRtoReportHtml({
-  ...incompleteDaily.payload,
-  metrics: { stock: { ev: null, ice: null, evShare: null }, period: { ev: null, ice: null } },
-});
-assert.doesNotMatch(unavailableMetricsHtml, /0\.0%|Net 0/);
-const zeroMetricsHtml = renderRtoReportHtml({
-  ...incompleteDaily.payload,
-  metrics: { stock: { ev: 0, ice: 100, evShare: 0 }, period: { ev: 0, ice: 0 } },
-});
-assert.match(zeroMetricsHtml, /0\.0%/);
-assert.match(zeroMetricsHtml, /Net 0/);
-
-const [unavailableDaily] = buildRtoReportPayloads({
-  period: reportPeriod("daily", "2026-07-24"),
-  cohort,
-  totalRows: [],
-  oemRows: [],
-});
-assert.equal(unavailableDaily.currentCoverage, false);
-assert.equal(unavailableDaily.payload.quality.currentCoverage, false);
-assert.match(unavailableDaily.payload.quality.warnings.join(" "), /shown as unavailable/);
+assert.equal(weeklyStock.periodEv, 30);
+assert.equal(weeklyStock.mtdEv, 170);
 
 const rankingCohort = [
   { state: "Alpha", rto: "Alpha RTO", cohort_rank: 1 },
@@ -184,19 +151,19 @@ const dailyRanking = buildRtoReportPayloads({
   cohort: rankingCohort,
   totalRows: rankingRows,
 });
-assert.equal(dailyRanking.find((report) => report.state === "Beta").cohortRank, 1, "cohort rank should use current active EV stock");
-assert.equal(dailyRanking.find((report) => report.state === "Alpha").cohortRank, 2);
+assert.equal(dailyRanking.find((report) => report.state === "Beta").cohortRank, null, "Daily rank cannot use stock");
+assert.equal(dailyRanking.find((report) => report.state === "Alpha").cohortRank, null);
 
-const csv = renderRtoReportCsv({ ...daily, cadence: "daily", periodStart: "2026-07-24", periodEnd: "2026-07-24" });
+const csv = renderRtoReportCsv({ ...weeklyStock, cadence: "weekly", periodStart: "2026-07-24", periodEnd: "2026-07-24" });
 assert.match(csv, /Example Motors/);
 assert.match(csv, /Other \/ untracked/);
 
-const html = renderRtoReportHtml(daily.payload);
+const html = renderRtoReportHtml(weeklyStock.payload);
 assert.match(html, /Dynamic top-maker stock/);
 assert.match(html, /VAHAN Public Dashboard/);
 assert.match(html, /trend-chart-bg/);
 const categoryOemHtml = renderRtoReportHtml({
-  ...daily.payload,
+  ...weeklyStock.payload,
   oems: [
     {
       oem: "Hero MotoCorp",
@@ -225,7 +192,7 @@ assert.equal((categoryOemHtml.match(/<td>Maruti Suzuki<\/td>/g) ?? []).length, 1
 assert.doesNotMatch(categoryOemHtml, /<td>Hero MotoCorp<\/td><td>3W<\/td>/);
 assert.doesNotMatch(categoryOemHtml, /<td>Maruti Suzuki<\/td><td>2W<\/td>/);
 const contextHtml = renderRtoReportHtml({
-  payload: daily.payload,
+  payload: weeklyStock.payload,
   explanations: [{
     finalHeading: "Official campaign aligned with the observed movement",
     finalBody: "Registrations moved above the matched peer trend after the cited campaign. This is an association, not proof of causation.",
@@ -286,7 +253,7 @@ const historicalContext = await loadRtoReportWithOptionalFactorContext({ reportI
   loadReport: async () => quarantined, loadApprovedExplanations: async () => { throw new Error("must not load invalid historical explanations"); } });
 assert.deepEqual(historicalContext.explanations, []);
 assert.match(historicalContext.factorContext.message, /unverified/);
-const [partialOem] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-07-24"), cohort, totalRows,
+const [partialOem] = buildRtoReportPayloads({ period: reportPeriod("weekly", "2026-07-24"), cohort, totalRows,
   oemRows: oemRows.filter(row => row.fuel_group === "EV") });
 const partialCategory = partialOem.payload.oems.find(row => row.oem === "Example Motors").categories[0];
 assert.ok(partialCategory.stock.ev > 0);

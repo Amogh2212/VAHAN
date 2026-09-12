@@ -328,6 +328,9 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) return console.log(usage());
+  if (!args.dryRun && (args.date !== snapshotDateKey() || args.targetMonth !== args.date.slice(0, 7))) {
+    throw new Error("The active-stock source only supports today's IST observation date/month. Historical daily registration backfill is unsupported; use report reconciliation to quarantine saved stock evidence.");
+  }
   if (args.neon) assertNeonDatabaseUrl();
 
   if (args.bootstrapConfigs) {
