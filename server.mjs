@@ -121,6 +121,7 @@ import {
   rtoReportExportRevision,
   saveRtoReportExport,
 } from "./lib/rto-reports.mjs";
+import { renderHtmlTextPdf } from "./lib/text-pdf.mjs";
 import { loadRtoReportWithOptionalFactorContext } from "./lib/rto-report-context.mjs";
 import {
   createRtoFactorDocument,
@@ -6735,10 +6736,12 @@ async function renderMonthlySalesReportPdf(report) {
 }
 
 async function renderRtoRegistrationReportPdf(report) {
-  const browser = await chromium.launch({ headless: true });
+  const html = renderRtoReportHtml(report);
+  let browser;
   try {
+    browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 1600 } });
-    await page.setContent(renderRtoReportHtml(report), { waitUntil: "networkidle" });
+    await page.setContent(html, { waitUntil: "networkidle" });
     await page.emulateMedia({ media: "print" });
     return await page.pdf({
       format: "A4",
@@ -6750,8 +6753,11 @@ async function renderRtoRegistrationReportPdf(report) {
         left: "10mm",
       },
     });
+  } catch (error) {
+    console.warn(`[rto-reports] Browser PDF renderer unavailable; using text fallback: ${error?.message ?? error}`);
+    return renderHtmlTextPdf(html);
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }
 
