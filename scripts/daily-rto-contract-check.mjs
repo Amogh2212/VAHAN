@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { unavailableDailyRegistrationReport } from '../lib/rto-daily-registration-contract.mjs';
 import { quarantineUnverifiedRtoReport,renderRtoReportCsv,renderRtoReportHtml } from '../lib/rto-reports.mjs';
-import {validateStockJobPersistence,buildRankedStockSnapshotRows} from '../lib/rto-daily-snapshots.mjs';
+import {validateRegistrationJobPersistence,buildRankedRegistrationSnapshotRows,selectAuthoritativeObservation} from '../lib/rto-daily-snapshots.mjs';
 import {loadRtoReportWithOptionalFactorContext} from '../lib/rto-report-context.mjs';
-import {withStockEvidence} from './fixtures/rto-stock-evidence.mjs';
+import {withRegistrationEvidence} from './fixtures/rto-stock-evidence.mjs';
 
 let checks=0;
 const check=(name,fn)=>{fn();checks++;console.log(`PASS ${name}`);};
@@ -25,12 +25,13 @@ const context=await loadRtoReportWithOptionalFactorContext({reportId:1,factorAge
 check('factor context withheld',()=>{assert.equal(contextLoaded,false);assert.deepEqual(context.explanations,[]);});
 const job={id:1,runId:2,state:'QA',rto:'QA RTO',snapshotDate:'2026-09-11',targetMonth:'2026-09'};
 const now=new Date('2026-09-11T10:00:00Z');
-const reports=['EV','ICE'].flatMap(fuelGroup=>['2W','3W','4W'].map(vehicleCategory=>withStockEvidence({status:'success',state:job.state,rto:job.rto,fuelGroup,vehicleCategory,filtersConfirmed:true,reportTotal:10,rows:[{maker:'QA Maker',vehicle_count:10,rank:1}],scrapedAt:now.toISOString()})));
-const rows=reports.flatMap(r=>buildRankedStockSnapshotRows({...job,sourceRows:r.rows,fuelGroup:r.fuelGroup,vehicleCategory:r.vehicleCategory,metadata:{scrapeRunId:job.runId,scrapedAt:r.scrapedAt,source:r.source}}));
-check('matching source persistence accepted',()=>validateStockJobPersistence({job,reports,rows,now}));
+const reports=['EV','ICE'].flatMap(fuelGroup=>['2W','3W','4W'].map(vehicleCategory=>withRegistrationEvidence({status:'success',state:job.state,rto:job.rto,fuelGroup,vehicleCategory,filtersConfirmed:true,reportTotal:10,rows:[{maker:'QA Maker',vehicle_count:10,rank:1}],targetMonth:job.targetMonth,scrapedAt:now.toISOString()},{oemStatus:'verified'})));
+const rows=reports.flatMap(r=>buildRankedRegistrationSnapshotRows({...job,sourceRows:r.rows,fuelGroup:r.fuelGroup,vehicleCategory:r.vehicleCategory,metadata:{scrapeRunId:job.runId,scrapedAt:r.scrapedAt,source:r.source}}));
+check('matching source persistence accepted',()=>validateRegistrationJobPersistence({job,reports,rows,now}));
 for(const [name,alter] of [
  ['wrong OEM total',r=>r[0].vehicleCount++],['duplicate OEM',r=>r.push({...r[0]})],['foreign source',r=>r[0].source='foreign-source'],['mixed date',r=>r[0].snapshotDate='2026-09-10'],['mismatched observation timestamp',r=>r[0].scrapedAt='2026-09-11T09:00:00Z']
-])check(`reject ${name}`,()=>{const changed=structuredClone(rows);alter(changed);assert.throws(()=>validateStockJobPersistence({job,reports,rows:changed,now}));});
-check('reject historical stock backfill',()=>assert.throws(()=>validateStockJobPersistence({job,reports,rows,now:new Date('2026-09-12T10:00:00Z')})));
-check('reject IST midnight crossing',()=>{const changed=structuredClone(reports);changed[0].scrapedAt='2026-09-10T18:29:59Z';assert.throws(()=>validateStockJobPersistence({job,reports:changed,rows,now}));});
+])check(`reject ${name}`,()=>{const changed=structuredClone(rows);alter(changed);assert.throws(()=>validateRegistrationJobPersistence({job,reports,rows:changed,now}));});
+check('reject historical registration backfill',()=>assert.throws(()=>validateRegistrationJobPersistence({job,reports,rows,now:new Date('2026-09-12T10:00:00Z')})));
+check('reject IST midnight crossing',()=>{const changed=structuredClone(reports);changed[0].scrapedAt='2026-09-10T18:29:59Z';assert.throws(()=>validateRegistrationJobPersistence({job,reports:changed,rows,now}));});
+check('first valid same-date observation is authoritative',()=>{assert.equal(selectAuthoritativeObservation(null,{valid:true}).accepted,true);assert.equal(selectAuthoritativeObservation({id:7},{valid:true}).authoritativeObservationId,7);});
 console.log(`Daily RTO contract: ${checks} focused checks passed.`);

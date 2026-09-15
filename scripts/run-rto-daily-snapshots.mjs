@@ -9,7 +9,7 @@ import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_FILTERS,
   RTO_DAILY_FUEL_GROUPS,
-  buildRankedStockSnapshotRows,
+  buildRankedRegistrationSnapshotRows,
   claimRtoDailyJob,
   completeRtoDailyJob,
   deferStaleRtoDailyCycles,
@@ -27,7 +27,7 @@ import {
   upsertRtoDailyConfigs,
   validateRtoDailyReport,
 } from "../lib/rto-daily-snapshots.mjs";
-import { fetchPublicRtoStockSegment } from "../lib/public-dashboard-client.mjs";
+import { fetchPublicRtoRegistrationSegment } from "../lib/public-dashboard-client.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 import { createTerminalProgress } from "../lib/terminal-progress.mjs";
 import {
@@ -133,7 +133,7 @@ function usage() {
     "  --max-jobs N           Seed at most N RTOs for a targeted pilot.",
     "  --retention-days N     Detailed snapshot retention (default 30).",
     "  --date YYYY-MM-DD      IST snapshot date.",
-    "  --target-month YYYY-MM Storage partition for the daily stock snapshot.",
+    "  --target-month YYYY-MM Public Dashboard monthly-registration target.",
     "  --state NAME           Restrict a pilot cycle to one state.",
     "  --rto LABEL            Restrict a pilot cycle to one exact official RTO label.",
   ].join("\n");
@@ -150,6 +150,9 @@ export function requireCompleteFailureReasons({ finalized, readiness } = {}) {
     reasons.push("RTO jobs remain queued, running, retrying, or deferred");
   }
   if (!readiness?.eligible) reasons.push(`report readiness is ${readiness?.reason ?? "not eligible"}`);
+  if (readiness?.dailyRegistrationEligible !== true) {
+    reasons.push(`Daily registration comparison readiness is ${readiness?.dailyRegistrationReason ?? "not eligible"}`);
+  }
   if (Number(readiness?.cohortSize) !== 100) reasons.push(`expected 100 frozen cohort members, found ${Number(readiness?.cohortSize ?? 0)}`);
   if (Number(readiness?.completeRtos) !== 100) reasons.push(`expected complete evidence for 100 RTOs, found ${Number(readiness?.completeRtos ?? 0)}`);
   return reasons;
@@ -224,9 +227,10 @@ async function scrapeJob({ job, workerId, rateLimit }) {
     for (const vehicleCategory of RTO_DAILY_CATEGORIES) {
       await heartbeatRtoDailyJob({ jobId: job.id, workerId });
       const categoryFilters = RTO_DAILY_CATEGORY_FILTERS[vehicleCategory];
-      const segment = await fetchPublicRtoStockSegment({
+      const segment = await fetchPublicRtoRegistrationSegment({
         state: job.state,
         rto: job.rto,
+        targetMonth: job.targetMonth,
         fuels: RTO_DAILY_FUEL_FILTERS[fuelGroup],
         vehicleCategories: categoryFilters.vehicleCategories,
         vehicleClasses: categoryFilters.vehicleClasses,
@@ -255,7 +259,8 @@ async function scrapeJob({ job, workerId, rateLimit }) {
           source: segment.source,
           metricKind: segment.metricKind,
           filters: segment.filters,
-          categories: segment.categories,
+          freshness: segment.freshness,
+          oem: segment.oem,
           topFiveTotal: segment.topFiveTotal,
           topMakerRows: segment.makers.map((maker) => ({ maker: maker.maker, vehicle_count: maker.count, rank: maker.rank })),
         },
@@ -263,7 +268,7 @@ async function scrapeJob({ job, workerId, rateLimit }) {
       validateRtoDailyReport(report, { state: job.state, rto: job.rto });
       const scrapeStatus = scrapeStatusForSnapshotDate(job.snapshotDate, report.scrapedAt);
       reports.push(report);
-      rows.push(...buildRankedStockSnapshotRows({
+      rows.push(...buildRankedRegistrationSnapshotRows({
         sourceRows: report.rows,
         state: job.state,
         rto: job.rto,
@@ -276,7 +281,7 @@ async function scrapeJob({ job, workerId, rateLimit }) {
           scrapedAt: report.scrapedAt,
           scrapeStatus,
           source: segment.source,
-          raw: { filters: segment.filters },
+          raw: { filters: segment.filters, targetMonth: job.targetMonth, requestHash: segment.validation.requestHash, responseHash: segment.validation.responseHash },
         },
       }));
     }
@@ -308,7 +313,7 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
       try {
         const result = await scrapeJob({ job, workerId, rateLimit });
         controller.record({ retryCount: result.retryCount, reportCount: result.reportCount, failed: false });
-        progress.log(`[${workerLabel}] saved public-dashboard stock rows | ${job.rto}`);
+        progress.log(`[${workerLabel}] saved Public Dashboard monthly-registration observations | ${job.rto}`);
       } catch (error) {
         controller.record({ retryCount: 0, reportCount: 6, failed: true });
         const failed = await failRtoDailyJob({
@@ -329,7 +334,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) return console.log(usage());
   if (!args.dryRun && (args.date !== snapshotDateKey() || args.targetMonth !== args.date.slice(0, 7))) {
-    throw new Error("The active-stock source only supports today's IST observation date/month. Historical daily registration backfill is unsupported; use report reconciliation to quarantine saved stock evidence.");
+    throw new Error("The monthly-registration source only supports today's IST observation date and target month. Historical backfill is unsupported because observation-time evidence cannot be recreated.");
   }
   if (args.neon) assertNeonDatabaseUrl();
 

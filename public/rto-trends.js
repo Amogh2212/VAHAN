@@ -7,7 +7,6 @@ const lookupInput = document.querySelector("#rtoLookupInput");
 const suggestions = document.querySelector("#rtoLookupSuggestions");
 const fuelSelect = document.querySelector("#rtoFuelGroup");
 const categorySelect = document.querySelector("#rtoCategory");
-const oemSelect = document.querySelector("#rtoOem");
 const freshnessLabel = document.querySelector("#rtoTrendFreshness");
 const pinButton = document.querySelector("#rtoPinBtn");
 const requestButton = document.querySelector("#rtoRequestBtn");
@@ -30,11 +29,6 @@ const coveragePanel = coverageSummary?.closest(".panel");
 const trendSubmitButton = form?.querySelector('button[type="submit"]');
 
 const fmt = new Intl.NumberFormat("en-IN");
-const CATEGORY_OEMS = {
-  "2W": ["Hero MotoCorp", "Honda Motorcycle", "TVS Motor (2W)", "Bajaj Auto (2W)", "Suzuki Motorcycle"],
-  "3W": ["Bajaj Auto (3W)", "Mahindra Last Mile Mobility", "TVS Motor (3W)", "Piaggio Vehicles", "Atul Auto"],
-  "4W": ["Maruti Suzuki", "Tata Motors", "Mahindra & Mahindra", "Hyundai Motor India", "JSW MG Motor India"],
-};
 const POLL_MS = 10_000;
 const NOTICE_AUTO_HIDE_MS = 30_000;
 
@@ -119,45 +113,30 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 
-function option(value, label = value) {
-  return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
-}
-
-function oemsForCategory(category = categorySelect.value) {
-  return CATEGORY_OEMS[category] ?? CATEGORY_OEMS["2W"];
-}
-
-function renderOemOptions({ preserveSelection = true } = {}) {
-  const previous = preserveSelection ? oemSelect.value : "";
-  const oems = oemsForCategory();
-  oemSelect.innerHTML = oems.map((item) => option(item)).join("");
-  oemSelect.value = oems.includes(previous) ? previous : oems[0];
-}
-
 function metricCard(label, value, secondary = "") {
   return `<div class="tracked-metric"><span>${escapeHtml(label)}</span><strong>${value}</strong>${secondary ? `<small>${escapeHtml(secondary)}</small>` : ""}</div>`;
 }
 
 function movementText(value) {
-  if (value === null || value === undefined) return `<span class="tracked-delta muted">--</span>`;
+  if (value === null || value === undefined) return `<span class="tracked-delta muted">Unavailable</span>`;
   const sign = value > 0 ? "+" : "";
   const tone = value > 0 ? "up" : value < 0 ? "down" : "flat";
   return `<span class="tracked-delta ${tone}">${sign}${fmt.format(value)}</span>`;
 }
 
 function renderSparkline(rows) {
-  if (rows.length < 2) return `<div class="tracked-sparkline tracked-sparkline-empty"><p class="result-empty">A trend line appears after two verified snapshots.</p></div>`;
+  if (rows.length < 2) return `<div class="tracked-sparkline tracked-sparkline-empty"><p class="result-empty">A trend line appears after two accepted observations.</p></div>`;
   const width = 560;
   const height = 110;
   const padding = 14;
-  const values = rows.map((row) => Number(row.vehicleCount));
+  const values = rows.map((row) => Number(row.monthToDateTotal));
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = Math.max(1, max - min);
   const xFor = (index) => padding + (index / Math.max(1, rows.length - 1)) * (width - padding * 2);
   const yFor = (value) => padding + (height - padding * 2) - ((value - min) / span) * (height - padding * 2);
-  const points = rows.map((row, index) => `${xFor(index).toFixed(1)},${yFor(Number(row.vehicleCount)).toFixed(1)}`).join(" ");
-  return `<div class="tracked-sparkline"><div class="tracked-sparkline-head"><span>30-day snapshot trend</span><strong>${fmt.format(values[0])} to ${fmt.format(values.at(-1))}</strong></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="RTO daily snapshot trend"><polyline points="${points}" /><circle cx="${xFor(0)}" cy="${yFor(values[0])}" r="4" /><circle cx="${xFor(rows.length - 1)}" cy="${yFor(values.at(-1))}" r="4" /></svg></div>`;
+  const points = rows.map((row, index) => `${xFor(index).toFixed(1)},${yFor(Number(row.monthToDateTotal)).toFixed(1)}`).join(" ");
+  return `<div class="tracked-sparkline"><div class="tracked-sparkline-head"><span>Source month-to-date trend</span><strong>${fmt.format(values[0])} to ${fmt.format(values.at(-1))}</strong></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="RTO month-to-date registration trend"><polyline points="${points}" /><circle cx="${xFor(0)}" cy="${yFor(values[0])}" r="4" /><circle cx="${xFor(rows.length - 1)}" cy="${yFor(values.at(-1))}" r="4" /></svg></div>`;
 }
 
 function setAuthState(user) {
@@ -246,7 +225,7 @@ async function resolveTypedSelection() {
 function renderSelectionActions() {
   const selected = Boolean(currentSelection);
   pinButton.hidden = !selected;
-  requestButton.hidden = !selected || Boolean(currentStatus?.lastSnapshotDate) || currentUser?.role !== "admin";
+  requestButton.hidden = !selected || Boolean(currentStatus?.lastRegistrationObservationDate) || currentUser?.role !== "admin";
   if (!selected) return;
   pinButton.textContent = currentUser
     ? currentStatus?.pinned ? "Unpin RTO" : "Pin RTO"
@@ -255,29 +234,29 @@ function renderSelectionActions() {
   requestButton.disabled = pending;
   requestButton.textContent = !currentUser
     ? "Sign in to queue"
-    : pending ? `Snapshot ${currentStatus.job.status}` : "Queue first snapshot";
+    : pending ? `Observation ${currentStatus.job.status}` : "Queue first observation";
 }
 
 function renderTrend(rows, filters) {
-  title.textContent = `${filters.rto} daily trend`;
-  meta.textContent = `${filters.state} · ${filters.fuelGroup} / ${filters.category} / ${filters.oem}`;
+  title.textContent = `${filters.rto} registration trend`;
+  meta.textContent = `${filters.state} · ${filters.fuelGroup} / ${filters.category} · Calendar Year / Monthly`;
   const latest = rows.at(-1) ?? null;
-  const movement = latest?.dailyDelta ?? null;
+  const movement = latest?.dailyRegistration ?? null;
   const failed = currentStatus?.job?.status === "failed";
   statusPill.textContent = latest ? "Loaded" : failed ? "Failed" : currentStatus?.job?.status ?? "No data";
   statusPill.className = `status-pill ${latest ? "tracked-status-active" : "tracked-status-paused"}`;
   tableWrap.hidden = !rows.length;
   summary.classList.toggle("empty-observation-state", !rows.length);
   if (rows.length) {
-    summary.innerHTML = `${metricCard("Latest snapshot", fmt.format(latest.vehicleCount), latest.snapshotDate)}${metricCard("Daily movement", movementText(movement))}${metricCard("Snapshots", fmt.format(rows.length), "Verified raw retention window")}${renderSparkline(rows)}`;
+    summary.innerHTML = `${metricCard("Source month to date", fmt.format(latest.monthToDateTotal), latest.snapshotDate)}${metricCard("Daily registrations", movementText(movement), latest.unavailableReason ?? "Consecutive compatible comparison")}${metricCard("Observations", fmt.format(rows.length), "Accepted registration evidence")}${renderSparkline(rows)}`;
   } else if (failed) {
-    summary.innerHTML = `<p class="result-empty">The latest collection failed: ${escapeHtml(currentStatus.job.lastError || "unknown scraper error")}. No value is shown until a verified snapshot succeeds.</p>`;
+    summary.innerHTML = `<p class="result-empty">The latest collection failed: ${escapeHtml(currentStatus.job.lastError || "unknown source error")}. No value is shown until accepted registration evidence exists.</p>`;
   } else if (["queued", "running", "retrying"].includes(currentStatus?.job?.status)) {
-    summary.innerHTML = `<p class="result-empty">The first snapshot is ${escapeHtml(currentStatus.job.status)}. This page will refresh when verified data arrives.</p>`;
+    summary.innerHTML = `<p class="result-empty">The first observation is ${escapeHtml(currentStatus.job.status)}. This page will refresh when accepted evidence arrives.</p>`;
   } else {
-    summary.innerHTML = `<p class="result-empty">No verified daily snapshot exists for this RTO yet. Queue the first snapshot or pin the RTO for daily priority.</p>`;
+    summary.innerHTML = `<p class="result-empty">No accepted monthly-registration observation exists for this RTO yet. Queue the first observation or pin the RTO for daily priority.</p>`;
   }
-  rowsBody.innerHTML = rows.map((row) => `<tr><td>${escapeHtml(row.snapshotDate)}</td><td>${escapeHtml(row.targetMonth)}</td><td>${fmt.format(row.vehicleCount)}</td><td>${movementText(row.dailyDelta)}${row.correction ? " <small>correction</small>" : ""}</td><td>${escapeHtml(row.qualityStatus ?? row.scrapeStatus)}</td></tr>`).join("");
+  rowsBody.innerHTML = rows.map((row) => `<tr><td>${escapeHtml(row.snapshotDate)}</td><td>${escapeHtml(row.targetMonth)}</td><td>${fmt.format(row.monthToDateTotal)}</td><td>${movementText(row.dailyRegistration)}${row.correction ? " <small>correction preserved</small>" : row.unavailableReason ? ` <small>${escapeHtml(row.unavailableReason)}</small>` : ""}</td><td>${escapeHtml(row.status)}</td></tr>`).join("");
 }
 
 async function loadTrend() {
@@ -286,7 +265,6 @@ async function loadTrend() {
     ...currentSelection,
     fuelGroup: fuelSelect.value,
     category: categorySelect.value,
-    oem: oemSelect.value,
   };
   const body = await apiJson(`/api/rto-daily/trend?${new URLSearchParams({ ...filters, limit: "30" })}`);
   renderTrend(body.rows ?? [], filters);
@@ -311,9 +289,9 @@ async function loadSelection() {
   currentSelection = { state: body.state, rto: body.rto };
   currentStatus = body.status;
   lookupInput.value = body.rto;
-  freshnessLabel.textContent = currentStatus.lastSnapshotDate
-    ? `${body.state} · latest ${currentStatus.lastSnapshotDate}`
-    : `${body.state} · no verified snapshot yet`;
+  freshnessLabel.textContent = currentStatus.lastRegistrationObservationDate
+    ? `${body.state} · latest accepted registration ${currentStatus.lastRegistrationObservationDate}`
+    : `${body.state} · no accepted registration observation yet`;
   renderSelectionActions();
   await loadTrend();
   scheduleStatusPoll();
@@ -325,7 +303,7 @@ function renderPins() {
   pinnedList.innerHTML = currentPins.length
     ? currentPins.map((pin) => {
       const state = pin.job?.status ?? pin.lastStatus ?? "waiting";
-      return `<div class="tracked-item rto-pinned-item"><button type="button" class="rto-pinned-select" data-pin-id="${pin.id}"><span class="tracked-item-main"><strong>${escapeHtml(pin.rto)}</strong><small>${escapeHtml(pin.state)}</small></span><span class="tracked-item-meta"><span class="status-pill ${state === "success" ? "tracked-status-active" : "tracked-status-paused"}">${escapeHtml(state)}</span><span>${escapeHtml(pin.lastSnapshotDate ?? "No verified snapshot")}</span></span></button><button type="button" class="rto-unpin" data-unpin-id="${pin.id}" aria-label="Unpin ${escapeHtml(pin.rto)}">×</button></div>`;
+      return `<div class="tracked-item rto-pinned-item"><button type="button" class="rto-pinned-select" data-pin-id="${pin.id}"><span class="tracked-item-main"><strong>${escapeHtml(pin.rto)}</strong><small>${escapeHtml(pin.state)}</small></span><span class="tracked-item-meta"><span class="status-pill ${state === "success" ? "tracked-status-active" : "tracked-status-paused"}">${escapeHtml(state)}</span><span>${escapeHtml(pin.lastRegistrationObservationDate ?? "No accepted registration")}</span></span></button><button type="button" class="rto-unpin" data-unpin-id="${pin.id}" aria-label="Unpin ${escapeHtml(pin.rto)}">×</button></div>`;
     }).join("")
     : `<p class="result-empty">No RTOs pinned yet. Search for one and choose “Pin RTO.”</p>`;
   for (const button of pinnedList.querySelectorAll(".rto-pinned-select")) {
@@ -389,7 +367,7 @@ async function requestFirstSnapshot() {
   requestButton.disabled = true;
   try {
     await apiJson("/api/rto-daily/requests", { method: "POST", body: JSON.stringify(currentSelection) });
-    showNotice("First snapshot queued. The deployment worker normally starts it within 15 minutes.");
+    showNotice("First monthly-registration observation queued. The worker normally starts it within 15 minutes.");
     await loadSelection();
   } finally {
     requestButton.disabled = false;
@@ -399,7 +377,7 @@ async function requestFirstSnapshot() {
 function renderCoverage(body) {
   document.body.classList.remove("rto-trends-source-error");
   coveragePanel?.classList.remove("is-unavailable");
-  for (const control of [lookupInput, fuelSelect, categorySelect, oemSelect, trendSubmitButton]) {
+  for (const control of [lookupInput, fuelSelect, categorySelect, trendSubmitButton]) {
     if (control) control.disabled = false;
   }
   const run = body.run;
@@ -434,7 +412,6 @@ function renderCoverage(body) {
 }
 
 async function init() {
-  renderOemOptions({ preserveSelection: false });
   try {
     const [, coverage] = await Promise.all([loadCurrentUser(), apiJson("/api/rto-daily/coverage")]);
     renderCoverage(coverage);
@@ -442,17 +419,17 @@ async function init() {
     console.error("RTO daily source request failed.", error);
     document.body.classList.add("rto-trends-source-error");
     coveragePanel?.classList.add("is-unavailable");
-    coverageMeta.textContent = "Database-backed snapshots are offline";
+    coverageMeta.textContent = "Database-backed observations are offline";
     coverageStatus.textContent = "Unavailable";
     coverageStatus.className = "status-pill tracked-run-failed";
     coverageSummary.innerHTML = `
       <div class="atlas-prerequisite">
         <span class="panel-kicker">Source prerequisite</span>
         <strong>Daily RTO coverage cannot be verified right now.</strong>
-        <p>Restore database access, then reload this page before using snapshot trends.</p>
+        <p>Restore database access, then reload this page before using registration trends.</p>
       </div>
     `;
-    for (const control of [lookupInput, fuelSelect, categorySelect, oemSelect, trendSubmitButton]) {
+    for (const control of [lookupInput, fuelSelect, categorySelect, trendSubmitButton]) {
       if (control) control.disabled = true;
     }
     showNotice("Daily RTO data is temporarily unavailable. Restore database access, then reload.", "error");
@@ -495,11 +472,10 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-for (const input of [fuelSelect, oemSelect]) {
+for (const input of [fuelSelect]) {
   input.addEventListener("change", () => loadTrend().catch((error) => showNotice(error.message, "error")));
 }
 categorySelect.addEventListener("change", () => {
-  renderOemOptions();
   loadTrend().catch((error) => showNotice(error.message, "error"));
 });
 pinButton.addEventListener("click", () => pinOrUnpin().catch((error) => showNotice(error.message, "error")));

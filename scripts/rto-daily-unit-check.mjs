@@ -1,16 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { withStockEvidence } from "./fixtures/rto-stock-evidence.mjs";
+import { withRegistrationEvidence } from "./fixtures/rto-stock-evidence.mjs";
 import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_GROUPS,
   RTO_DAILY_QUEUE_PRIORITIES,
-  RTO_DAILY_OEMS,
-  buildRankedStockSnapshotRows,
-  countForOem,
-  rtoDailyCombinationMatrix,
+  buildRankedRegistrationSnapshotRows,
   rtoDailyExpectedRowCount,
   scrapeStatusForSnapshotDate,
+  selectAuthoritativeObservation,
   snapshotDateKey,
   targetMonthForDate,
   validateRtoDailyReport,
@@ -39,7 +37,6 @@ for (const preserveHistory of [true, false]) {
   }
 }
 
-const matrix = rtoDailyCombinationMatrix();
 const loadTestCohort = JSON.parse(fs.readFileSync(new URL("../data/vahan/rto-top-100-cohort.json", import.meta.url), "utf8"));
 const validatedLoadTestCohort = validateRtoDailyLoadTestCohort(loadTestCohort);
 assert.equal(validatedLoadTestCohort.length, 100, "hosted load-test cohort must have exactly 100 members");
@@ -57,7 +54,7 @@ assert.throws(
 assert.deepEqual(
   requireCompleteFailureReasons({
     finalized: { complete: true, summary: { total: 100, succeeded: 100, failed: 0, queued: 0, running: 0, retrying: 0, deferred: 0 } },
-    readiness: { eligible: true, cohortSize: 100, completeRtos: 100 },
+    readiness: { eligible: true, dailyRegistrationEligible: true, cohortSize: 100, completeRtos: 100 },
   }),
   [],
   "strict hosted completion should accept a fully evidenced 100-RTO run",
@@ -70,34 +67,35 @@ assert.match(
   /cycle did not finish|expected 100 successful|queued|not eligible|complete evidence/i,
   "strict hosted completion should reject partial cycles and missing evidence",
 );
-assert.equal(matrix.length, 90, "daily RTO matrix should produce exactly 90 rows per RTO");
 assert.equal(rtoDailyExpectedRowCount(), 30, "Public Dashboard top-five collection should store at most 30 rows per RTO");
-
-for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
-  for (const category of RTO_DAILY_CATEGORIES) {
-    const rows = matrix.filter((item) => item.fuelGroup === fuelGroup && item.vehicleCategory === category);
-    assert.equal(rows.length, RTO_DAILY_OEMS.length, `${fuelGroup}/${category} should include all OEMs`);
-  }
-}
-
-const tata = RTO_DAILY_OEMS.find((item) => item.name === "Tata Motors");
-assert.equal(
-  countForOem([
-    { maker: "TATA MOTORS LTD", vehicle_count: 10 },
-    { maker: "TATA MOTORS LIMITED", vehicle_count: 8 },
-    { maker: "NOT TATA", vehicle_count: 99 },
-  ], tata),
-  18,
-  "OEM alias matching should sum known aliases only",
+assert.deepEqual(selectAuthoritativeObservation(null, { valid: true }), {
+  accepted: true, disposition: "accepted", reason: "first_valid_observation_for_date",
+});
+assert.equal(selectAuthoritativeObservation({ id: 41 }, { valid: true }).authoritativeObservationId, 41,
+  "same-date reruns retain the first valid observation as the comparison boundary");
+assert.equal(selectAuthoritativeObservation(null, { valid: false }).disposition, "rejected");
+assert.match(
+  requireCompleteFailureReasons({
+    finalized: { complete: true, summary: { total: 100, succeeded: 100, failed: 0, queued: 0, running: 0, retrying: 0, deferred: 0 } },
+    readiness: {
+      eligible: true,
+      dailyRegistrationEligible: false,
+      dailyRegistrationReason: "comparison evidence is incomplete",
+      cohortSize: 100,
+      completeRtos: 100,
+    },
+  }).join(" | "),
+  /Daily registration comparison readiness.*incomplete/i,
+  "warning-only collection readiness must not make Daily reports usable",
 );
 
-const rankedRows = buildRankedStockSnapshotRows({
+const rankedRows = buildRankedRegistrationSnapshotRows({
   sourceRows: [{ maker: "Maker A", count: 12, rank: 1 }, { maker: "Maker B", count: 7, rank: 2 }],
   state: "Uttarakhand", rto: "Haridwar RTO", snapshotDate: "2026-09-07", targetMonth: "2026-09",
   fuelGroup: "EV", vehicleCategory: "2W",
 });
 assert.deepEqual(rankedRows.map((row) => [row.oem, row.vehicleCount, row.sourceRank]), [["Maker A", 12, 1], ["Maker B", 7, 2]]);
-assert.ok(rankedRows.every((row) => row.metricKind === "active_stock" && row.source === "vahan-public-dashboard"));
+assert.ok(rankedRows.every((row) => row.metricKind === "registration_month_to_date" && row.source === "vahan-public-dashboard"));
 
 assert.equal(snapshotDateKey(new Date(Date.UTC(2026, 5, 14))), "2026-06-14");
 assert.equal(targetMonthForDate(new Date(Date.UTC(2026, 5, 14))), "2026-06");
@@ -233,7 +231,8 @@ assert.match(dailyRunnerSource, /RTO_DAILY_PROGRESS_LOG_INTERVAL_MS[\s\S]+30_000
 assert.match(dailyRunnerSource, /args\.neon[\s\S]+assertNeonDatabaseUrl/, "Neon mode should validate the configured database before scraping");
 assert.match(dailyRunnerSource, /storage: args\.neon \? \"neon\"/, "Neon runs should identify their persistence target in output");
 assert.match(dailyRunnerSource, /--require-complete/, "the RTO worker should expose strict hosted-load-test completion gating");
-assert.match(dailyRunnerSource, /fetchPublicRtoStockSegment/, "the fixed RTO worker should use the Public Dashboard stock endpoints");
+assert.match(dailyRunnerSource, /fetchPublicRtoRegistrationSegment/, "the fixed RTO worker should use the Public Dashboard monthly-registration endpoint");
+assert.doesNotMatch(dailyRunnerSource, /fetchPublicRtoStockSegment/, "the Daily worker must not collect As-On-Date active stock");
 assert.doesNotMatch(dailyRunnerSource, /createVahanMakerSession/, "the fixed RTO worker should not depend on the retired legacy dashboard session");
 assert.match(hostedLoadTestWorkflow, /workflow_dispatch:/, "the hosted load test must be manually triggered");
 assert.doesNotMatch(hostedLoadTestWorkflow, /schedule:/, "the hosted load test must not be scheduled");
@@ -277,7 +276,7 @@ const resolvedMh12WithDuplicateCatalogLabel = resolveRtoWithCatalog({ state: "Ma
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.rtoResolution.status, "resolved", "an exact code should resolve even if the catalog contains duplicate labels");
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.ambiguousRtos, null, "duplicate labels for one exact code must not produce an ambiguity prompt");
 
-assert.equal(validateRtoDailyReport(withStockEvidence({
+assert.equal(validateRtoDailyReport(withRegistrationEvidence({
   status: "success",
   state: "Uttarakhand",
   rto: "Haridwar RTO",
@@ -286,7 +285,7 @@ assert.equal(validateRtoDailyReport(withStockEvidence({
   filtersConfirmed: true,
   reportTotal: 0,
   explicitZero: true,
-  rows: [],
+  rows: [], targetMonth: "2026-09", scrapedAt: "2026-09-09T08:00:00Z",
 }), { state: "Uttarakhand", rto: "Haridwar RTO" }), true);
 
 assert.throws(
@@ -301,14 +300,14 @@ assert.throws(
     explicitZero: false,
     rows: [],
   }),
-  /empty report was not explicitly confirmed as zero/,
+  /empty maker evidence is neither explicitly unavailable nor a confirmed zero/,
   "unexplained empty reports must never become trusted zero snapshots",
 );
 
-assert.equal(validateRtoDailyReport(withStockEvidence({
+assert.equal(validateRtoDailyReport(withRegistrationEvidence({
   status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",
   filtersConfirmed: true, reportTotal: 20, explicitZero: false,
-  rows: [{ maker: "Maker A", vehicle_count: 12, rank: 1 }, { maker: "Maker B", vehicle_count: 7, rank: 2 }],
+  rows: [], targetMonth: "2026-09", scrapedAt: "2026-09-09T08:00:00Z",
 })), true);
 assert.throws(() => validateRtoDailyReport({
   status: "success", state: "Uttarakhand", rto: "Haridwar RTO", fuelGroup: "EV", vehicleCategory: "2W",

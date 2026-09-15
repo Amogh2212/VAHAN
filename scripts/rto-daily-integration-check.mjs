@@ -4,7 +4,7 @@ import { closePool, query } from "../lib/db.mjs";
 import {
   RTO_DAILY_CATEGORIES,
   RTO_DAILY_FUEL_GROUPS,
-  buildRankedStockSnapshotRows,
+  buildRankedRegistrationSnapshotRows,
   claimRtoDailyJob,
   completeRtoDailyJob,
   createRtoDailyPin,
@@ -19,13 +19,16 @@ import {
   listRtoDailyPins,
   requeueDeferredRtoDailyJobs,
   rolloverRtoDailyCycle,
+  snapshotDateKey,
   upsertRtoDailyConfigs,
 } from "../lib/rto-daily-snapshots.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
+import { withRegistrationEvidence } from "./fixtures/rto-stock-evidence.mjs";
 
 const STATE = "__RTO_DAILY_INTEGRATION_TEST__";
 const RTO = "TEST RTO";
-const DATE = "2099-12-30";
+const DATE = snapshotDateKey();
+const DATE_MONTH = DATE.slice(0, 7);
 const PRIORITY_DATE = "2099-12-31";
 const STALE_DATE = "2099-12-01";
 const PIN_RTO = "PIN TEST RTO";
@@ -42,7 +45,14 @@ function assertLocalDatabase() {
 
 async function cleanup() {
   await query("delete from rto_daily_snapshots where state = $1", [STATE]);
-  await query("delete from rto_daily_collection_runs where snapshot_date in ($1::date, $2::date, $3::date, $4::date, $5::date) and target_month = '2099-12'", [DATE, PRIORITY_DATE, STALE_DATE, ROLLOVER_SOURCE_DATE, ROLLOVER_CURRENT_DATE]);
+  await query("delete from rto_registration_observations where state = $1", [STATE]);
+  await query("delete from rto_daily_jobs where state = $1", [STATE]);
+  await query(
+    `delete from rto_daily_collection_runs r
+     where r.metadata->>'state' = $1
+       and not exists (select 1 from rto_daily_jobs j where j.run_id = r.id)`,
+    [STATE],
+  );
   await query("delete from rto_daily_snapshot_configs where state = $1", [STATE]);
   await query("delete from users where google_sub like '__rto_daily_integration_%'", []);
 }
@@ -64,7 +74,20 @@ async function main() {
   await cleanup();
   try {
     await upsertRtoDailyConfigs([{ state: STATE, rto: RTO, enabled: true, priority: 1 }]);
-    const run = await ensureRtoDailyCycle({ snapshotDate: DATE, targetMonth: "2099-12", workerCount: 2, state: STATE });
+    const config = await query("select id from rto_daily_snapshot_configs where state = $1 and rto = $2", [STATE, RTO]);
+    const run = await query(
+      `insert into rto_daily_collection_runs
+         (status, snapshot_date, target_month, worker_count, metric_kind, source, metadata, total_rtos)
+       values ('running', $1::date, $2, 2, $3, 'vahan-public-dashboard', $4::jsonb, 1)
+       returning id`,
+      [DATE, DATE_MONTH, `registration_integration_fixture_${process.pid}`, JSON.stringify({ state: STATE, fixture: true })],
+    );
+    await query(
+      `insert into rto_daily_jobs (run_id, config_id, snapshot_date, target_month, state, rto)
+       values ($1, $2, $3::date, $4, $5, $6)`,
+      [run.rows[0].id, config.rows[0].id, DATE, DATE_MONTH, STATE, RTO],
+    );
+    run.id = run.rows[0].id;
     const [left, right] = await Promise.all([
       claimRtoDailyJob({ runId: run.id, workerId: "integration-a" }),
       claimRtoDailyJob({ runId: run.id, workerId: "integration-b" }),
@@ -87,28 +110,27 @@ async function main() {
     const rows = [];
     for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
       for (const vehicleCategory of RTO_DAILY_CATEGORIES) {
-        reports.push({
+        reports.push(withRegistrationEvidence({
           status: "success", state: STATE, rto: RTO, fuelGroup, vehicleCategory,
           filtersConfirmed: true, reportTotal: 0, explicitZero: true, rows: [],
-          attempts: 1, scrapedAt: new Date().toISOString(), evidence: { fixture: true },
-          metricKind: "active_stock", source: "vahan-public-dashboard",
-        });
-        rows.push(...buildRankedStockSnapshotRows({
-          sourceRows: [], state: STATE, rto: RTO, snapshotDate: DATE, targetMonth: "2099-12",
+          attempts: 1, scrapedAt: new Date().toISOString(), targetMonth: DATE_MONTH,
+        }));
+        rows.push(...buildRankedRegistrationSnapshotRows({
+          sourceRows: [], state: STATE, rto: RTO, snapshotDate: DATE, targetMonth: DATE_MONTH,
           fuelGroup, vehicleCategory,
           metadata: { scrapeRunId: run.id, scrapeStatus: "late_fill", scrapedAt: new Date().toISOString() },
         }));
       }
     }
     const completed = await completeRtoDailyJob({ job: reclaimed, workerId: "integration-d", reports, rows });
-    assert.deepEqual(completed, { reports: 6, rows: 0 });
+    assert.deepEqual(completed, { reports: 6, rows: 0, acceptedScopes: 6, observations: 6 });
     const finalized = await finalizeRtoDailyCycle(run.id);
     assert.equal(finalized.run.status, "success");
     const coverage = await getRtoDailyCoverage({ date: DATE });
     assert.equal(coverage.summary.completionPercent, 100);
     assert.equal(coverage.summary.succeeded, 1);
-    assert.equal(coverage.summary.successRtos, 0);
-    assert.equal(coverage.summary.lateFillRtos, 1, "coverage should expose completed late-fill RTOs separately");
+    assert.equal(coverage.summary.successRtos, 1);
+    assert.equal(coverage.summary.lateFillRtos, 0);
     assert.equal(coverage.summary.pendingRtos, 0);
     assert.equal(coverage.summary.coveragePercent, 100);
 

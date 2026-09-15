@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   buildRtoReportPayloads,
+  evaluateRtoReportReadinessGates,
   periodValueForSeries,
   RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO,
   RTO_REPORT_EXPECTED_OEMS,
@@ -17,6 +18,32 @@ import { loadRtoReportWithOptionalFactorContext } from "../lib/rto-report-contex
 
 assert.equal(RTO_REPORT_EXPECTED_OEMS, 5);
 assert.equal(RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO, 30);
+assert.deepEqual(
+  evaluateRtoReportReadinessGates({
+    run: { status: "success", succeeded_rtos: 99, total_rtos: 100 },
+    cohortSize: 100,
+    completeRtos: 100,
+    comparisonEligibleRtos: 100,
+  }),
+  {
+    reason: "collection_incomplete",
+    collectionCompletion: false,
+    collectionEligible: false,
+    comparisonEligible: true,
+    dailyRegistrationEligible: false,
+  },
+  "complete-looking evidence must not make an unfinished collection usable",
+);
+assert.equal(
+  evaluateRtoReportReadinessGates({
+    run: { status: "success", succeeded_rtos: 100, total_rtos: 100 },
+    cohortSize: 100,
+    completeRtos: 100,
+    comparisonEligibleRtos: 99,
+  }).dailyRegistrationEligible,
+  false,
+  "warning-only comparison coverage must not make Daily reports usable",
+);
 assert.ok(rtoReportExportRevision({ revision: 3 }, "csv") > 3, "old CSV caches must not bypass source quarantine");
 assert.ok(rtoReportExportRevision({ revision: 3 }, "pdf") > 3);
 const weeklySeries = new Map([
@@ -46,6 +73,28 @@ const totalsByDate = {
   "2026-07-23": [100, 25, 15, 580, 95, 75],
   "2026-07-24": [120, 30, 20, 600, 100, 80],
 };
+const responseHashForDate = { "2026-07-22": "a", "2026-07-23": "b", "2026-07-24": "c" };
+function registrationEvidence(snapshotDate, fuelGroup, vehicleCategory, { oemStatus = "unavailable" } = {}) {
+  const vehicleCategories = vehicleCategory === "2W"
+    ? ["TWO WHEELER(NT)", "TWO WHEELER(T)"]
+    : vehicleCategory === "3W"
+      ? ["THREE WHEELER(NT)", "THREE WHEELER(T)"]
+      : ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"];
+  return {
+    validation: {
+      contract: "public-registration-mtd-v1",
+      targetMonth: "2026-07",
+      requestHash: "1".repeat(64),
+      responseHash: responseHashForDate[snapshotDate].repeat(64),
+    },
+    filters: {
+      stateCode: "AA", rtoCode: "1", vehicleCategories, vehicleClasses: [],
+      fuels: [fuelGroup === "EV" ? "PURE EV" : "PETROL"], archiveScope: "ACTIVE_ONLY",
+      calendarType: "3", timePeriod: "0", targetMonth: "2026-07",
+    },
+    oem: { status: oemStatus, reason: oemStatus === "verified" ? null : "Maker chart lacks an exact target-month contract." },
+  };
+}
 const totalRows = Object.entries(totalsByDate).flatMap(([snapshotDate, values]) =>
   [
     ["EV", "2W"],
@@ -66,7 +115,10 @@ const totalRows = Object.entries(totalsByDate).flatMap(([snapshotDate, values]) 
     untracked_total: 5,
     scrape_status: "success",
     quality_status: "ready",
-    quality_flags: {},
+    metric_kind: "registration_month_to_date",
+    source: "vahan-public-dashboard",
+    scraped_at: `${snapshotDate}T08:00:00.000Z`,
+    quality_flags: { sourceEvidence: registrationEvidence(snapshotDate, fuelGroup, vehicleCategory) },
   })));
 
 const oemRows = ["2026-07-22", "2026-07-23", "2026-07-24"].flatMap((snapshotDate, dateIndex) =>
@@ -97,25 +149,156 @@ const [daily] = buildRtoReportPayloads({
   generatedAt: new Date("2026-07-24T18:00:00.000Z"),
 });
 
-assert.equal(daily.periodEv, null, "stock movement must never become daily registrations");
-assert.equal(daily.periodIce, null);
+assert.equal(daily.periodEv, 30, "Daily EV registrations must use consecutive month-to-date registration observations");
+assert.equal(daily.periodIce, 30);
 assert.equal(daily.cohortRank, null);
-assert.equal(daily.evShare, null);
-assert.equal(daily.status, "needs_review");
+assert.equal(daily.evShare, 50);
+assert.equal(daily.status, "ready_with_warnings");
 assert.equal(daily.payload.dailyRegistration.previousDayRegistrations.date, "2026-07-23");
+assert.equal(daily.payload.dailyRegistration.previousDayRegistrations.value, 50);
 assert.equal(daily.payload.dailyRegistration.evRegistrations.date, "2026-07-24");
-assert.equal(daily.payload.dailyRegistration.baselineEligible, false);
-assert.equal(daily.payload.categories[0].period.ev, null);
+assert.equal(daily.payload.dailyRegistration.evRegistrations.value, 30);
+assert.equal(daily.payload.dailyRegistration.baselineEligible, true);
+assert.equal(daily.payload.categories[0].period.ev, 20);
+assert.equal(daily.payload.metrics.sourceMonthToDate.ev, 170);
+assert.equal(daily.payload.metrics.activeStock.ev, null, "active stock must remain a separately labelled, unavailable metric");
 assert.deepEqual(daily.payload.oems, []);
-assert.deepEqual(daily.payload.trend, []);
-assert.match(daily.summary, /Daily registrations unavailable/);
+assert.equal(daily.payload.trend.filter((row) => row.complete).length, 2);
+assert.match(daily.summary, /30 EV and 30 ICE registrations/);
 const dailyHtml = renderRtoReportHtml(daily.payload);
 assert.match(dailyHtml, /Previous-day registrations/);
-assert.doesNotMatch(dailyHtml, /<strong>0<|>170</);
+assert.match(dailyHtml, />30</);
 const dailyCsv = renderRtoReportCsv(daily);
 assert.match(dailyCsv, /previousDayRegistrations/);
-assert.match(dailyCsv, /unavailable/);
+assert.match(dailyCsv, /evRegistrations,30,available/);
+assert.match(dailyCsv, /sourceMonthToDate.ev,170,source_observation/);
 assert.doesNotMatch(dailyCsv, /Example Motors/);
+assert.equal(daily.payload.source.requestHashes.length, 6);
+assert.equal(daily.payload.source.responseHashes.length, 6);
+assert.equal(daily.payload.oemEvidence.status, "unavailable");
+assert.match(daily.payload.oemEvidence.reason, /exact target-month contract/i);
+
+const verifiedOemTotals = structuredClone(totalRows);
+for (const row of verifiedOemTotals.filter((item) => item.snapshot_date === "2026-07-24")) {
+  row.quality_flags.sourceEvidence.oem = { status: "verified", reason: null };
+}
+const dynamicOemRows = verifiedOemTotals
+  .filter((row) => row.snapshot_date === "2026-07-24")
+  .flatMap((row) => [
+    { maker: `${row.fuel_group} ${row.vehicle_category} Maker A`, count: 2, rank: 1 },
+    { maker: `${row.fuel_group} ${row.vehicle_category} Maker B`, count: 1, rank: 2 },
+  ].map((maker) => ({
+    snapshot_date: row.snapshot_date,
+    target_month: row.target_month,
+    state: row.state,
+    rto: row.rto,
+    fuel_group: row.fuel_group,
+    vehicle_category: row.vehicle_category,
+    oem: maker.maker,
+    vehicle_count: maker.count,
+    source_rank: maker.rank,
+    scrape_status: "success",
+  })));
+const [verifiedOemDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"),
+  cohort,
+  totalRows: verifiedOemTotals,
+  oemRows: dynamicOemRows,
+});
+assert.equal(verifiedOemDaily.payload.oemEvidence.status, "verified");
+assert.equal(verifiedOemDaily.payload.oemEvidence.segments.length, 6);
+assert.ok(verifiedOemDaily.payload.oemEvidence.segments.every((segment) => segment.topFive.length === 2));
+assert.ok(verifiedOemDaily.payload.oemEvidence.segments.every((segment) => segment.topFiveTotal === 3));
+for (const segment of verifiedOemDaily.payload.oemEvidence.segments) {
+  const headline = verifiedOemTotals.find((row) => row.snapshot_date === "2026-07-24"
+    && row.fuel_group === segment.fuelGroup && row.vehicle_category === segment.vehicleCategory);
+  assert.equal(segment.otherUntracked + segment.topFiveTotal, headline.report_total, "Other / untracked must reconcile to the segment headline");
+}
+assert.equal(dynamicOemRows.length, 12, "missing maker positions must stay absent rather than being zero-filled to 30 rows");
+
+const identicalRows = structuredClone(totalRows);
+for (const row of identicalRows.filter((item) => item.snapshot_date === "2026-07-24")) {
+  row.quality_flags.sourceEvidence.validation.responseHash = "b".repeat(64);
+}
+const [identicalDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: identicalRows,
+});
+assert.equal(identicalDaily.periodEv, null, "identical cross-day response hashes must never become a zero Daily value");
+assert.equal(identicalDaily.payload.dailyRegistration.baselineEligible, false);
+assert.match(identicalDaily.payload.dailyRegistration.reason, /identical.*no refresh timestamp/i);
+
+const unchangedTargetRows = structuredClone(totalRows);
+const priorTargetByScope = new Map(unchangedTargetRows
+  .filter((row) => row.snapshot_date === "2026-07-23")
+  .map((row) => [`${row.fuel_group}|${row.vehicle_category}`, row.report_total]));
+for (const row of unchangedTargetRows.filter((item) => item.snapshot_date === "2026-07-24")) {
+  row.report_total = priorTargetByScope.get(`${row.fuel_group}|${row.vehicle_category}`);
+}
+const [unchangedTargetDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: unchangedTargetRows,
+});
+assert.equal(unchangedTargetDaily.periodEv, null,
+  "different whole-response hashes must not certify zero when the selected month is unchanged");
+assert.match(unchangedTargetDaily.payload.dailyRegistration.reason, /target-month registration total is unchanged/i);
+
+const negativeRows = structuredClone(totalRows);
+const priorByScope = new Map(negativeRows
+  .filter((row) => row.snapshot_date === "2026-07-23")
+  .map((row) => [`${row.fuel_group}|${row.vehicle_category}`, row.report_total]));
+for (const row of negativeRows.filter((item) => item.snapshot_date === "2026-07-24")) {
+  row.report_total = priorByScope.get(`${row.fuel_group}|${row.vehicle_category}`) - (row.fuel_group === "EV" ? 2 : 3);
+}
+const [negativeDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: negativeRows,
+});
+assert.equal(negativeDaily.periodEv, -6);
+assert.equal(negativeDaily.periodIce, -9);
+assert.equal(negativeDaily.payload.dailyRegistration.status, "correction");
+assert.equal(negativeDaily.payload.dailyRegistration.evRegistrations.status, "correction");
+assert.match(negativeDaily.payload.quality.warnings.join(" "), /negative Daily value.*preserved/i);
+
+const missingScopeRows = totalRows.filter((row) => !(row.snapshot_date === "2026-07-23" && row.fuel_group === "EV" && row.vehicle_category === "2W"));
+const [missingScopeDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: missingScopeRows,
+});
+assert.equal(missingScopeDaily.periodEv, null);
+assert.match(missingScopeDaily.payload.dailyRegistration.reason, /Six accepted registration scopes/);
+
+const duplicateScopeRows = [...totalRows, structuredClone(totalRows.find((row) => row.snapshot_date === "2026-07-24"))];
+const [duplicateScopeDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: duplicateScopeRows,
+});
+assert.equal(duplicateScopeDaily.periodEv, null, "duplicate same-date scopes must be unavailable rather than double counted");
+
+const mixedMonthRows = structuredClone(totalRows);
+const mixed = mixedMonthRows.find((row) => row.snapshot_date === "2026-07-24" && row.fuel_group === "EV" && row.vehicle_category === "2W");
+mixed.target_month = "2026-06";
+mixed.quality_flags.sourceEvidence.validation.targetMonth = "2026-06";
+mixed.quality_flags.sourceEvidence.filters.targetMonth = "2026-06";
+const [mixedMonthDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: mixedMonthRows,
+});
+assert.equal(mixedMonthDaily.periodEv, null);
+assert.match(mixedMonthDaily.payload.dailyRegistration.reason, /Invalid or mixed monthly-registration evidence/);
+
+const rolloverRows = totalRows
+  .filter((row) => ["2026-07-23", "2026-07-24"].includes(row.snapshot_date))
+  .map((source) => {
+    const row = structuredClone(source);
+    const current = row.snapshot_date === "2026-07-24";
+    row.snapshot_date = current ? "2026-08-01" : "2026-07-31";
+    row.target_month = current ? "2026-08" : "2026-07";
+    row.scraped_at = `${row.snapshot_date}T08:00:00.000Z`;
+    row.quality_flags.sourceEvidence.validation.targetMonth = row.target_month;
+    row.quality_flags.sourceEvidence.filters.targetMonth = row.target_month;
+    row.quality_flags.sourceEvidence.validation.responseHash = (current ? "d" : "e").repeat(64);
+    return row;
+  });
+const [rolloverDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-08-01"), cohort, totalRows: rolloverRows,
+});
+assert.equal(rolloverDaily.periodEv, null);
+assert.match(rolloverDaily.payload.dailyRegistration.reason, /Month-boundary baseline/);
 // Stock rendering remains independently supported for the weekly cadence.
 const [weeklyStock] = buildRtoReportPayloads({
   period: reportPeriod("weekly", "2026-07-24"), cohort,
@@ -125,10 +308,7 @@ const [weeklyStock] = buildRtoReportPayloads({
 assert.equal(weeklyStock.periodEv, 30);
 assert.equal(weeklyStock.mtdEv, 170);
 
-const rankingCohort = [
-  { state: "Alpha", rto: "Alpha RTO", cohort_rank: 1 },
-  { state: "Beta", rto: "Beta RTO", cohort_rank: 2 },
-];
+const rankingCohort = Array.from({ length: 100 }, (_, index) => ({ state: `State ${index + 1}`, rto: `RTO ${index + 1}`, cohort_rank: index + 1 }));
 const rankingRows = rankingCohort.flatMap((member, memberIndex) =>
   ["2026-07-23", "2026-07-24"].flatMap((snapshotDate, dateIndex) =>
     ["EV", "ICE"].flatMap((fuelGroup) => ["2W", "3W", "4W"].map((vehicleCategory) => ({
@@ -138,12 +318,15 @@ const rankingRows = rankingCohort.flatMap((member, memberIndex) =>
       rto: member.rto,
       fuel_group: fuelGroup,
       vehicle_category: vehicleCategory,
-      report_total: memberIndex === 0 ? 100 + dateIndex * 20 : 1_000 + dateIndex * 5,
+      report_total: 1_000 + memberIndex + dateIndex * (fuelGroup === "EV" ? 100 - memberIndex : 10),
       tracked_oem_total: 0,
       untracked_total: 0,
       scrape_status: "success",
       quality_status: "ready",
-      quality_flags: {},
+      metric_kind: "registration_month_to_date",
+      source: "vahan-public-dashboard",
+      scraped_at: `${snapshotDate}T08:00:00.000Z`,
+      quality_flags: { sourceEvidence: registrationEvidence(snapshotDate, fuelGroup, vehicleCategory) },
     })))),
 );
 const dailyRanking = buildRtoReportPayloads({
@@ -151,8 +334,11 @@ const dailyRanking = buildRtoReportPayloads({
   cohort: rankingCohort,
   totalRows: rankingRows,
 });
-assert.equal(dailyRanking.find((report) => report.state === "Beta").cohortRank, null, "Daily rank cannot use stock");
-assert.equal(dailyRanking.find((report) => report.state === "Alpha").cohortRank, null);
+assert.equal(rankingRows.length, 1_200, "100 RTOs × six scopes × two consecutive observations must be validated");
+assert.equal(dailyRanking.length, 100);
+assert.ok(dailyRanking.every((report) => report.payload.dailyRegistration.baselineEligible));
+assert.equal(dailyRanking.find((report) => report.rto === "RTO 1").cohortRank, 1, "Daily rank must use today's EV registration change across all 100 RTOs");
+assert.equal(dailyRanking.find((report) => report.rto === "RTO 100").cohortRank, 100);
 
 const csv = renderRtoReportCsv({ ...weeklyStock, cadence: "weekly", periodStart: "2026-07-24", periodEnd: "2026-07-24" });
 assert.match(csv, /Example Motors/);

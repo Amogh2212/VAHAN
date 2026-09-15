@@ -363,13 +363,26 @@ completed at least one successful scrape/report cycle. CockroachDB transaction
 retry error `40001` is retried automatically by the shared DB helper; tune
 `DB_MAX_RETRIES` and `DB_RETRY_BASE_MS` only if the logs show repeated retries.
 
-## Daily RTO Snapshot Trends
+## Daily RTO Registration Trends
 
-This collector stores current-month daily snapshots for enabled RTOs across:
+This collector stores six current-month registration observations for each
+enabled RTO:
 
 ```text
-2 fuel groups x 3 vehicle categories x 15 OEMs = 90 rows per RTO per day
+2 fuel groups x 3 vehicle categories = 6 month-to-date totals per RTO per day
 ```
+
+The source contract is the official Public Dashboard Calendar Year / Monthly
+registration table (`calendarType=3`, `timePeriod=0`) with exact state, RTO,
+fuel, and category filters. Daily values are calculated only from compatible,
+consecutive same-month observations. As-On-Date active stock and differences
+between stock snapshots are never used as Daily registrations.
+
+The Public Dashboard maker chart currently does not expose an independently
+verified exact target-month contract. The collector therefore stores an
+explicit OEM-unavailable reason and continues the six headline observations;
+it does not zero-fill makers. If that contract is proven later, at most five
+source-ranked makers per segment plus `Other / untracked` may be published.
 
 Apply the schema and build the VAHAN RTO catalog first:
 
@@ -475,9 +488,11 @@ Public dual-lookup endpoints are `/api/rto-daily/search` and
 `GET|POST /api/rto-daily/pins`, `DELETE /api/rto-daily/pins/:id`, and queue an
 unpinned first snapshot with `POST /api/rto-daily/requests`.
 
-The runner keeps raw `rto_daily_snapshots` for `RTO_DAILY_RETENTION_DAYS`
-(default `30`) and rolls older rows into `rto_monthly_snapshot_aggregates`
-before deleting raw snapshots. The UI is available at `/rto-trends.html`.
+The append-style `rto_registration_observations` ledger retains raw MTD totals,
+filters, request/response hashes, timestamps, freshness evidence, and the
+accepted/superseded decision. Ordinary snapshot retention does not delete this
+ledger. Optional verified maker rows in `rto_daily_snapshots` remain subject to
+`RTO_DAILY_RETENTION_DAYS`. The UI is available at `/rto-trends.html`.
 
 ## Top-100 RTO Reports
 
@@ -488,21 +503,25 @@ reports:
 
 ```text
 2 fuel groups x 3 vehicle categories x 100 RTOs = 600 required reports
-600 required reports x 15 tracked OEMs = 9,000 required OEM rows
+600 accepted source observations = one complete collection gate
 ```
 
-An eligible cycle creates one daily batch. A Sunday cycle also creates a weekly
-batch, and a month-end cycle also creates a monthly batch. Every batch contains
+Collection completeness and Daily usability are separate gates. A Daily batch
+can publish numeric registrations only when all 100 RTOs also have six
+compatible, freshness-distinct observations for the preceding calendar day.
+On the first day of a month, the cross-month baseline remains unavailable. A
+registration collection creates only a Daily batch; weekly/monthly active-stock
+reports remain a separate metric contract. Every complete cohort batch contains
 100 individual RTO reports. Reconciliation is idempotent: unchanged source facts
-reuse the existing revision, while a late correction creates a new revision.
+reuse the existing revision, while a correction creates a new revision.
 
-Headline EV and ICE totals come only from
-`rto_daily_scrape_reports.report_total`. OEM detail comes from
-`rto_daily_snapshots.vehicle_count`; any non-negative difference is shown
-separately as `Other / untracked` instead of being assigned to an OEM. Missing
-boundaries, negative source corrections, late fills, unconfirmed filters, and
-headline/OEM reconciliation problems are retained as quality warnings or
-`needs_review` states.
+Headline EV and ICE Daily totals are differences between consecutive accepted
+`rto_registration_observations.month_to_date_total` values. Negative differences
+remain visible source corrections. Identical response hashes without an upstream
+refresh timestamp, missing scopes, mixed filters/months, and month boundaries
+remain unavailable rather than becoming zero. OEM detail is shown only when the
+same exact monthly source contract is proven and reconciles to the headline;
+otherwise the headline continues with the exact OEM-unavailable reason.
 
 Reconcile a known run manually, including any still-available history needed for
 daily or comparison boundaries:

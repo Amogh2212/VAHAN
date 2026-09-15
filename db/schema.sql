@@ -284,8 +284,9 @@ alter table rto_daily_collection_runs
 alter table rto_daily_collection_runs
   add column if not exists report_cohort_size integer not null default 0;
 
-create unique index if not exists rto_daily_collection_runs_cycle_idx
-  on rto_daily_collection_runs (snapshot_date, target_month)
+drop index if exists rto_daily_collection_runs_cycle_idx;
+create unique index if not exists rto_daily_collection_runs_cycle_metric_idx
+  on rto_daily_collection_runs (snapshot_date, target_month, metric_kind)
   where snapshot_date is not null and target_month is not null;
 
 create index if not exists rto_daily_collection_runs_started_idx
@@ -370,7 +371,7 @@ create table if not exists rto_daily_scrape_reports (
   evidence jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)
+  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, metric_kind)
 );
 
 alter table rto_daily_scrape_reports
@@ -384,6 +385,74 @@ create index if not exists rto_daily_scrape_reports_job_idx
 
 create index if not exists rto_daily_scrape_reports_run_idx
   on rto_daily_scrape_reports (run_id);
+
+do $$
+declare old_constraint text;
+begin
+  select conname into old_constraint
+  from pg_constraint
+  where conrelid = 'rto_daily_scrape_reports'::regclass
+    and contype = 'u'
+    and pg_get_constraintdef(oid) like 'UNIQUE (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)%'
+    and pg_get_constraintdef(oid) not like '%metric_kind%'
+  limit 1;
+  if old_constraint is not null then
+    execute format('alter table rto_daily_scrape_reports drop constraint %I', old_constraint);
+  end if;
+end $$;
+
+create unique index if not exists rto_daily_scrape_reports_scope_metric_idx
+  on rto_daily_scrape_reports (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, metric_kind);
+
+create table if not exists rto_registration_observations (
+  id bigserial primary key,
+  run_id bigint not null references rto_daily_collection_runs(id) on delete cascade,
+  job_id bigint not null references rto_daily_jobs(id) on delete cascade,
+  attempt_id text not null,
+  observation_date date not null,
+  observed_at timestamptz not null,
+  target_month text not null check (target_month ~ '^[0-9]{4}-[0-9]{2}$'),
+  state text not null,
+  rto text not null,
+  fuel_group text not null check (fuel_group in ('EV', 'ICE')),
+  vehicle_category text not null check (vehicle_category in ('2W', '3W', '4W')),
+  month_to_date_total integer not null check (month_to_date_total >= 0),
+  metric_kind text not null check (metric_kind = 'registration_month_to_date'),
+  source text not null check (source = 'vahan-public-dashboard'),
+  source_contract text not null,
+  filters jsonb not null,
+  request_hash text not null check (request_hash ~ '^[a-f0-9]{64}$'),
+  response_hash text not null check (response_hash ~ '^[a-f0-9]{64}$'),
+  freshness jsonb not null default '{}'::jsonb,
+  evidence jsonb not null default '{}'::jsonb,
+  accepted boolean not null default false,
+  disposition text not null check (disposition in ('accepted', 'superseded', 'rejected')),
+  selection_reason text not null,
+  authoritative_observation_id bigint references rto_registration_observations(id) on delete restrict,
+  created_at timestamptz not null default now(),
+  unique (run_id, attempt_id, fuel_group, vehicle_category)
+);
+
+alter table rto_registration_observations
+  drop constraint if exists rto_registration_observations_run_id_fkey;
+alter table rto_registration_observations
+  add constraint rto_registration_observations_run_id_fkey
+  foreign key (run_id) references rto_daily_collection_runs(id) on delete restrict;
+
+alter table rto_registration_observations
+  drop constraint if exists rto_registration_observations_job_id_fkey;
+alter table rto_registration_observations
+  add constraint rto_registration_observations_job_id_fkey
+  foreign key (job_id) references rto_daily_jobs(id) on delete restrict;
+
+create unique index if not exists rto_registration_observations_accepted_scope_idx
+  on rto_registration_observations
+    (observation_date, target_month, state, rto, fuel_group, vehicle_category, metric_kind)
+  where accepted = true;
+
+create index if not exists rto_registration_observations_history_idx
+  on rto_registration_observations
+    (state, rto, fuel_group, vehicle_category, target_month, observation_date desc, observed_at desc);
 
 create table if not exists rto_daily_snapshots (
   id bigserial primary key,
@@ -405,7 +474,7 @@ create table if not exists rto_daily_snapshots (
   raw jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem)
+  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem, metric_kind)
 );
 
 alter table rto_daily_snapshots
@@ -429,6 +498,19 @@ create index if not exists rto_daily_snapshots_run_idx
 create index if not exists rto_daily_snapshots_report_idx
   on rto_daily_snapshots (report_id);
 
+do $$
+declare old_constraint text;
+begin
+  select conname into old_constraint from pg_constraint
+  where conrelid = 'rto_daily_snapshots'::regclass and contype = 'u'
+    and pg_get_constraintdef(oid) like 'UNIQUE (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem)%'
+    and pg_get_constraintdef(oid) not like '%metric_kind%'
+  limit 1;
+  if old_constraint is not null then execute format('alter table rto_daily_snapshots drop constraint %I', old_constraint); end if;
+end $$;
+create unique index if not exists rto_daily_snapshots_scope_metric_idx
+  on rto_daily_snapshots (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem, metric_kind);
+
 create table if not exists rto_monthly_snapshot_aggregates (
   id bigserial primary key,
   target_month text not null check (target_month ~ '^[0-9]{4}-[0-9]{2}$'),
@@ -450,6 +532,23 @@ create table if not exists rto_monthly_snapshot_aggregates (
 
 alter table rto_monthly_snapshot_aggregates
   add column if not exists metric_kind text not null default 'registration_flow';
+
+do $$
+declare old_constraint text;
+begin
+  select conname into old_constraint from pg_constraint
+  where conrelid = 'rto_monthly_snapshot_aggregates'::regclass and contype = 'u'
+    and pg_get_constraintdef(oid) like 'UNIQUE (target_month, state, rto, fuel_group, vehicle_category, oem)%'
+    and pg_get_constraintdef(oid) not like '%metric_kind%'
+  limit 1;
+  if old_constraint is not null then
+    execute format('alter table rto_monthly_snapshot_aggregates drop constraint %I', old_constraint);
+  end if;
+end $$;
+
+create unique index if not exists rto_monthly_snapshot_aggregates_scope_metric_idx
+  on rto_monthly_snapshot_aggregates
+    (target_month, state, rto, fuel_group, vehicle_category, oem, metric_kind);
 
 create index if not exists rto_monthly_snapshot_aggregates_lookup_idx
   on rto_monthly_snapshot_aggregates (state, rto, fuel_group, vehicle_category, oem, target_month desc);
@@ -493,7 +592,7 @@ create table if not exists rto_daily_report_totals (
   scraped_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)
+  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, metric_kind)
 );
 
 alter table rto_daily_report_totals
@@ -514,6 +613,19 @@ create index if not exists rto_daily_report_totals_source_run_idx
 create index if not exists rto_daily_report_totals_source_report_idx
   on rto_daily_report_totals (source_report_id);
 
+do $$
+declare old_constraint text;
+begin
+  select conname into old_constraint from pg_constraint
+  where conrelid = 'rto_daily_report_totals'::regclass and contype = 'u'
+    and pg_get_constraintdef(oid) like 'UNIQUE (snapshot_date, target_month, state, rto, fuel_group, vehicle_category)%'
+    and pg_get_constraintdef(oid) not like '%metric_kind%'
+  limit 1;
+  if old_constraint is not null then execute format('alter table rto_daily_report_totals drop constraint %I', old_constraint); end if;
+end $$;
+create unique index if not exists rto_daily_report_totals_scope_metric_idx
+  on rto_daily_report_totals (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, metric_kind);
+
 create table if not exists rto_daily_oem_totals (
   id bigserial primary key,
   snapshot_date date not null,
@@ -532,7 +644,7 @@ create table if not exists rto_daily_oem_totals (
   scraped_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem)
+  unique (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem, metric_kind)
 );
 
 alter table rto_daily_oem_totals
@@ -552,6 +664,19 @@ create index if not exists rto_daily_oem_totals_retention_idx
 
 create index if not exists rto_daily_oem_totals_source_run_idx
   on rto_daily_oem_totals (source_run_id);
+
+do $$
+declare old_constraint text;
+begin
+  select conname into old_constraint from pg_constraint
+  where conrelid = 'rto_daily_oem_totals'::regclass and contype = 'u'
+    and pg_get_constraintdef(oid) like 'UNIQUE (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem)%'
+    and pg_get_constraintdef(oid) not like '%metric_kind%'
+  limit 1;
+  if old_constraint is not null then execute format('alter table rto_daily_oem_totals drop constraint %I', old_constraint); end if;
+end $$;
+create unique index if not exists rto_daily_oem_totals_scope_metric_idx
+  on rto_daily_oem_totals (snapshot_date, target_month, state, rto, fuel_group, vehicle_category, oem, metric_kind);
 
 create table if not exists rto_report_batches (
   id bigserial primary key,

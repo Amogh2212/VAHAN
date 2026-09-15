@@ -102,9 +102,9 @@ function renderReadiness(readiness) {
   if (state.cadence === "daily" && readiness.dailyRegistrationEligible !== true) {
     title.textContent = "Daily registrations unavailable";
     status.className = "status-pill status-needs-review";
-    status.textContent = "Source unsuitable";
-    metrics.innerHTML = `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} stock observations collected</span><span>Daily registration coverage: unavailable</span>`;
-    if (message) { message.hidden = false; message.textContent = readiness.dailyRegistrationReason || "The source does not provide verified registrations for an exact day."; }
+    status.textContent = "Comparison incomplete";
+    metrics.innerHTML = `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} RTOs with six registration scopes</span><span><strong>${fmt(readiness.comparisonEligibleRtos ?? 0)}</strong> / ${fmt(expected)} comparison-eligible</span>`;
+    if (message) { message.hidden = false; message.textContent = readiness.dailyRegistrationReason || "Consecutive compatible monthly-registration observations are incomplete."; }
     return;
   }
   if (readiness.eligible) {
@@ -153,7 +153,7 @@ function selectCadence(cadence) {
       state.batches.length ? `No ${cadence} reports yet` : "No reports generated yet",
       state.batches.length
         ? `Choose another cadence to view an available batch.`
-        : "Reports appear after all six EV/ICE and 2W/3W/4W stock queries are complete for every frozen RTO. Each query retains the Public Dashboard's current top five makers, so a complete RTO has at most 30 maker rows.",
+        : "Daily reports appear after all six EV/ICE and 2W/3W/4W monthly-registration observations are stored for every frozen RTO. Missing or incompatible comparisons remain unavailable rather than becoming zero.",
     );
     return;
   }
@@ -349,16 +349,29 @@ function renderReportDetail(report) {
         ? `${dailyMetricBlock("Previous-day registrations", daily?.previousDayRegistrations)}
            ${dailyMetricBlock("Today's EV registrations", daily?.evRegistrations)}
            ${dailyMetricBlock("Today's ICE registrations", daily?.iceRegistrations)}
-           ${dailyMetricBlock("Today's EV share", daily?.evShare)}
-           ${dailyMetricBlock("Today's rank", daily?.rank)}`
+           ${dailyMetricBlock("Today's EV share", daily?.evShare, "percent")}
+           ${dailyMetricBlock("Today's rank", daily?.rank, "rank")}`
         : `${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
            ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
            ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
            ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`}
     </section>
     <p class="rto-report-quality">${escapeHtml(isDaily
-      ? (daily?.reason ?? "Daily registration evidence is unavailable for this date.")
+      ? (daily?.reason ?? "Daily values are calculated from consecutive, compatible Public Dashboard monthly-registration observations.")
       : (payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness."))}</p>
+
+    ${isDaily ? `
+      <section class="rto-report-evidence">
+        <div class="rto-report-section-head">
+          <div><h3>Source month-to-date registrations</h3><span>Accepted Public Dashboard totals for ${escapeHtml(payload.source?.targetMonth ?? payload.period?.end?.slice(0, 7) ?? "the target month")}; these are source observations, not Daily values</span></div>
+        </div>
+        <div class="rto-report-metrics">
+          ${metricBlock("EV month to date", metrics.sourceMonthToDate?.ev, "Public Dashboard monthly-registration observation")}
+          ${metricBlock("ICE month to date", metrics.sourceMonthToDate?.ice, "Public Dashboard monthly-registration observation")}
+          ${metricBlock("Combined month to date", metrics.sourceMonthToDate?.total, "EV + ICE across 2W, 3W and 4W")}
+        </div>
+      </section>
+    ` : ""}
 
     ${warnings.length ? `
       <section class="rto-report-quality">
@@ -378,7 +391,12 @@ function renderReportDetail(report) {
       <div class="rto-report-trend">${trendSvg(payload.trend ?? [], isDaily)}</div>
     </section>
 
-    <section class="rto-report-evidence">
+    ${isDaily ? `<section class="rto-report-evidence">
+      <div class="rto-report-section-head">
+        <div><h3>Vehicle categories</h3><span>Daily registration contribution from compatible month-to-date observations</span></div>
+      </div>
+      <div class="rto-report-category-bars">${categoryBars(categories, true)}</div>
+    </section>${renderDailyOemEvidence(payload.oemEvidence)}` : `<section class="rto-report-evidence">
       <div class="rto-report-section-head">
         <div><h3>Vehicle categories</h3><span>${isDaily ? "Daily registration contribution" : "2W, 3W, and 4W stock contribution"}</span></div>
       </div>
@@ -387,32 +405,32 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>${isDaily ? "OEM registrations" : "OEM stock"}</h3><span>${isDaily ? "Unavailable: source top-five stock makers cannot establish daily OEM registrations." : "Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero."}</span></div>
+        <div><h3>OEM stock</h3><span>Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero.</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
           ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
       </div>
       <div class="rto-report-table-wrap">
         <table class="rto-report-table">
-          <thead><tr><th>OEM</th><th>${isDaily ? "EV registrations" : "EV stock"}</th><th>${isDaily ? "ICE registrations" : "ICE stock"}</th><th>${isDaily ? "Reported registrations" : "Reported stock"}</th><th>${isDaily ? "Previous period" : "Previous stock"}</th><th>${isDaily ? "Change" : "Net change"}</th></tr></thead>
+          <thead><tr><th>OEM</th><th>EV stock</th><th>ICE stock</th><th>Reported stock</th><th>Previous stock</th><th>Net change</th></tr></thead>
           <tbody>${selectedOemRows.length ? selectedOemRows.map((row) => `
             <tr>
               <td>${escapeHtml(row.oem)}</td>
-              <td>${fmt((isDaily ? row.period : row.stock)?.ev)}</td>
-              <td>${fmt((isDaily ? row.period : row.stock)?.ice)}</td>
-              <td>${fmt((isDaily ? row.period : row.stock)?.total)}</td>
+              <td>${fmt(row.stock?.ev)}</td>
+              <td>${fmt(row.stock?.ice)}</td>
+              <td>${fmt(row.stock?.total)}</td>
               <td>${fmt(row.previousPeriod?.total)}</td>
-              <td class="${movementClass(isDaily ? row.period?.total : row.change?.total?.absolute)}">${signed(isDaily ? row.period?.total : row.change?.total?.absolute)}</td>
+              <td class="${movementClass(row.change?.total?.absolute)}">${signed(row.change?.total?.absolute)}</td>
             </tr>
-          `).join("") : `<tr><td colspan="6" class="result-empty">${isDaily ? "OEM registrations unavailable: no verified daily source." : `No OEM observation is available for ${escapeHtml(state.oemCategory)} in this period.`}</td></tr>`}</tbody>
+          `).join("") : `<tr><td colspan="6" class="result-empty">No OEM observation is available for ${escapeHtml(state.oemCategory)} in this period.</td></tr>`}</tbody>
         </table>
       </div>
-    </section>
+    </section>`}
 
     <footer class="rto-report-source">
       ${isDaily ? `<span>Report date: ${escapeHtml(daily?.date ?? payload.period?.end)} · Asia/Kolkata</span><span>${escapeHtml(payload.source?.freshnessReason ?? "Upstream freshness is unverified.")}</span>` : ""}
-      <span>Totals: rto_daily_scrape_reports.report_total</span>
-      <span>OEMs: rto_daily_snapshots.vehicle_count</span>
+      <span>Totals: ${escapeHtml(payload.source?.totalsTable ?? "Unavailable")}</span>
+      <span>OEMs: ${escapeHtml(payload.source?.oemTable ?? "Unavailable under the current source contract")}</span>
       <span>Cohort ${escapeHtml(report.cohortHash?.slice(0, 10) ?? "unknown")} | revision ${fmt(report.revision)}</span>
     </footer>
   `;
@@ -574,15 +592,25 @@ function metricBlock(label, value, comparison) {
   return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(display)}</strong><small>${escapeHtml(comparison ?? "")}</small></article>`;
 }
 
-function dailyMetricBlock(label, field) {
+function dailyMetricBlock(label, field, format = "number") {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   if (field?.date !== today) label = label.replace("Today's ", "");
-  const reason = /rank/i.test(label) ? "Requires daily EV coverage for all 100 RTOs." : "Source does not provide daily registrations.";
-  return metricBlock(label, "Unavailable", `${field?.date ?? "Selected date"} (IST) · ${reason}`);
+  const value = field?.value;
+  const display = field?.status === "unavailable" || !Number.isFinite(value)
+    ? "Unavailable"
+    : format === "percent"
+      ? percent(value)
+      : format === "rank"
+        ? `#${fmt(value)}`
+        : signed(value);
+  const stateText = field?.status === "correction" ? "Correction preserved" : field?.status === "available" ? "Verified comparison" : field?.reason;
+  return metricBlock(label, display, `${field?.date ?? "Selected date"} (IST) · ${stateText ?? "Unavailable"}`);
 }
 
 function reportEvLabel(report) {
-  if (state.cadence === "daily") return "Daily registrations unavailable";
+  if (state.cadence === "daily") {
+    return Number.isFinite(report.periodEv) ? `Daily EV ${signed(report.periodEv)}` : "Daily registrations unavailable";
+  }
   return `EV stock ${fmt(report.mtdEv)}`;
 }
 
@@ -614,9 +642,8 @@ function categoryBars(categories, isDaily = false) {
 }
 
 function trendSvg(rows, isDaily = false) {
-  if (isDaily) return `<p class="result-empty">Daily trend unavailable: no verified daily registration source. Stock observations cannot supply this chart.</p>`;
   const usable = rows.filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice));
-  if (usable.length < 2) return `<p class="result-empty">Not enough comparable dates.</p>`;
+  if (usable.length < 2) return `<p class="result-empty">${isDaily ? "Not enough compatible consecutive monthly-registration observations for a Daily trend." : "Not enough comparable dates."}</p>`;
   const width = 760;
   const height = 268;
   const pad = { top: 22, right: 24, bottom: 42, left: 48 };
@@ -672,7 +699,7 @@ function trendSvg(rows, isDaily = false) {
     return `<g class="trend-date-group" tabindex="-1"><rect class="trend-date-hit" x="${Math.max(pad.left, pointX - 14)}" y="${pad.top}" width="${Math.min(28, width - pad.right - Math.max(pad.left, pointX - 14))}" height="${chartHeight}"></rect><line class="trend-hover-guide" x1="${pointX}" x2="${pointX}" y1="${guideTop}" y2="${guideBottom}"></line>${pointMarkup}${tooltipMarkup}</g>`;
   }).join("");
   return `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Observed EV and ICE active-stock trend">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${isDaily ? "Calculated Daily EV and ICE registration changes" : "Observed EV and ICE active-stock trend"}">
       <rect class="trend-chart-bg" x="${pad.left}" y="${pad.top}" width="${chartWidth}" height="${chartHeight}" rx="8"></rect>
       ${yTicks.join("")}
       <line class="trend-axis" x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${pad.top + chartHeight}"></line>
@@ -683,6 +710,40 @@ function trendSvg(rows, isDaily = false) {
       ${xLabels}
     </svg>
     <div class="rto-report-legend"><span><i class="ev"></i>EV</span><span><i class="ice"></i>ICE</span></div>
+  `;
+}
+
+function renderDailyOemEvidence(evidence = {}) {
+  if (evidence.status !== "verified") {
+    return `
+      <section class="rto-report-evidence" aria-live="polite">
+        <div class="rto-report-section-head">
+          <div><h3>OEM distribution unavailable</h3><span>Headline Daily registration calculations remain independent of maker evidence</span></div>
+          <span class="status-pill status-needs-review">Contract unverified</span>
+        </div>
+        <p class="result-empty">${escapeHtml(evidence.reason ?? "The monthly maker source contract is not verified for all six RTO segments.")}</p>
+      </section>
+    `;
+  }
+  const segments = (evidence.segments ?? []).filter((segment) => segment.vehicleCategory === state.oemCategory);
+  return `
+    <section class="rto-report-evidence">
+      <div class="rto-report-section-head">
+        <div><h3>Top-five OEM evidence</h3><span>Partial month-to-date evidence; Other / untracked reconciles each segment to its registration headline</span></div>
+        <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
+          ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
+        </div>
+      </div>
+      <div class="rto-report-table-wrap">
+        <table class="rto-report-table">
+          <thead><tr><th>Fuel</th><th>Rank</th><th>OEM</th><th>Month-to-date registrations</th><th>Evidence</th></tr></thead>
+          <tbody>${segments.flatMap((segment) => [
+            ...segment.topFive.map((row) => `<tr><td>${escapeHtml(segment.fuelGroup)}</td><td>#${fmt(row.rank)}</td><td>${escapeHtml(row.name)}</td><td>${fmt(row.count)}</td><td>Source top five</td></tr>`),
+            `<tr><td>${escapeHtml(segment.fuelGroup)}</td><td>—</td><td>Other / untracked</td><td>${fmt(segment.otherUntracked)}</td><td>Headline minus top five</td></tr>`,
+          ]).join("")}</tbody>
+        </table>
+      </div>
+    </section>
   `;
 }
 

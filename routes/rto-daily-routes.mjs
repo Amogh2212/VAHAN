@@ -92,7 +92,6 @@ export function createRtoDailyRouter(services) {
       rto: url.searchParams.get("rto"),
       fuelGroup: url.searchParams.get("fuelGroup"),
       category: url.searchParams.get("category"),
-      oem: url.searchParams.get("oem"),
     };
     return { body: { filters, rows: await listRtoDailyTrend({ ...filters, limit: url.searchParams.get("limit") }) } };
   });

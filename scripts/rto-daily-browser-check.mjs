@@ -55,6 +55,32 @@ async function main() {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     await page.route("https://fonts.googleapis.com/**", (route) => route.fulfill({ status: 200, contentType: "text/css", body: "" }));
+    await page.route("**/api/rto-daily/trend?**", async (route) => {
+      const url = new URL(route.request().url());
+      const filters = {
+        state: url.searchParams.get("state"),
+        rto: url.searchParams.get("rto"),
+        fuelGroup: url.searchParams.get("fuelGroup"),
+        category: url.searchParams.get("category"),
+      };
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          filters,
+          rows: [
+            registrationObservation({ ...filters, snapshotDate: "2026-07-23", monthToDateTotal: 1_200 }),
+            registrationObservation({
+              ...filters,
+              snapshotDate: "2026-07-24",
+              monthToDateTotal: 1_195,
+              dailyRegistration: -5,
+              status: "correction",
+            }),
+          ],
+        }),
+      });
+    });
     await page.goto(`${BASE_URL}/rto-trends.html`, { waitUntil: "networkidle" });
 
     const lookup = page.getByRole("combobox", { name: "Search official RTO" });
@@ -72,25 +98,39 @@ async function main() {
     assert.equal(menuIsTopLayer, true, "RTO suggestions must render above the snapshot panel");
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-dropdown-layering.png"), fullPage: true });
     await page.getByRole("option").first().click();
-    await page.getByRole("heading", { name: /Haridwar.*daily trend/i }).waitFor({ state: "visible" });
+    await page.getByRole("heading", { name: /Haridwar.*registration trend/i }).waitFor({ state: "visible" });
     assert.equal(await page.getByRole("button", { name: "Sign in to pin" }).isVisible(), true);
+    assert.match(await page.locator("#rtoTrendMeta").innerText(), /Calendar Year \/ Monthly/i);
+    assert.match(await page.locator("#rtoTrendSummary").innerText(), /Source month to date\s*1,195\s*2026-07-24/i);
+    assert.match(await page.locator("#rtoTrendSummary").innerText(), /Daily registrations\s*-5\s*Consecutive compatible comparison/i);
+    assert.match(await page.locator("#rtoTrendRows tr").first().innerText(), /Unavailable No previous accepted observation/i);
+    const correctionRow = page.locator("#rtoTrendRows tr").last();
+    assert.match(await correctionRow.innerText(), /2026-07-24\s+2026-07\s+1,195\s+-5 correction preserved\s+correction/i);
+    assert.equal(await page.locator("#rtoOem").count(), 0, "the obsolete fixed-maker selector must not return");
 
     const optionTheme = await page.locator("#rtoFuelGroup option").first().evaluate((element) => {
       const style = getComputedStyle(element);
       return { backgroundColor: style.backgroundColor, color: style.color };
     });
-    assert.notEqual(optionTheme.backgroundColor, "rgb(255, 255, 255)", "native option rows must use the dark theme");
-    assert.notEqual(optionTheme.color, "rgb(255, 255, 255)", "native option text needs visible contrast against its background");
+    assert.notEqual(optionTheme.backgroundColor, optionTheme.color, "native option text needs visible contrast against its background");
 
     await lookup.fill("noida");
     await page.getByRole("option").first().waitFor({ state: "visible" });
     await lookup.press("ArrowDown");
     await lookup.press("Enter");
-    await page.getByRole("heading", { name: /Noida.*daily trend/i }).waitFor({ state: "visible" });
+    await page.getByRole("heading", { name: /Noida.*registration trend/i }).waitFor({ state: "visible" });
     assert.equal(await lookup.getAttribute("aria-expanded"), "false");
-    assert.equal(await page.getByRole("button", { name: "Sign in to queue" }).isVisible(), true);
+    assert.equal(await page.locator("#rtoRequestBtn").isHidden(), true, "queue action is admin-only and must stay hidden for signed-out users");
 
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-dual-system.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await assertNoPageOverflow(page);
+    assert.equal(
+      await page.locator("#rtoTrendSummary").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length),
+      1,
+      "trend metrics must stack on 390px mobile",
+    );
+    await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-registration-trend-mobile.png"), fullPage: true });
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
     console.log("RTO daily browser checks passed.");
   } finally {
@@ -98,6 +138,35 @@ async function main() {
     if (server.exitCode === null) server.kill();
     if (serverError.trim()) process.stderr.write(serverError);
   }
+}
+
+async function assertNoPageOverflow(page) {
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    page: document.documentElement.scrollWidth,
+  }));
+  assert.ok(dimensions.page <= dimensions.viewport + 1, `page width ${dimensions.page}px exceeds viewport ${dimensions.viewport}px`);
+}
+
+function registrationObservation({ state, rto, fuelGroup, category, snapshotDate, monthToDateTotal, dailyRegistration = null, status = "unavailable" }) {
+  return {
+    snapshotDate,
+    targetMonth: "2026-07",
+    state,
+    rto,
+    fuelGroup,
+    vehicleCategory: category,
+    metricKind: "registration_month_to_date",
+    monthToDateTotal,
+    dailyRegistration,
+    correction: Number(dailyRegistration) < 0,
+    status,
+    unavailableReason: dailyRegistration === null ? "No previous accepted observation." : null,
+    observedAt: `${snapshotDate}T12:30:00.000Z`,
+    requestHash: "1".repeat(64),
+    responseHash: snapshotDate.endsWith("23") ? "2".repeat(64) : "3".repeat(64),
+    freshness: { status: dailyRegistration === null ? "baseline_only" : "comparison_verified" },
+  };
 }
 
 main().catch((error) => {

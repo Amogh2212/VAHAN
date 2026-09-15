@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Search official VAHAN RTO snapshot trends and pin selected RTOs for daily priority collection." />
-    <title>VAHAN RTO Daily Trends</title>
+    <meta name="description" content="Search official VAHAN RTO month-to-date observations and verified Daily registration changes." />
+    <title>VAHAN RTO Registration Trends</title>
     <link rel="stylesheet" href="/styles.css?v=20260624-rto-dropdown-fix" />
 
   <link rel="stylesheet" href="/atlas.css" />
@@ -19,7 +19,7 @@
           <div class="hero-title-row">
 
             <div>
-              <p class="eyebrow">Daily RTO snapshots</p>
+              <p class="eyebrow">Daily RTO registrations</p>
               <h1>Search once. Pin for every day.</h1>
               <p class="compare-empty">Look up any official RTO, or pin up to ten RTOs for first-priority daily collection.</p>
             </div>
@@ -57,10 +57,10 @@
           <div class="panel-head">
             <div>
               <h2>RTO lookup</h2>
-              <span class="panel-kicker" id="rtoTrendFreshness">Type a city, RTO name, alias, or code</span>
+              <span class="panel-kicker" id="rtoTrendFreshness">Calendar Year / Monthly registration observations</span>
             </div>
             <div class="rto-selection-actions">
-              <button type="button" class="secondary-action" id="rtoRequestBtn" hidden>Queue first snapshot</button>
+              <button type="button" class="secondary-action" id="rtoRequestBtn" hidden>Queue first observation</button>
               <button type="button" class="secondary-action" id="rtoPinBtn" hidden>Pin RTO</button>
             </div>
           </div>
@@ -90,10 +90,6 @@
               <span class="eyebrow">Category</span>
               <select id="rtoCategory"><option value="2W">2W</option><option value="3W">3W</option><option value="4W">4W</option></select>
             </label>
-            <label>
-              <span class="eyebrow">OEM</span>
-              <select id="rtoOem"></select>
-            </label>
             <button type="submit">Load trend</button>
           </form>
         </section>
@@ -102,17 +98,17 @@
           <article class="panel tracked-detail-panel">
             <div class="panel-head">
               <div>
-                <h2 id="rtoTrendTitle">Snapshot trend</h2>
+                <h2 id="rtoTrendTitle">Registration trend</h2>
                 <span class="panel-kicker" id="rtoTrendMeta">Choose an RTO to load data</span>
               </div>
               <span class="status-pill" id="rtoTrendStatus">Idle</span>
             </div>
             <div id="rtoTrendSummary" class="tracked-observation-summary empty-observation-state">
-              <p class="result-empty">Daily snapshots retain 30 days of month-to-date VAHAN totals.</p>
+              <p class="result-empty">Daily changes require consecutive, compatible Public Dashboard monthly-registration observations.</p>
             </div>
             <div class="tracked-table-wrap" id="rtoTrendTableWrap" hidden>
               <table class="tracked-table">
-                <thead><tr><th>Date</th><th>Target month</th><th>Count</th><th>Daily movement</th><th>Status</th></tr></thead>
+                <thead><tr><th>IST date</th><th>Target month</th><th>Source MTD</th><th>Daily registrations</th><th>Status</th></tr></thead>
                 <tbody id="rtoTrendRows"></tbody>
               </table>
             </div>
@@ -131,6 +127,6 @@
       </main>
     </div>
     <script src="/system.js"></script>
-    <script src="/rto-trends.js?v=20260725-atlas-source-states" defer></script>
+    <script src="/rto-trends.js?v=20260915-registration-mtd-v1" defer></script>
   </body>
 </html>

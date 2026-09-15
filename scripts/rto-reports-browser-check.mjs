@@ -35,6 +35,8 @@ async function main() {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      DATABASE_URL: "",
+      NODE_ENV: "test",
       PORT: String(PORT),
       AI_QUERY_PROVIDER: "none",
       FACTOR_AGENT_PROVIDER: "none",
@@ -73,7 +75,7 @@ async function main() {
     assert.equal(await emptyPage.locator("#rtoReportBatchStrip").isHidden(), true);
     assert.equal(await emptyPage.locator(".rto-report-list-panel").isHidden(), true);
     assert.equal(await emptyPage.getByRole("heading", { name: "No reports generated yet" }).isVisible(), true);
-    assert.match(await emptyPage.locator(".rto-report-empty p").innerText(), /at most 30 maker rows/);
+    assert.match(await emptyPage.locator(".rto-report-empty p").innerText(), /six EV\/ICE and 2W\/3W\/4W monthly-registration observations/);
     await assertTabsContained(emptyPage);
     await assertReadinessPillAligned(emptyPage);
     await assertReadinessContentsContained(emptyPage);
@@ -95,7 +97,8 @@ async function main() {
     assert.equal(await page.locator("#rtoReportReadinessStatus").innerText(), "100 / 100");
     assert.equal(await page.locator(".rto-report-list-item").count(), 100);
     assert.equal(await page.getByRole("heading", { name: "Pune Central RTO" }).isVisible(), true);
-    assert.equal(await page.getByRole("heading", { name: "OEM stock" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
     assert.match(await page.locator(".rto-factor-card").innerText(), /associated with a higher daily EV run-rate/i);
     assert.equal(
@@ -105,10 +108,12 @@ async function main() {
     assert.equal(await page.locator("#rtoReportBatchDate").inputValue(), "2026-07-24");
     assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "READY WITH WARNINGS");
     const metricCards = page.locator(".rto-report-metrics article");
-    await expectMetricCard(metricCards.nth(0), "Active EV stock", "1,253", "Net N/A");
-    await expectMetricCard(metricCards.nth(1), "Active ICE stock", "5,908", "Net N/A");
-    await expectMetricCard(metricCards.nth(2), "EV stock share", "17.5%", "Baseline 16.8%");
-    assert.match(await page.locator(".rto-report-list-item").first().innerText(), /Active EV stock 1,253/);
+    await expectMetricCard(metricCards.nth(0), "Previous-day registrations", "+489", "2026-07-23 (IST) · Verified comparison");
+    await expectMetricCard(metricCards.nth(1), "EV registrations", "+91", "2026-07-24 (IST) · Verified comparison");
+    await expectMetricCard(metricCards.nth(2), "ICE registrations", "+422", "2026-07-24 (IST) · Verified comparison");
+    assert.match(await page.locator(".rto-report-list-item").first().innerText(), /Daily EV \+91/);
+    assert.match(await page.locator(".rto-report-detail").innerText(), /EV month to date\s+1,253/i);
+    assert.match(await page.locator(".rto-report-detail").innerText(), /Maker chart lacks an exact target-month contract/);
     await page.evaluate(() => {
       window.__rtoDatePickerOpened = 0;
       HTMLInputElement.prototype.__rtoOriginalShowPicker = HTMLInputElement.prototype.showPicker;
@@ -123,20 +128,8 @@ async function main() {
       delete HTMLInputElement.prototype.__rtoOriginalShowPicker;
       delete window.__rtoDatePickerOpened;
     });
-    assert.equal(await page.getByRole("button", { name: "2W OEMs" }).isVisible(), true);
-    assert.equal(await page.getByRole("button", { name: "All categories" }).count(), 0);
-    assert.equal(await page.locator(".rto-report-table tbody tr").count(), 5);
-    const twoWText = await page.locator(".rto-report-table tbody").innerText();
-    assert.match(twoWText, /Hero MotoCorp/);
-    assert.match(twoWText, /Bajaj Auto \(2W\)/);
-    assert.doesNotMatch(twoWText, /Maruti Suzuki/);
-    await page.getByRole("button", { name: "4W OEMs" }).click();
-    assert.equal(await page.getByRole("button", { name: "4W OEMs" }).getAttribute("aria-pressed"), "true");
-    assert.equal(await page.locator(".rto-report-table tbody tr").count(), 5);
-    const fourWText = await page.locator(".rto-report-table tbody").innerText();
-    assert.match(fourWText, /Maruti Suzuki/);
-    assert.match(fourWText, /JSW MG Motor India/);
-    assert.doesNotMatch(fourWText, /Bajaj Auto \(2W\)/);
+    assert.equal(await page.getByRole("button", { name: "2W OEMs" }).count(), 0, "unverified monthly OEM evidence must not render a maker table");
+    assert.equal(await page.locator(".rto-report-category-row").count(), 3);
     assert.equal(await page.locator("#rtoReportBatchCsv").getAttribute("href"), "/api/rto-reports/batches/901.csv");
     await assertTabsContained(page);
     await assertReadinessPillAligned(page);
@@ -169,7 +162,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelectorAll(".rto-report-list-item").length === 100);
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
-    const metricColumns = await page.locator(".rto-report-metrics").evaluate((element) =>
+    const metricColumns = await page.locator('.rto-report-metrics[aria-label="Headline metrics"]').evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").length);
     assert.equal(metricColumns, 1, "headline metrics must stack on narrow mobile screens");
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-mobile.png"), fullPage: true });
@@ -192,6 +185,9 @@ async function fulfillReportApi(route) {
       expectedRtos: 100,
       cohortSize: 100,
       completeRtos: 100,
+      dailyRegistrationEligible: true,
+      comparisonEligibleRtos: 100,
+      dailyRegistrationReason: null,
       missingRtos: [],
       run: { id: 77, snapshotDate: "2026-07-24", reportCohortSize: 100 },
     });
@@ -351,9 +347,8 @@ function reportSummary(rank) {
       ? ["Maharashtra", "Mumbai Central RTO"]
       : [`State ${String(Math.ceil(rank / 4)).padStart(2, "0")}`, `Regional RTO ${String(rank).padStart(3, "0")}`];
   const status = rank % 37 === 0 ? "needs_review" : rank % 13 === 0 ? "ready_with_warnings" : "ready";
-  const missingDailyBoundary = rank === 1;
-  const periodEv = missingDailyBoundary ? null : 90 + rank;
-  const periodIce = missingDailyBoundary ? null : 420 + rank * 2;
+  const periodEv = 90 + rank;
+  const periodIce = 420 + rank * 2;
   const mtdEv = 1_250 + rank * 3;
   const mtdIce = 5_900 + rank * 8;
   return {
@@ -369,10 +364,8 @@ function reportSummary(rank) {
     periodIce,
     mtdEv,
     mtdIce,
-    evShare: missingDailyBoundary ? null : 17.8,
-    summary: missingDailyBoundary
-      ? `${names[1]} has unavailable daily net stock movement because the previous-day boundary is incomplete. Current active stock is ${mtdEv} EV and ${mtdIce} ICE vehicles.`
-      : `${names[1]} recorded net stock movement of ${periodEv} EV and ${periodIce} ICE vehicles in this period.`,
+    evShare: periodEv / (periodEv + periodIce) * 100,
+    summary: `${names[1]} recorded ${periodEv} EV and ${periodIce} ICE registrations on 2026-07-24.`,
     generatedAt: "2026-07-24T18:00:00.000Z",
   };
 }
@@ -383,23 +376,9 @@ function fullReport(summary) {
     { vehicleCategory: "3W", period: { ev: 18, ice: 42, total: 60 }, stock: { ev: 220, ice: 590, total: 810 } },
     { vehicleCategory: "4W", period: { ev: 9, ice: 90, total: 99 }, stock: { ev: 153, ice: 1_268, total: 1_421 } },
   ];
-  const oemNames = [
-    "Hero MotoCorp",
-    "Honda Motorcycle",
-    "TVS Motor (2W)",
-    "Bajaj Auto (2W)",
-    "Suzuki Motorcycle",
-    "Bajaj Auto (3W)",
-    "Mahindra Last Mile Mobility",
-    "TVS Motor (3W)",
-    "Piaggio Vehicles",
-    "Atul Auto",
-    "Maruti Suzuki",
-    "Tata Motors",
-    "Mahindra & Mahindra",
-    "Hyundai Motor India",
-    "JSW MG Motor India",
-  ];
+  const prior = { ev: 82, ice: 407, total: 489, evShare: 82 / 489 * 100 };
+  const dateField = (value, date) => ({ value, date, timezone: "Asia/Kolkata", status: "available", reason: null });
+  const oemReason = "Maker chart lacks an exact target-month contract; Daily headline registrations remain available from the six verified monthly totals.";
   return {
     ...summary,
     cadence: "daily",
@@ -437,8 +416,10 @@ function fullReport(summary) {
     ],
     payload: {
       schemaVersion: 1,
+      kind: "rto-daily-registration-report",
+      metricKind: "registration_month_to_date",
       cadence: "daily",
-      period: { label: "24 July 2026", periodStart: "2026-07-24", periodEnd: "2026-07-24" },
+      period: { label: "24 July 2026", start: "2026-07-24", end: "2026-07-24", comparisonStart: "2026-07-23", comparisonEnd: "2026-07-23" },
       rto: {
         state: summary.state,
         name: summary.rto,
@@ -453,31 +434,26 @@ function fullReport(summary) {
           total: sumMetric(summary.periodEv, summary.periodIce),
           evShare: summary.evShare,
         },
-        previousPeriod: { ev: 82, ice: 407, total: 489, evShare: 16.8 },
-        stock: { ev: summary.mtdEv, ice: summary.mtdIce, total: summary.mtdEv + summary.mtdIce, evShare: 17.5 },
-        change: {
-          ev: { absolute: 9, percent: 11.0 },
-          ice: { absolute: 15, percent: 3.7 },
-          total: { absolute: 24, percent: 4.9 },
-        },
+        previousPeriod: prior,
+        sourceMonthToDate: { ev: summary.mtdEv, ice: summary.mtdIce, total: summary.mtdEv + summary.mtdIce, evShare: summary.mtdEv / (summary.mtdEv + summary.mtdIce) * 100 },
+        activeStock: { ev: null, ice: null, total: null, evShare: null, status: "not_collected_by_daily_registration_run" },
+      },
+      dailyRegistration: {
+        status: "available",
+        reason: null,
+        date: "2026-07-24",
+        timezone: "Asia/Kolkata",
+        baselineEligible: true,
+        previousDayEligible: true,
+        previousDayRegistrations: dateField(prior.total, "2026-07-23"),
+        evRegistrations: dateField(summary.periodEv, "2026-07-24"),
+        iceRegistrations: dateField(summary.periodIce, "2026-07-24"),
+        evShare: dateField(summary.evShare, "2026-07-24"),
+        rank: dateField(summary.cohortRank, "2026-07-24"),
       },
       categories,
-      oems: oemNames.map((oem, index) => ({
-        oem,
-        categories: (() => {
-          const categoryIndex = Math.floor(index / 5);
-          const categoryStart = categoryIndex * 5;
-          const vehicleCategory = ["2W", "3W", "4W"][categoryIndex];
-          return [{
-          vehicleCategory,
-          period: { ev: Math.max(0, 12 - index - categoryIndex), ice: Math.max(1, 36 - index * 2 - categoryIndex), total: Math.max(1, 48 - index * 3 - categoryIndex * 2) },
-          previousPeriod: { ev: Math.max(0, 10 - index - categoryIndex), ice: Math.max(1, 33 - index * 2 - categoryIndex), total: Math.max(1, 43 - index * 3 - categoryIndex * 2) },
-          stock: { ev: Math.max(0, 120 - index), ice: Math.max(1, 360 - index * 2), total: Math.max(1, 480 - index * 3) },
-          rank: { ev: index - categoryStart + 1, ice: index - categoryStart + 1 },
-          previousRank: { ev: index - categoryStart + 2, ice: index - categoryStart + 1 },
-          change: { total: { absolute: index % 3 === 0 ? -2 : 7 } },
-        }]; })(),
-      })),
+      oems: [],
+      oemEvidence: { status: "unavailable", reason: oemReason, segments: [] },
       trend: Array.from({ length: 14 }, (_, index) => ({
         date: `2026-07-${String(11 + index).padStart(2, "0")}`,
         ev: 70 + index * 2 + (index % 3),
@@ -487,7 +463,27 @@ function fullReport(summary) {
       quality: {
         status: summary.status,
         lateFill: false,
-        warnings: summary.status === "ready" ? [] : ["One supporting comparison should be reviewed before publication."],
+        currentCoverage: true,
+        registrationCoverage: 6,
+        comparisonEligible: true,
+        previousDayEligible: true,
+        warnings: [oemReason],
+      },
+      source: {
+        validationContract: "public-registration-mtd-v1",
+        registrationFlowAvailable: true,
+        dailyBaselineEligible: true,
+        limitation: null,
+        totalsTable: "rto_registration_observations.month_to_date_total",
+        oemTable: null,
+        metricKind: "registration_month_to_date",
+        sourceSystem: "vahan-public-dashboard",
+        targetMonth: "2026-07",
+        requestHashes: ["1".repeat(64)],
+        responseHashes: ["2".repeat(64)],
+        freshnessStatus: "comparison_verified",
+        freshnessReason: "The source does not publish a refresh timestamp; distinct consecutive response hashes establish only comparison freshness.",
+        oemContract: { status: "unavailable", reason: oemReason },
       },
     },
   };
@@ -499,7 +495,11 @@ function sumMetric(...values) {
 
 async function expectMetricCard(locator, label, value, note) {
   const text = await locator.innerText();
-  assert.match(text, new RegExp(`^${label}\\s+${value}\\s+${note}$`, "i"));
+  assert.match(text, new RegExp(`^${escapeRegExp(label)}\\s+${escapeRegExp(value)}\\s+${escapeRegExp(note)}$`, "i"));
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 main().catch((error) => {
