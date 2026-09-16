@@ -19,8 +19,10 @@ import {
   heartbeatRtoDailyJob,
   previewRtoDailyCycle,
   requeueFailedRtoDailyJobs,
+  requeueIncompleteRtoDailyJobs,
   rollupAndPruneRtoDailySnapshots,
   rtoDailyCycleSummary,
+  persistRtoDailyJobReports,
   scrapeStatusForSnapshotDate,
   snapshotDateKey,
   targetMonthForDate,
@@ -59,6 +61,7 @@ export function parseArgs(argv) {
     state: null,
     rto: null,
     retryFailed: false,
+    retryIncomplete: false,
     workQueue: false,
     neon: false,
     timeBudgetMinutes: null,
@@ -71,6 +74,7 @@ export function parseArgs(argv) {
     if (arg === "--dry-run") args.dryRun = true;
     else if (arg === "--bootstrap-configs") args.bootstrapConfigs = true;
     else if (arg === "--retry-failed") args.retryFailed = true;
+    else if (arg === "--retry-incomplete") args.retryIncomplete = true;
     else if (arg === "--work-queue") args.workQueue = true;
     else if (arg === "--require-complete") args.requireComplete = true;
     else if (arg === "--preserve-history") args.preserveHistory = true;
@@ -123,6 +127,7 @@ function usage() {
     "  --dry-run              Preview enabled RTOs without creating jobs or calling the dashboard.",
     "  --bootstrap-configs    Legacy bootstrap from data/vahan/rto_catalog.json.",
     "  --retry-failed         Requeue terminal failures in the selected cycle/scope.",
+    "  --retry-incomplete     Requeue only RTO jobs with fewer than six valid scopes.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
     "  --require-complete     Exit non-zero unless the run finishes with complete 100-RTO report readiness.",
     "  --preserve-history    Today's run only; skip prior-cycle edits, history rematerialization and retention cleanup.",
@@ -223,19 +228,26 @@ export function createAdaptiveController(initialWorkers, {
 async function scrapeJob({ job, workerId, rateLimit }) {
   const reports = [];
   const rows = [];
+  const unavailableSegments = [];
   for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
     for (const vehicleCategory of RTO_DAILY_CATEGORIES) {
       await heartbeatRtoDailyJob({ jobId: job.id, workerId });
       const categoryFilters = RTO_DAILY_CATEGORY_FILTERS[vehicleCategory];
-      const segment = await fetchPublicRtoRegistrationSegment({
-        state: job.state,
-        rto: job.rto,
-        targetMonth: job.targetMonth,
-        fuels: RTO_DAILY_FUEL_FILTERS[fuelGroup],
-        vehicleCategories: categoryFilters.vehicleCategories,
-        vehicleClasses: categoryFilters.vehicleClasses,
-        beforeRequest: rateLimit,
-      });
+      let segment;
+      try {
+        segment = await fetchPublicRtoRegistrationSegment({
+          state: job.state,
+          rto: job.rto,
+          targetMonth: job.targetMonth,
+          fuels: RTO_DAILY_FUEL_FILTERS[fuelGroup],
+          vehicleCategories: categoryFilters.vehicleCategories,
+          vehicleClasses: categoryFilters.vehicleClasses,
+          beforeRequest: rateLimit,
+        });
+      } catch (error) {
+        unavailableSegments.push({ fuelGroup, vehicleCategory, error: error.message });
+        continue;
+      }
       const report = {
         status: "success",
         state: job.state,
@@ -285,6 +297,11 @@ async function scrapeJob({ job, workerId, rateLimit }) {
         },
       }));
     }
+  }
+  if (unavailableSegments.length) {
+    if (reports.length) await persistRtoDailyJobReports({ job, workerId, reports, rows });
+    const details = unavailableSegments.map(({ fuelGroup, vehicleCategory, error }) => `${fuelGroup}/${vehicleCategory}: ${error}`).join(" | ");
+    throw new Error(`Partial RTO evidence saved (${reports.length}/6 segments). ${details}`);
   }
   await completeRtoDailyJob({ job, workerId, reports, rows });
   return { retryCount: 0, reportCount: reports.length };
@@ -375,6 +392,11 @@ async function main() {
     if (args.retryFailed) {
       console.log(JSON.stringify({
         requeued: await requeueFailedRtoDailyJobs({ runId: run.id, state: args.state, rto: args.rto }),
+      }, null, 2));
+    }
+    if (args.retryIncomplete) {
+      console.log(JSON.stringify({
+        requeuedIncomplete: await requeueIncompleteRtoDailyJobs({ runId: run.id, state: args.state, rto: args.rto }),
       }, null, 2));
     }
     const terminalProgress = createTerminalProgress();

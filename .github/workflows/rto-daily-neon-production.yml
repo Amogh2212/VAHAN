@@ -71,12 +71,12 @@ jobs:
         if: ${{ inputs.initialize_cohort == true }}
         run: npm run rto-daily:production:seed
 
-      - name: Run complete 100-RTO collection
+      - name: Run 100-RTO collection with partial-evidence handling
         id: collect
         continue-on-error: true
         run: >-
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
-          --neon --work-queue --retry-failed --time-budget-minutes 315 --workers 2 --require-complete --preserve-history
+          --neon --work-queue --retry-failed --retry-incomplete --time-budget-minutes 315 --workers 2 --preserve-history
 
       - name: Create sanitized production summary
         if: always()
@@ -92,7 +92,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Enforce complete collection
+      - name: Enforce collection process completion
         if: always()
         run: test "${{ steps.collect.outcome }}" = "success"
 

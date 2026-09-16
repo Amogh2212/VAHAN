@@ -12,12 +12,15 @@ const state = {
   readiness: null,
   requestId: 0,
   detailRequestId: 0,
+  currentEvidenceMode: false,
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
 
 const batchDateInput = document.querySelector("#rtoReportBatchDate");
 const periodStatus = document.querySelector("#rtoReportPeriodStatus");
+const periodLabel = document.querySelector("#rtoReportPeriodLabel");
+const periodHelp = document.querySelector("#rtoReportPeriodHelp");
 const searchInput = document.querySelector("#rtoReportSearch");
 const statusFilter = document.querySelector("#rtoReportStatusFilter");
 const reportList = document.querySelector("#rtoReportList");
@@ -100,11 +103,26 @@ function renderReadiness(readiness) {
       ? "status-ready-with-warnings"
       : "status-needs-review"}`;
   if (state.cadence === "daily" && readiness.dailyRegistrationEligible !== true) {
-    title.textContent = "Daily registrations unavailable";
+    // Every incomplete RTO is part of the partial-coverage cohort. Some may
+    // have zero verified scopes; those remain explicitly unverified rather
+    // than disappearing from the coverage summary.
+    const partialRtos = (readiness.missingRtos ?? []).filter((entry) => Number(entry.validReports) < 6);
+    const verifiedPartialScopes = partialRtos.reduce((total, entry) => total + Number(entry.validReports ?? 0), 0);
+    const examples = partialRtos.slice(0, 3)
+      .map((entry) => `${entry.rto} (${fmt(entry.validReports)}/6 scopes)`)
+      .join("; ");
+    title.textContent = partialRtos.length ? "Daily registrations partially collected" : "Daily registrations unavailable";
     status.className = "status-pill status-needs-review";
-    status.textContent = "Comparison incomplete";
-    metrics.innerHTML = `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} RTOs with six registration scopes</span><span><strong>${fmt(readiness.comparisonEligibleRtos ?? 0)}</strong> / ${fmt(expected)} comparison-eligible</span>`;
-    if (message) { message.hidden = false; message.textContent = readiness.dailyRegistrationReason || "Consecutive compatible monthly-registration observations are incomplete."; }
+    status.textContent = partialRtos.length ? "Partial evidence" : "Comparison incomplete";
+    metrics.innerHTML = partialRtos.length
+      ? `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} RTOs complete</span><span><strong>${fmt(partialRtos.length)}</strong> partial RTOs · ${fmt(verifiedPartialScopes)} verified scopes</span>`
+      : `<span><strong>${fmt(complete)}</strong> / ${fmt(expected)} RTOs with six registration scopes</span><span><strong>${fmt(readiness.comparisonEligibleRtos ?? 0)}</strong> / ${fmt(expected)} comparison-eligible</span>`;
+    if (message) {
+      message.hidden = false;
+      message.textContent = partialRtos.length
+        ? `Verified scopes are retained for operational review but excluded from the Daily total until all six scopes are available. ${examples}${partialRtos.length > 3 ? "; …" : ""}`
+        : readiness.dailyRegistrationReason || "Consecutive compatible monthly-registration observations are incomplete.";
+    }
     return;
   }
   if (readiness.eligible) {
@@ -142,6 +160,29 @@ function selectCadence(cadence) {
   }
   const matching = batchesForCadence(cadence);
   renderPeriodPicker(matching);
+  const currentEvidence = cadence === "daily" ? (state.readiness?.currentCycleEvidence ?? []) : [];
+  if (currentEvidence.length) {
+    state.currentEvidenceMode = true;
+    state.batch = null;
+    state.reports = currentEvidence;
+    state.report = currentEvidence[0] ?? null;
+    batchDateInput.disabled = true;
+    batchDateInput.value = state.readiness?.run?.snapshotDate ?? "";
+    statusFilter.disabled = true;
+    statusFilter.value = "";
+    periodLabel.textContent = "Current cycle";
+    periodHelp.textContent = "Verified month-to-date evidence; a Daily report needs the matching prior day.";
+    updatePeriodStatus(null);
+    periodStatus.textContent = "Current evidence";
+    renderBatch();
+    renderReportList();
+    renderCurrentEvidenceDetail(state.report);
+    return;
+  }
+  state.currentEvidenceMode = false;
+  statusFilter.disabled = false;
+  periodLabel.textContent = "Report period";
+  periodHelp.textContent = "Select a generated report period.";
   if (!matching.length) {
     state.batch = null;
     state.reports = [];
@@ -175,6 +216,15 @@ async function selectBatch(batchId) {
 }
 
 async function loadReports() {
+  if (state.currentEvidenceMode) {
+    const q = searchInput.value.trim().toLowerCase();
+    state.reports = (state.readiness?.currentCycleEvidence ?? []).filter((entry) => !q || `${entry.state} ${entry.rto}`.toLowerCase().includes(q));
+    renderReportList();
+    const selected = state.reports.find((entry) => entry.rto === state.report?.rto && entry.state === state.report?.state) ?? state.reports[0];
+    state.report = selected ?? null;
+    renderCurrentEvidenceDetail(state.report);
+    return;
+  }
   if (!state.batch) return;
   const requestId = ++state.requestId;
   const batchId = state.batch.id;
@@ -206,11 +256,14 @@ async function loadReports() {
 function renderBatch() {
   const strip = document.querySelector("#rtoReportBatchStrip");
   const download = document.querySelector("#rtoReportBatchCsv");
-  document.body.classList.toggle("rto-reports-no-batch", !state.batch);
+  // Current-cycle evidence is displayed in the normal list/detail workspace even
+  // though it has not yet produced a generated Daily report batch.
+  document.body.classList.toggle("rto-reports-no-batch", !state.batch && !state.currentEvidenceMode);
+  document.body.classList.toggle("rto-reports-current-evidence", state.currentEvidenceMode);
   if (!state.batch) {
     strip.hidden = true;
     download.hidden = true;
-    document.querySelector("#rtoReportListMeta").textContent = "No generated batch";
+    document.querySelector("#rtoReportListMeta").textContent = state.currentEvidenceMode ? "Current verified source evidence" : "No generated batch";
     return;
   }
   const ready = Math.max(0, state.batch.reportCount - state.batch.warningCount - state.batch.reviewCount);
@@ -275,6 +328,26 @@ function openDatePicker() {
 }
 
 function renderReportList() {
+  if (state.currentEvidenceMode) {
+    document.querySelector("#rtoReportListTitle").textContent = "Current RTO evidence";
+    document.querySelector("#rtoReportListMeta").textContent = `${fmt(state.reports.length)} shown | month-to-date source evidence`;
+    reportList.innerHTML = state.reports.map((entry) => `
+      <button type="button" class="rto-report-list-item${entry.rto === state.report?.rto && entry.state === state.report?.state ? " active" : ""}" data-current-rto="${escapeHtml(entry.rto)}" data-current-state="${escapeHtml(entry.state)}">
+        <span class="rto-report-rank">${fmt(entry.verifiedScopes)}/6</span>
+        <span class="rto-report-list-copy"><strong>${escapeHtml(entry.rto)}</strong><small>${escapeHtml(entry.state)} | MTD ${fmt(entry.totalMonthToDate)}</small></span>
+        <span class="rto-report-list-status ${entry.verifiedScopes === 6 ? "status-ready" : "status-needs-review"}">${entry.verifiedScopes === 6 ? "Verified" : "Partial"}</span>
+      </button>
+    `).join("") || `<p class="result-empty">No RTO evidence matches this search.</p>`;
+    for (const button of reportList.querySelectorAll("[data-current-rto]")) {
+      button.addEventListener("click", () => {
+        state.report = state.reports.find((entry) => entry.rto === button.dataset.currentRto && entry.state === button.dataset.currentState) ?? null;
+        renderReportList();
+        renderCurrentEvidenceDetail(state.report);
+      });
+    }
+    return;
+  }
+  document.querySelector("#rtoReportListTitle").textContent = "Individual RTO reports";
   if (!state.batch) {
     reportList.innerHTML = `<p class="result-empty">No report batch has been generated yet.</p>`;
     return;
@@ -605,6 +678,48 @@ function dailyMetricBlock(label, field, format = "number") {
         : signed(value);
   const stateText = field?.status === "correction" ? "Correction preserved" : field?.status === "available" ? "Verified comparison" : field?.reason;
   return metricBlock(label, display, `${field?.date ?? "Selected date"} (IST) · ${stateText ?? "Unavailable"}`);
+}
+
+function renderCurrentEvidenceDetail(entry) {
+  if (!entry) return renderEmptyDetail("No current evidence matches this search", "Clear the RTO search to see the collected source evidence.");
+  const complete = entry.verifiedScopes === 6;
+  reportDetail.innerHTML = `
+    <header class="rto-report-detail-head"><div><span class="panel-kicker">Current cycle · ${escapeHtml(state.readiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals, not Daily registrations.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Verified evidence" : "Partial evidence"}</span></header>
+    <section class="rto-report-metrics" aria-label="Month-to-date source totals">
+      ${metricBlock("EV registrations", entry.evMonthToDate, "Current cycle")}
+      ${metricBlock("ICE registrations", entry.iceMonthToDate, "Current cycle")}
+      ${metricBlock("Total registrations", entry.totalMonthToDate, complete ? "EV + ICE combined" : "Partial source coverage")}
+      ${metricBlock("Daily total", "Unavailable", "Needs a previous-day match")}
+    </section>
+    <section class="rto-report-quality"><strong>Why this is not a Daily report</strong><p>Daily registrations need the previous day’s matching six scopes. This current collection is still the first compatible observation.</p></section>
+    ${renderCurrentFuelDistribution(entry)}
+  `;
+}
+
+function renderCurrentFuelDistribution(entry) {
+  const totals = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
+  const rows = ["2W", "3W", "4W"].map((vehicleCategory) => {
+    const ev = totals.get(`EV/${vehicleCategory}`);
+    const ice = totals.get(`ICE/${vehicleCategory}`);
+    const available = Number.isFinite(ev) || Number.isFinite(ice);
+    const total = (Number.isFinite(ev) ? ev : 0) + (Number.isFinite(ice) ? ice : 0);
+    const evWidth = total ? (100 * (Number.isFinite(ev) ? ev : 0)) / total : 0;
+    const iceWidth = total ? (100 * (Number.isFinite(ice) ? ice : 0)) / total : 0;
+    return `
+      <div class="rto-current-fuel-row">
+        <strong>${vehicleCategory}</strong>
+        <div class="rto-current-fuel-content">
+          <div class="rto-current-fuel-values"><span class="ev"><i></i><small>EV</small><b>${Number.isFinite(ev) ? fmt(ev) : "Unavailable"}</b></span><span class="ice"><i></i><small>ICE</small><b>${Number.isFinite(ice) ? fmt(ice) : "Unavailable"}</b></span></div>
+          ${available ? `<div class="rto-current-fuel-bar" aria-label="${vehicleCategory}: EV ${fmt(ev)}, ICE ${fmt(ice)}"><i class="ev" style="width:${evWidth}%"></i><i class="ice" style="width:${iceWidth}%"></i></div>` : `<span class="rto-current-fuel-unavailable">Both fuel scopes unavailable</span>`}
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <section class="rto-report-evidence rto-current-fuel-distribution">
+      <div class="rto-report-section-head"><div><h3>Fuel distribution by vehicle class</h3><span>Verified month-to-date registrations. Missing scopes are not treated as zero.</span></div></div>
+      <div class="rto-current-fuel-legend"><span><i class="ev"></i>EV</span><span><i class="ice"></i>ICE</span></div>
+      <div class="rto-current-fuel-rows">${rows}</div>
+    </section>`;
 }
 
 function reportEvLabel(report) {
