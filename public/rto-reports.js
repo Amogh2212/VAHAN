@@ -170,8 +170,8 @@ function selectCadence(cadence) {
     batchDateInput.value = state.readiness?.run?.snapshotDate ?? "";
     statusFilter.disabled = true;
     statusFilter.value = "";
-    periodLabel.textContent = "Current cycle";
-    periodHelp.textContent = "Verified month-to-date evidence; a Daily report needs the matching prior day.";
+    if (periodLabel) periodLabel.textContent = "Current cycle";
+    if (periodHelp) periodHelp.textContent = "Verified month-to-date evidence; a Daily report needs the matching prior day.";
     updatePeriodStatus(null);
     periodStatus.textContent = "Current evidence";
     renderBatch();
@@ -181,8 +181,8 @@ function selectCadence(cadence) {
   }
   state.currentEvidenceMode = false;
   statusFilter.disabled = false;
-  periodLabel.textContent = "Report period";
-  periodHelp.textContent = "Select a generated report period.";
+  if (periodLabel) periodLabel.textContent = "Report period";
+  if (periodHelp) periodHelp.textContent = "Select a generated report period.";
   if (!matching.length) {
     state.batch = null;
     state.reports = [];
