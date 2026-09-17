@@ -166,7 +166,9 @@ function selectCadence(cadence) {
     state.batch = null;
     state.reports = currentEvidence;
     state.report = currentEvidence[0] ?? null;
-    batchDateInput.disabled = true;
+    // Keep historical generated Daily batches selectable while showing the current-cycle evidence.
+    // Disable the picker only when there is no historical batch to switch to.
+    batchDateInput.disabled = matching.length === 0;
     batchDateInput.value = state.readiness?.run?.snapshotDate ?? "";
     statusFilter.disabled = true;
     statusFilter.value = "";
@@ -993,6 +995,7 @@ batchDateInput?.addEventListener("change", () => {
     setPeriodInputDate(state.batch);
     return;
   }
+  state.currentEvidenceMode = false;
   selectBatch(batch.id);
 });
 statusFilter.addEventListener("change", loadReports);
