@@ -67,6 +67,7 @@ export function parseArgs(argv) {
     timeBudgetMinutes: null,
     dateExplicit: false,
     requireComplete: false,
+    allowPartial: false,
     preserveHistory: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -77,6 +78,7 @@ export function parseArgs(argv) {
     else if (arg === "--retry-incomplete") args.retryIncomplete = true;
     else if (arg === "--work-queue") args.workQueue = true;
     else if (arg === "--require-complete") args.requireComplete = true;
+    else if (arg === "--allow-partial") args.allowPartial = true;
     else if (arg === "--preserve-history") args.preserveHistory = true;
     else if (arg === "--neon") args.neon = true;
     else if (arg === "--workers") args.workers = argv[++index];
@@ -130,6 +132,7 @@ function usage() {
     "  --retry-incomplete     Requeue only RTO jobs with fewer than six valid scopes.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
     "  --require-complete     Exit non-zero unless the run finishes with complete 100-RTO report readiness.",
+    "  --allow-partial        Treat expected failed/incomplete RTO jobs as a warning instead of a process failure.",
     "  --preserve-history    Today's run only; skip prior-cycle edits, history rematerialization and retention cleanup.",
     "  --neon                 Require the configured DATABASE_URL to point to Neon.",
     "  --time-budget-minutes N Stop claiming new RTOs after N minutes (work-queue default 10).",
@@ -447,7 +450,12 @@ async function main() {
         ? { passed: completionFailures.length === 0, failures: completionFailures, readiness }
         : null,
     }, null, 2));
-    if ((finalized.complete && finalized.summary.failed) || completionFailures.length) process.exitCode = 1;
+    if (
+      (finalized.complete && finalized.summary.failed && !args.allowPartial) ||
+      completionFailures.length
+    ) {
+      process.exitCode = 1;
+    }
   } finally {
     await releaseLock();
   }
