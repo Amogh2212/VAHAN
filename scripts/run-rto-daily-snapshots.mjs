@@ -232,6 +232,9 @@ async function scrapeJob({ job, workerId, rateLimit }) {
   const reports = [];
   const rows = [];
   const unavailableSegments = [];
+  // A retry must have a distinct ledger identity. Reusing only the job attempt
+  // number collides when a stopped run is resumed after partial persistence.
+  const attemptId = `${job.id}:${job.attempts ?? 1}:${Date.now()}`;
   for (const fuelGroup of RTO_DAILY_FUEL_GROUPS) {
     for (const vehicleCategory of RTO_DAILY_CATEGORIES) {
       await heartbeatRtoDailyJob({ jobId: job.id, workerId });
@@ -266,6 +269,7 @@ async function scrapeJob({ job, workerId, rateLimit }) {
           rank: maker.rank,
         })),
         attempts: 1,
+        attemptId,
         scrapedAt: segment.scrapedAt,
         metricKind: segment.metricKind,
         source: segment.source,
