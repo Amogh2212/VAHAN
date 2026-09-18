@@ -289,6 +289,10 @@ function batchesForCadence(cadence = state.cadence) {
 function renderPeriodPicker(batches) {
   if (!batchDateInput) return;
   const dates = batches.flatMap((batch) => [batch.periodStart, batch.periodEnd].filter(Boolean));
+  const currentEvidenceDate = state.cadence === "daily" && state.readiness?.currentCycleEvidence?.length
+    ? state.readiness?.run?.snapshotDate
+    : null;
+  if (currentEvidenceDate) dates.push(currentEvidenceDate);
   batchDateInput.disabled = batches.length === 0;
   batchDateInput.min = dates.length ? dates.reduce((min, date) => date < min ? date : min, dates[0]) : "";
   batchDateInput.max = dates.length ? dates.reduce((max, date) => date > max ? date : max, dates[0]) : "";
@@ -988,6 +992,13 @@ batchDateInput?.addEventListener("keydown", (event) => {
   openDatePicker();
 });
 batchDateInput?.addEventListener("change", () => {
+  const currentEvidenceDate = state.cadence === "daily" && state.readiness?.currentCycleEvidence?.length
+    ? state.readiness?.run?.snapshotDate
+    : null;
+  if (batchDateInput.value === currentEvidenceDate) {
+    selectCadence("daily");
+    return;
+  }
   const batch = findBatchForDate(batchDateInput.value);
   if (!batch) {
     batchDateInput.setCustomValidity(`No ${state.cadence} RTO report exists for this date.`);
