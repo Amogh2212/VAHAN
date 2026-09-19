@@ -681,6 +681,17 @@ function metricBlock(label, value, comparison) {
   return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(display)}</strong><small>${escapeHtml(comparison ?? "")}</small></article>`;
 }
 
+function sourceEvidenceMetricBlock(label, total, daily, comparison = "Current cycle") {
+  const dailyValue = daily?.value;
+  const verified = daily?.status === "available" || daily?.status === "correction";
+  const isCorrection = Number(dailyValue) < 0;
+  const arrow = isCorrection ? "↓" : "↑";
+  const change = verified
+    ? `<b class="rto-current-daily-change ${isCorrection ? "is-down" : "is-up"}" aria-label="${escapeHtml(`${arrow} ${signed(dailyValue)} verified today`)}">${arrow} ${escapeHtml(signed(dailyValue))}</b>`
+    : "";
+  return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(fmt(total))}${change}</strong><small>${escapeHtml(verified ? `${comparison} · verified Daily change` : comparison)}</small></article>`;
+}
+
 function dailyMetricBlock(label, field, format = "number") {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   if (field?.date !== today) label = label.replace("Today's ", "");
@@ -700,15 +711,18 @@ function renderCurrentEvidenceDetail(entry) {
   if (!entry) return renderEmptyDetail("No current evidence matches this search", "Clear the RTO search to see the collected source evidence.");
   const evidenceReadiness = activeEvidenceReadiness();
   const complete = entry.verifiedScopes === 6;
+  const daily = entry.daily ?? { status: "unavailable" };
+  const dailyAvailable = daily.status === "available" || daily.status === "correction";
+  const date = evidenceReadiness?.run?.snapshotDate ?? "Selected date";
   reportDetail.innerHTML = `
     <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(evidenceReadiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals, not Daily registrations.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Verified evidence" : "Partial evidence"}</span></header>
     <section class="rto-report-metrics" aria-label="Month-to-date source totals">
-      ${metricBlock("EV registrations", entry.evMonthToDate, "Current cycle")}
-      ${metricBlock("ICE registrations", entry.iceMonthToDate, "Current cycle")}
+      ${sourceEvidenceMetricBlock("EV registrations", entry.evMonthToDate, { value: daily.ev, status: daily.status })}
+      ${sourceEvidenceMetricBlock("ICE registrations", entry.iceMonthToDate, { value: daily.ice, status: daily.status })}
       ${metricBlock("Total registrations", entry.totalMonthToDate, complete ? "EV + ICE combined" : "Partial source coverage")}
-      ${metricBlock("Daily total", "Unavailable", "Needs a previous-day match")}
+      ${metricBlock("Daily total", dailyAvailable ? signed(daily.total) : "Unavailable", dailyAvailable ? `${date} · verified previous-day match` : "Needs a matching previous-day scope")}
     </section>
-    <section class="rto-report-quality"><strong>Why this is not a Daily report</strong><p>Daily registrations need the previous day’s matching six scopes. This current collection is still the first compatible observation.</p></section>
+    <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes are calculated from this RTO’s six matching prior-day registration scopes. The full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
     ${renderCurrentFuelDistribution(entry)}
   `;
 }

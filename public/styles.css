@@ -681,6 +681,23 @@ body::before {
   font-size: 22px;
 }
 
+.rto-current-daily-change {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.rto-current-daily-change.is-up {
+  color: var(--success, #17684f);
+}
+
+.rto-current-daily-change.is-down {
+  color: var(--danger, #a33b2b);
+}
+
 .rto-report-metrics small {
   margin-top: 5px;
   color: var(--text-secondary);
