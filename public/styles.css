@@ -356,6 +356,19 @@ body::before {
   padding: 20px 0;
 }
 
+.rto-reports-current-evidence .rto-report-toolbar {
+  grid-template-columns: auto minmax(270px, 340px) minmax(300px, 1fr);
+}
+
+.rto-reports-current-evidence .rto-report-status-control {
+  display: none;
+}
+
+.rto-reports-current-evidence .rto-report-period-picker input[type="date"] {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
 .rto-report-tabs {
   display: grid;
   grid-template-columns: repeat(3, 88px);
@@ -962,6 +975,78 @@ body::before {
   display: grid;
   gap: 14px;
   margin-top: 17px;
+}
+
+.rto-current-fuel-distribution {
+  margin-top: 24px;
+}
+
+.rto-current-fuel-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: -16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.rto-current-fuel-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.rto-current-fuel-legend i.ev,
+.rto-current-fuel-bar i.ev { background: #176b73; }
+
+.rto-current-fuel-legend i.ice,
+.rto-current-fuel-bar i.ice { background: #a9b7c4; }
+
+.rto-current-fuel-rows {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.rto-current-fuel-row {
+  display: grid;
+  grid-template-columns: 36px minmax(180px, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.rto-current-fuel-row > strong { font-size: 12px; }
+
+.rto-current-fuel-bar {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #edf0f2;
+}
+
+.rto-current-fuel-bar i { height: 100%; }
+
+.rto-current-fuel-values {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 8px;
+}
+
+.rto-current-fuel-values span { display: grid; grid-template-columns: 8px auto; column-gap: 7px; align-items: baseline; min-width: 92px; }
+.rto-current-fuel-values i { grid-row: span 2; width: 8px; height: 8px; border-radius: 50%; background: #176b73; }
+.rto-current-fuel-values .ice i { background: #a9b7c4; }
+.rto-current-fuel-values small { color: var(--text-secondary); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+.rto-current-fuel-values b { color: var(--text-primary); font-size: 16px; font-weight: 700; line-height: 1.1; }
+.rto-current-fuel-unavailable { color: var(--text-secondary); font-size: 12px; }
+
+@media (max-width: 640px) {
+  .rto-current-fuel-row { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+  .rto-current-fuel-values { gap: 16px; }
+  .rto-current-fuel-values span { min-width: 0; }
 }
 
 .rto-report-category-row {
@@ -5318,6 +5403,32 @@ button:disabled,
 
 .rto-trends-page .tracked-sparkline svg {
   max-height: 140px;
+}
+
+@media (min-width: 781px) and (max-width: 1120px) {
+  .rto-reports-current-evidence .rto-report-toolbar {
+    grid-template-columns: auto minmax(250px, 320px) minmax(220px, 1fr);
+  }
+}
+
+@media (max-width: 780px) {
+  .rto-reports-current-evidence .rto-report-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .rto-current-fuel-legend {
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
+  .rto-current-fuel-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .rto-current-fuel-values,
+  .rto-current-fuel-unavailable {
+    grid-column: 2;
+  }
 }
 
 .rto-trends-page .tracked-observation-summary {
