@@ -177,6 +177,7 @@ async function main() {
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-source-evidence.png"), fullPage: true });
     assert.match(await page.locator(".rto-report-detail").innerText(), /Daily total\s+\+489/i);
     assert.match(await page.locator(".rto-current-daily-change.is-up").first().innerText(), /↑ \+91/);
+    assert.equal(await page.locator(".rto-report-quality.is-verified").count(), 1);
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
 

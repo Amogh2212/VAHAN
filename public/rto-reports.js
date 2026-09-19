@@ -722,7 +722,7 @@ function renderCurrentEvidenceDetail(entry) {
       ${metricBlock("Total registrations", entry.totalMonthToDate, complete ? "EV + ICE combined" : "Partial source coverage")}
       ${metricBlock("Daily total", dailyAvailable ? signed(daily.total) : "Unavailable", dailyAvailable ? `${date} · verified previous-day match` : "Needs a matching previous-day scope")}
     </section>
-    <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes are calculated from this RTO’s six matching prior-day registration scopes. The full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
+    <section class="rto-report-quality${dailyAvailable ? " is-verified" : ""}"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "Calculated from this RTO’s six matching prior-day registration scopes. Full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
     ${renderCurrentFuelDistribution(entry)}
   `;
 }

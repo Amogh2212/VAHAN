@@ -711,6 +711,18 @@ body::before {
   background: var(--warning-bg);
 }
 
+.rto-report-quality.is-verified {
+  background: var(--success-bg, #eaf4ef);
+}
+
+.rto-report-quality.is-verified strong {
+  color: var(--success, #17684f);
+}
+
+.rto-report-quality.is-verified p {
+  color: var(--text-secondary);
+}
+
 .rto-report-quality h3 {
   margin: 0;
   font-size: 14px;
