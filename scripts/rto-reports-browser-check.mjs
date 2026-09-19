@@ -167,6 +167,16 @@ async function main() {
     assert.equal(metricColumns, 1, "headline metrics must stack on narrow mobile screens");
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-mobile.png"), fullPage: true });
 
+    await page.locator("#rtoReportBatchDate").fill("2026-07-23");
+    await page.locator("#rtoReportBatchDate").dispatchEvent("change");
+    await page.getByText("Source evidence", { exact: true }).waitFor();
+    assert.equal(await page.locator("#rtoReportPeriodLabel").innerText(), "SOURCE EVIDENCE DATE");
+    assert.match(await page.locator("#rtoReportPeriodHelp").innerText(), /not a complete Daily registration report/i);
+    assert.equal(await page.locator(".rto-report-list-item").count(), 1);
+    assert.match(await page.locator(".rto-report-detail").innerText(), /6\/6 verified monthly-registration scopes/i);
+    await assertReadinessContentsContained(page);
+    await assertNoPageOverflow(page);
+
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
     console.log("RTO report browser checks passed.");
   } finally {
@@ -195,6 +205,30 @@ async function fulfillReportApi(route) {
   }
   if (url.pathname === "/api/rto-reports/batches") {
     await json(route, { batches: BATCHES });
+    return;
+  }
+  if (url.pathname === "/api/rto-reports/evidence" && url.searchParams.get("date") === "2026-07-23") {
+    await json(route, {
+      eligible: false,
+      reason: "collection_incomplete",
+      expectedRtos: 100,
+      cohortSize: 100,
+      completeRtos: 1,
+      dailyRegistrationEligible: false,
+      comparisonEligibleRtos: 0,
+      dailyRegistrationReason: "Collection is incomplete.",
+      missingRtos: [],
+      currentCycleEvidence: [{
+        state: "Maharashtra",
+        rto: "Pune Central RTO",
+        verifiedScopes: 6,
+        evMonthToDate: 1253,
+        iceMonthToDate: 984,
+        totalMonthToDate: 2237,
+        scopes: [],
+      }],
+      run: { id: 76, snapshotDate: "2026-07-23", reportCohortSize: 100 },
+    });
     return;
   }
   const reportsMatch = url.pathname.match(/^\/api\/rto-reports\/batches\/(\d+)\/reports$/);
