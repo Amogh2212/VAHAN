@@ -111,6 +111,7 @@ import {
   getRtoReport,
   getRtoReportBatch,
   latestRtoReportReadiness,
+  rtoReportReadinessForDate,
   listRtoReportBatches,
   listRtoReportsForBatch,
   loadCachedRtoReportExport,
@@ -6941,6 +6942,16 @@ const server = http.createServer(async (request, response) => {
     if (await rtoDailyRouter.handle({ request, response, url })) return;
     if (request.method === "GET" && url.pathname === "/api/rto-reports/readiness") {
       sendJson(response, 200, await latestRtoReportReadiness());
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/rto-reports/evidence") {
+      const date = url.searchParams.get("date");
+      const readiness = await rtoReportReadinessForDate(date);
+      if (!readiness) {
+        sendJson(response, 404, { error: "No saved RTO source evidence exists for this date." });
+        return;
+      }
+      sendJson(response, 200, readiness);
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/rto-reports/batches") {

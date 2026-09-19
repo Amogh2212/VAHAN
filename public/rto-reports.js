@@ -13,6 +13,7 @@ const state = {
   requestId: 0,
   detailRequestId: 0,
   currentEvidenceMode: false,
+  evidenceReadiness: null,
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
@@ -148,8 +149,32 @@ function renderReadiness(readiness) {
   status.textContent = "No cohort";
 }
 
+function activeEvidenceReadiness() {
+  return state.evidenceReadiness ?? state.readiness;
+}
+
+function activateEvidence(readiness) {
+  state.evidenceReadiness = readiness;
+  state.currentEvidenceMode = true;
+  state.batch = null;
+  state.reports = readiness.currentCycleEvidence ?? [];
+  state.report = state.reports[0] ?? null;
+  batchDateInput.disabled = false;
+  batchDateInput.value = readiness.run?.snapshotDate ?? "";
+  statusFilter.disabled = true;
+  statusFilter.value = "";
+  if (periodLabel) periodLabel.textContent = "Source evidence date";
+  if (periodHelp) periodHelp.textContent = "Saved month-to-date source evidence; this is not a complete Daily registration report.";
+  updatePeriodStatus(null);
+  periodStatus.textContent = "Source evidence";
+  renderBatch();
+  renderReportList();
+  renderCurrentEvidenceDetail(state.report);
+}
+
 function selectCadence(cadence) {
   state.cadence = cadence;
+  state.evidenceReadiness = null;
   if (state.readiness) renderReadiness(state.readiness);
   ++state.requestId;
   ++state.detailRequestId;
@@ -162,23 +187,7 @@ function selectCadence(cadence) {
   renderPeriodPicker(matching);
   const currentEvidence = cadence === "daily" ? (state.readiness?.currentCycleEvidence ?? []) : [];
   if (currentEvidence.length) {
-    state.currentEvidenceMode = true;
-    state.batch = null;
-    state.reports = currentEvidence;
-    state.report = currentEvidence[0] ?? null;
-    // Keep historical generated Daily batches selectable while showing the current-cycle evidence.
-    // Disable the picker only when there is no historical batch to switch to.
-    batchDateInput.disabled = matching.length === 0;
-    batchDateInput.value = state.readiness?.run?.snapshotDate ?? "";
-    statusFilter.disabled = true;
-    statusFilter.value = "";
-    if (periodLabel) periodLabel.textContent = "Current cycle";
-    if (periodHelp) periodHelp.textContent = "Verified month-to-date evidence; a Daily report needs the matching prior day.";
-    updatePeriodStatus(null);
-    periodStatus.textContent = "Current evidence";
-    renderBatch();
-    renderReportList();
-    renderCurrentEvidenceDetail(state.report);
+    activateEvidence(state.readiness);
     return;
   }
   state.currentEvidenceMode = false;
@@ -220,7 +229,7 @@ async function selectBatch(batchId) {
 async function loadReports() {
   if (state.currentEvidenceMode) {
     const q = searchInput.value.trim().toLowerCase();
-    state.reports = (state.readiness?.currentCycleEvidence ?? []).filter((entry) => !q || `${entry.state} ${entry.rto}`.toLowerCase().includes(q));
+    state.reports = (activeEvidenceReadiness()?.currentCycleEvidence ?? []).filter((entry) => !q || `${entry.state} ${entry.rto}`.toLowerCase().includes(q));
     renderReportList();
     const selected = state.reports.find((entry) => entry.rto === state.report?.rto && entry.state === state.report?.state) ?? state.reports[0];
     state.report = selected ?? null;
@@ -289,8 +298,9 @@ function batchesForCadence(cadence = state.cadence) {
 function renderPeriodPicker(batches) {
   if (!batchDateInput) return;
   const dates = batches.flatMap((batch) => [batch.periodStart, batch.periodEnd].filter(Boolean));
-  const currentEvidenceDate = state.cadence === "daily" && state.readiness?.currentCycleEvidence?.length
-    ? state.readiness?.run?.snapshotDate
+  const evidenceReadiness = activeEvidenceReadiness();
+  const currentEvidenceDate = state.cadence === "daily" && evidenceReadiness?.currentCycleEvidence?.length
+    ? evidenceReadiness?.run?.snapshotDate
     : null;
   if (currentEvidenceDate) dates.push(currentEvidenceDate);
   batchDateInput.disabled = batches.length === 0;
@@ -688,9 +698,10 @@ function dailyMetricBlock(label, field, format = "number") {
 
 function renderCurrentEvidenceDetail(entry) {
   if (!entry) return renderEmptyDetail("No current evidence matches this search", "Clear the RTO search to see the collected source evidence.");
+  const evidenceReadiness = activeEvidenceReadiness();
   const complete = entry.verifiedScopes === 6;
   reportDetail.innerHTML = `
-    <header class="rto-report-detail-head"><div><span class="panel-kicker">Current cycle · ${escapeHtml(state.readiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals, not Daily registrations.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Verified evidence" : "Partial evidence"}</span></header>
+    <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(evidenceReadiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals, not Daily registrations.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Verified evidence" : "Partial evidence"}</span></header>
     <section class="rto-report-metrics" aria-label="Month-to-date source totals">
       ${metricBlock("EV registrations", entry.evMonthToDate, "Current cycle")}
       ${metricBlock("ICE registrations", entry.iceMonthToDate, "Current cycle")}
@@ -1001,6 +1012,10 @@ batchDateInput?.addEventListener("change", () => {
   }
   const batch = findBatchForDate(batchDateInput.value);
   if (!batch) {
+    if (state.cadence === "daily" && batchDateInput.value) {
+      loadHistoricalEvidence(batchDateInput.value);
+      return;
+    }
     batchDateInput.setCustomValidity(`No ${state.cadence} RTO report exists for this date.`);
     batchDateInput.reportValidity();
     setPeriodInputDate(state.batch);
@@ -1009,6 +1024,21 @@ batchDateInput?.addEventListener("change", () => {
   state.currentEvidenceMode = false;
   selectBatch(batch.id);
 });
+
+async function loadHistoricalEvidence(date) {
+  const requestId = ++state.requestId;
+  try {
+    const readiness = await apiJson(`/api/rto-reports/evidence?date=${encodeURIComponent(date)}`);
+    if (requestId !== state.requestId || state.cadence !== "daily") return;
+    renderReadiness(readiness);
+    activateEvidence(readiness);
+  } catch (error) {
+    if (requestId !== state.requestId) return;
+    batchDateInput.setCustomValidity(error.message);
+    batchDateInput.reportValidity();
+    batchDateInput.value = activeEvidenceReadiness()?.run?.snapshotDate ?? "";
+  }
+}
 statusFilter.addEventListener("change", loadReports);
 searchInput.addEventListener("input", () => {
   clearTimeout(state.searchTimer);
