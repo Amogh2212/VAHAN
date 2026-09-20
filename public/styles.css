@@ -862,10 +862,13 @@ body::before {
 }
 
 .trend-ev,
-.trend-ice {
+.trend-ice,
+.trend-total {
   fill: none;
   stroke-width: 3;
   vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: opacity .16s ease, stroke-width .16s ease;
 }
 
 .trend-ev {
@@ -875,6 +878,14 @@ body::before {
 .trend-ice {
   stroke: hsl(210 74% 61%);
 }
+
+.trend-total { stroke: hsl(32 86% 57%); }
+.trend-ev.is-dimmed,
+.trend-ice.is-dimmed,
+.trend-total.is-dimmed { opacity: .16; }
+.trend-ev:focus,
+.trend-ice:focus,
+.trend-total:focus { stroke-width: 5; outline: none; }
 
 .rto-report-trend .trend-point-group {
   cursor: pointer;
@@ -966,11 +977,26 @@ body::before {
 
 .rto-report-legend {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 18px;
   color: var(--text-secondary);
   font-size: 10px;
 }
+
+.rto-report-legend button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 3px 0;
+  font: inherit;
+  cursor: pointer;
+  opacity: .62;
+}
+.rto-report-legend button:hover,
+.rto-report-legend button:focus-visible,
+.rto-report-legend button.active { color: var(--text-primary); opacity: 1; }
 
 .rto-report-legend i {
   display: inline-block;
@@ -979,6 +1005,11 @@ body::before {
   margin-right: 5px;
   vertical-align: middle;
 }
+
+.rto-report-legend i.ev { background: hsl(160 72% 48%); }
+.rto-report-legend i.ice { background: hsl(210 74% 61%); }
+.rto-report-legend i.total { background: hsl(32 86% 57%); }
+.rto-report-legend .trend-reset { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
 
 .rto-report-legend i.ev {
   background: var(--bg-surface);
