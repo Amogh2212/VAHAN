@@ -740,12 +740,7 @@ function renderCurrentEvidenceDetail(entry) {
 }
 
 function currentEvidenceTrend(entry) {
-  const scopes = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
-  return ["2W", "3W", "4W"].map((vehicleCategory) => {
-    const ev = scopes.get(`EV/${vehicleCategory}`);
-    const ice = scopes.get(`ICE/${vehicleCategory}`);
-    return { label: vehicleCategory, ev, ice, total: [ev, ice].every(Number.isFinite) ? ev + ice : null };
-  }).filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice) || Number.isFinite(row.total));
+  return Array.isArray(entry.trend) ? entry.trend : [];
 }
 
 function renderCurrentFuelDistribution(entry) {
