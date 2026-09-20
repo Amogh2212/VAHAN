@@ -15,6 +15,7 @@ const state = {
   currentEvidenceMode: false,
   evidenceReadiness: null,
   trendFocus: null,
+  trendMode: "date",
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
@@ -726,8 +727,8 @@ function renderCurrentEvidenceDetail(entry) {
     <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes are calculated from this RTO’s six matching prior-day registration scopes. The full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
     ${renderCurrentFuelDistribution(entry)}
     <section class="rto-report-evidence">
-      <div class="rto-report-section-head"><div><h3>Registrations by vehicle class</h3><span>Current-cycle month-to-date registrations; click a line or legend item to focus it.</span></div></div>
-      <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry), true)}</div>
+      <div class="rto-report-section-head"><div><h3>Registration trend</h3><span>${state.trendMode === "date" ? "Daily registration history" : "Current-cycle month-to-date registrations by vehicle class"}; click a line or legend item to focus it.</span></div><div class="rto-report-trend-toggle" role="group" aria-label="Trend grouping"><button type="button" class="${state.trendMode === "date" ? "active" : ""}" data-trend-mode="date" aria-pressed="${state.trendMode === "date"}">Date</button><button type="button" class="${state.trendMode === "category" ? "active" : ""}" data-trend-mode="category" aria-pressed="${state.trendMode === "category"}">Vehicle category</button></div></div>
+      <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry, state.trendMode), true)}</div>
     </section>
   `;
   for (const button of reportDetail.querySelectorAll("[data-trend-focus]")) {
@@ -737,10 +738,23 @@ function renderCurrentEvidenceDetail(entry) {
       renderCurrentEvidenceDetail(entry);
     });
   }
+  for (const button of reportDetail.querySelectorAll("[data-trend-mode]")) {
+    button.addEventListener("click", () => {
+      state.trendMode = button.dataset.trendMode === "category" ? "category" : "date";
+      state.trendFocus = null;
+      renderCurrentEvidenceDetail(entry);
+    });
+  }
 }
 
-function currentEvidenceTrend(entry) {
-  return Array.isArray(entry.trend) ? entry.trend : [];
+function currentEvidenceTrend(entry, mode = "date") {
+  if (mode === "date") return Array.isArray(entry.trend) ? entry.trend : [];
+  const scopes = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
+  return ["2W", "3W", "4W"].map((vehicleCategory) => {
+    const ev = scopes.get(`EV/${vehicleCategory}`);
+    const ice = scopes.get(`ICE/${vehicleCategory}`);
+    return { label: vehicleCategory, ev, ice, total: [ev, ice].every(Number.isFinite) ? ev + ice : null };
+  }).filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice) || Number.isFinite(row.total));
 }
 
 function renderCurrentFuelDistribution(entry) {
