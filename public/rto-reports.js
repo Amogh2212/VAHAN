@@ -14,6 +14,7 @@ const state = {
   detailRequestId: 0,
   currentEvidenceMode: false,
   evidenceReadiness: null,
+  trendFocus: null,
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
@@ -724,7 +725,27 @@ function renderCurrentEvidenceDetail(entry) {
     </section>
     <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes are calculated from this RTO’s six matching prior-day registration scopes. The full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
     ${renderCurrentFuelDistribution(entry)}
+    <section class="rto-report-evidence">
+      <div class="rto-report-section-head"><div><h3>Registrations by vehicle class</h3><span>Current-cycle month-to-date registrations; click a line or legend item to focus it.</span></div></div>
+      <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry), true)}</div>
+    </section>
   `;
+  for (const button of reportDetail.querySelectorAll("[data-trend-focus]")) {
+    button.addEventListener("click", () => {
+      const focus = button.dataset.trendFocus || null;
+      state.trendFocus = state.trendFocus === focus ? null : focus;
+      renderCurrentEvidenceDetail(entry);
+    });
+  }
+}
+
+function currentEvidenceTrend(entry) {
+  const scopes = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
+  return ["2W", "3W", "4W"].map((vehicleCategory) => {
+    const ev = scopes.get(`EV/${vehicleCategory}`);
+    const ice = scopes.get(`ICE/${vehicleCategory}`);
+    return { label: vehicleCategory, ev, ice, total: [ev, ice].every(Number.isFinite) ? ev + ice : null };
+  }).filter((row) => Number.isFinite(row.ev) || Number.isFinite(row.ice) || Number.isFinite(row.total));
 }
 
 function renderCurrentFuelDistribution(entry) {
@@ -795,7 +816,10 @@ function trendSvg(rows, isDaily = false) {
   const pad = { top: 22, right: 24, bottom: 42, left: 48 };
   const chartWidth = width - pad.left - pad.right;
   const chartHeight = height - pad.top - pad.bottom;
-  const values = usable.flatMap((row) => [row.ev, row.ice]).filter(Number.isFinite);
+  const fields = ["ev", "ice", "total"];
+  const focus = fields.includes(state.trendFocus) ? state.trendFocus : null;
+  const visibleFields = focus ? [focus] : fields;
+  const values = usable.flatMap((row) => visibleFields.map((field) => row[field])).filter(Number.isFinite);
   const min = Math.min(0, ...values);
   const max = Math.max(1, ...values);
   const tickStep = Math.max(1, Math.ceil((max - min) / 4));
@@ -815,13 +839,14 @@ function trendSvg(rows, isDaily = false) {
   const xLabelIndexes = usable.length <= 10
     ? usable.map((_, index) => index)
     : [...new Set([0, Math.floor((usable.length - 1) / 2), usable.length - 1])];
-  const xLabels = xLabelIndexes.map((index) => `<text class="trend-x-label" x="${x(index)}" y="${height - 10}" text-anchor="middle">${escapeHtml(shortDate(usable[index].date))}</text>`).join("");
+  const xLabels = xLabelIndexes.map((index) => `<text class="trend-x-label" x="${x(index)}" y="${height - 10}" text-anchor="middle">${escapeHtml(usable[index].label ?? shortDate(usable[index].date))}</text>`).join("");
   const dateHoverGroups = usable.map((row, index) => {
     const pointX = x(index);
     const pointsForDate = [
-      Number.isFinite(row.ev) ? { field: "ev", label: "EV", value: row.ev, pointY: y(row.ev) } : null,
-      Number.isFinite(row.ice) ? { field: "ice", label: "ICE", value: row.ice, pointY: y(row.ice) } : null,
-    ].filter(Boolean);
+      Number.isFinite(row.ev) ? { field: "ev", label: "EV registrations", value: row.ev, pointY: y(row.ev) } : null,
+      Number.isFinite(row.ice) ? { field: "ice", label: "ICE registrations", value: row.ice, pointY: y(row.ice) } : null,
+      Number.isFinite(row.total) ? { field: "total", label: "Total registrations", value: row.total, pointY: y(row.total) } : null,
+    ].filter((point) => point && visibleFields.includes(point.field));
     if (!pointsForDate.length) return "";
 
     const tooltipWidth = 146;
@@ -845,17 +870,19 @@ function trendSvg(rows, isDaily = false) {
     return `<g class="trend-date-group" tabindex="-1"><rect class="trend-date-hit" x="${Math.max(pad.left, pointX - 14)}" y="${pad.top}" width="${Math.min(28, width - pad.right - Math.max(pad.left, pointX - 14))}" height="${chartHeight}"></rect><line class="trend-hover-guide" x1="${pointX}" x2="${pointX}" y1="${guideTop}" y2="${guideBottom}"></line>${pointMarkup}${tooltipMarkup}</g>`;
   }).join("");
   return `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${isDaily ? "Calculated Daily EV and ICE registration changes" : "Observed EV and ICE active-stock trend"}">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(`${focus ? `${focus === "ev" ? "EV" : focus === "ice" ? "ICE" : "Total"} registrations focused` : "EV, ICE, and total registrations"} trend`)}">
       <rect class="trend-chart-bg" x="${pad.left}" y="${pad.top}" width="${chartWidth}" height="${chartHeight}" rx="8"></rect>
       ${yTicks.join("")}
       <line class="trend-axis" x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${pad.top + chartHeight}"></line>
       <line class="trend-axis" x1="${pad.left}" x2="${width - pad.right}" y1="${pad.top + chartHeight}" y2="${pad.top + chartHeight}"></line>
-      <polyline class="trend-ev" points="${points("ev")}"></polyline>
-      <polyline class="trend-ice" points="${points("ice")}"></polyline>
+      ${fields.map((field) => `<polyline class="trend-${field}${focus && focus !== field ? " is-dimmed" : ""}" points="${points(field)}" data-trend-focus="${field}" tabindex="0" role="button" aria-label="Focus ${field === "ev" ? "EV registrations" : field === "ice" ? "ICE registrations" : "Total registrations"}"></polyline>`).join("")}
       ${dateHoverGroups}
       ${xLabels}
     </svg>
-    <div class="rto-report-legend"><span><i class="ev"></i>EV</span><span><i class="ice"></i>ICE</span></div>
+    <div class="rto-report-legend" role="group" aria-label="Trend series focus">
+      ${fields.map((field) => `<button type="button" class="${focus === field ? "active" : ""}" data-trend-focus="${field}" aria-pressed="${focus === field}"><i class="${field}"></i>${field === "ev" ? "EV registrations" : field === "ice" ? "ICE registrations" : "Total registrations"}</button>`).join("")}
+      ${focus ? `<button type="button" class="trend-reset" data-trend-focus="">Show all</button>` : ""}
+    </div>
   `;
 }
 
