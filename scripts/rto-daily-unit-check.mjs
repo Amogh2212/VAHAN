@@ -20,6 +20,11 @@ import { createAdaptiveController, requireCompleteFailureReasons, parseArgs, fin
 
 assert.equal(parseArgs(["--preserve-history"]).preserveHistory, true);
 assert.equal(parseArgs([]).preserveHistory, false);
+const productionWorkflow = fs.readFileSync(new URL("../.github/workflows/rto-daily-neon-production.yml", import.meta.url), "utf8");
+assert.match(productionWorkflow, /--neon --work-queue --allow-partial --time-budget-minutes 315/,
+  "production queue runs must continue pending RTOs without automatically requeueing known partial failures");
+assert.doesNotMatch(productionWorkflow, /--retry-failed|--retry-incomplete/,
+  "production queue runs must not spend the daily budget repeating deterministic partial failures");
 assert.throws(() => parseArgs(["--preserve-history", "--date=2000-01-01"]), /historical reruns are forbidden/);
 for (const preserveHistory of [true, false]) {
   const calls = [];
