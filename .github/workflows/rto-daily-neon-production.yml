@@ -1,15 +1,15 @@
 name: RTO Daily Neon Production Collection
 
 on:
-  # GitHub Actions cron is UTC: 08:00 UTC is 13:30 IST.
+  # GitHub Actions cron is UTC: 21:00 UTC is 02:30 IST on the following day.
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch:
     inputs:
       initialize_cohort:
-        description: Seed the fixed 100-RTO production cohort before collection.
-        required: true
-        default: true
+        description: Only seed the cohort for first-time setup. Leave disabled to resume today's existing queue.
+        required: false
+        default: false
         type: boolean
 
 concurrency:

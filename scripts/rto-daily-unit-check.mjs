@@ -21,6 +21,10 @@ import { createAdaptiveController, requireCompleteFailureReasons, parseArgs, fin
 assert.equal(parseArgs(["--preserve-history"]).preserveHistory, true);
 assert.equal(parseArgs([]).preserveHistory, false);
 const productionWorkflow = fs.readFileSync(new URL("../.github/workflows/rto-daily-neon-production.yml", import.meta.url), "utf8");
+assert.match(productionWorkflow, /cron: "0 21 \* \* \*"/,
+  "production scheduling must target 02:30 IST (21:00 UTC)");
+assert.match(productionWorkflow, /initialize_cohort:[\s\S]*?default: false/,
+  "manual production runs must not reseed an existing daily queue by default");
 assert.match(productionWorkflow, /--neon --work-queue --allow-partial --time-budget-minutes 315/,
   "production queue runs must continue pending RTOs without automatically requeueing known partial failures");
 assert.doesNotMatch(productionWorkflow, /--retry-failed|--retry-incomplete/,
