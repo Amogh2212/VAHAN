@@ -31,6 +31,8 @@ jobs:
       RTO_DAILY_JITTER_MS: "400"
       RTO_DAILY_MAX_JOB_ATTEMPTS: "3"
       RTO_DAILY_WORK_BUDGET_MINUTES: "315"
+      DB_MAX_RETRIES: "5"
+      DB_RETRY_BASE_MS: "1000"
 
     steps:
       - name: Checkout main
@@ -62,6 +64,8 @@ jobs:
             printf 'RTO_DAILY_JITTER_MS=400\n'
             printf 'RTO_DAILY_MAX_JOB_ATTEMPTS=3\n'
             printf 'RTO_DAILY_WORK_BUDGET_MINUTES=315\n'
+            printf 'DB_MAX_RETRIES=5\n'
+            printf 'DB_RETRY_BASE_MS=1000\n'
           } > .env
 
       - name: Apply Neon schema
