@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import process from "node:process";
 import { closePool, transaction } from "../lib/db.mjs";
 
-process.env.DATABASE_URL = "postgres://postgres:postgres@127.0.0.1:1/vahan_rto_action_test";
+process.env.DATABASE_URL = "postgres://postgres@127.0.0.1:1/vahan_rto_action_test";
 process.env.PGSSL = "false";
 process.env.DB_MAX_RETRIES = "1";
 process.env.DB_RETRY_BASE_MS = "25";
