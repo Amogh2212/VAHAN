@@ -317,18 +317,29 @@ async function scrapeJob({ job, workerId, rateLimit }) {
 async function workerLoop({ index, runId, args, controller, rateLimit, deadline, progress }) {
   const workerId = `${os.hostname()}-${process.pid}-w${index + 1}`;
   const workerLabel = `w${index + 1}`;
+  let queueFailures = 0;
   try {
     while (true) {
       if (Date.now() >= deadline) return;
       if (!controller.canRun(index)) {
-        const summary = await rtoDailyCycleSummary(runId);
+        const summary = await readCycleSummary({ runId, workerLabel, progress });
         if (!summary.queued && !summary.running && !summary.retrying) return;
         await sleep(5000);
         continue;
       }
-      const job = await claimRtoDailyJob({ runId, workerId });
+      let job;
+      try {
+        job = await claimRtoDailyJob({ runId, workerId });
+        queueFailures = 0;
+      } catch (error) {
+        queueFailures += 1;
+        const delayMs = Math.min(30_000, 1_000 * (2 ** Math.min(queueFailures, 5)));
+        progress.log(`[${workerLabel}] queue claim failed; retrying in ${Math.ceil(delayMs / 1000)}s | ${error.message}`, { error: true });
+        await sleep(delayMs);
+        continue;
+      }
       if (!job) {
-        const summary = await rtoDailyCycleSummary(runId);
+        const summary = await readCycleSummary({ runId, workerLabel, progress });
         if (!summary.queued && !summary.running && !summary.retrying) return;
         await sleep(2000);
         continue;
@@ -351,6 +362,15 @@ async function workerLoop({ index, runId, args, controller, rateLimit, deadline,
       await progress.refresh();
     }
   } finally {
+  }
+}
+
+async function readCycleSummary({ runId, workerLabel, progress }) {
+  try {
+    return await rtoDailyCycleSummary(runId);
+  } catch (error) {
+    progress.log(`[${workerLabel}] queue status read failed; treating the cycle as pending | ${error.message}`, { error: true });
+    return { queued: 1, running: 0, retrying: 0 };
   }
 }
 
