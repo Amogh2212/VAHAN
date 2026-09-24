@@ -225,7 +225,7 @@ const [identicalDaily] = buildRtoReportPayloads({
 });
 assert.equal(identicalDaily.periodEv, null, "identical cross-day response hashes must never become a zero Daily value");
 assert.equal(identicalDaily.payload.dailyRegistration.baselineEligible, false);
-assert.match(identicalDaily.payload.dailyRegistration.reason, /identical.*no refresh timestamp/i);
+assert.match(identicalDaily.payload.dailyRegistration.reason, /changed without a changed source response/i);
 
 const unchangedTargetRows = structuredClone(totalRows);
 const priorTargetByScope = new Map(unchangedTargetRows
@@ -239,7 +239,22 @@ const [unchangedTargetDaily] = buildRtoReportPayloads({
 });
 assert.equal(unchangedTargetDaily.periodEv, null,
   "different whole-response hashes must not certify zero when the selected month is unchanged");
-assert.match(unchangedTargetDaily.payload.dailyRegistration.reason, /target-month registration total is unchanged/i);
+assert.match(unchangedTargetDaily.payload.dailyRegistration.reason, /month-to-date total is unchanged/i);
+
+const partlyUnchangedRows = structuredClone(totalRows);
+for (const row of partlyUnchangedRows.filter((item) => item.snapshot_date === "2026-07-24"
+  && ((item.fuel_group === "EV" && item.vehicle_category === "4W")
+    || (item.fuel_group === "ICE" && item.vehicle_category === "3W")))) {
+  row.report_total = priorTargetByScope.get(`${row.fuel_group}|${row.vehicle_category}`);
+  row.quality_flags.sourceEvidence.validation.responseHash = "b".repeat(64);
+}
+const [partlyUnchangedDaily] = buildRtoReportPayloads({
+  period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: partlyUnchangedRows,
+});
+assert.equal(partlyUnchangedDaily.periodEv, 25, "an unchanged EV scope must not erase the changed EV group");
+assert.equal(partlyUnchangedDaily.periodIce, 25, "an unchanged ICE scope must not erase the changed ICE group");
+assert.equal(partlyUnchangedDaily.payload.metrics.period.total, 50);
+assert.equal(partlyUnchangedDaily.payload.dailyRegistration.baselineEligible, true);
 
 const negativeRows = structuredClone(totalRows);
 const priorByScope = new Map(negativeRows

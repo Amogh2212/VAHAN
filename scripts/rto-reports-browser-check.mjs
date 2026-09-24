@@ -170,12 +170,12 @@ async function main() {
     await page.locator("#rtoReportBatchDate").fill("2026-07-23");
     await page.locator("#rtoReportBatchDate").dispatchEvent("change");
     await page.getByText("Source evidence", { exact: true }).waitFor();
-    assert.equal(await page.locator("#rtoReportPeriodLabel").innerText(), "SOURCE EVIDENCE DATE");
-    assert.match(await page.locator("#rtoReportPeriodHelp").innerText(), /not a complete Daily registration report/i);
+    assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "SOURCE EVIDENCE");
     assert.equal(await page.locator(".rto-report-list-item").count(), 1);
     assert.match(await page.locator(".rto-report-detail").innerText(), /6\/6 verified monthly-registration scopes/i);
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-source-evidence.png"), fullPage: true });
     assert.match(await page.locator(".rto-report-detail").innerText(), /Daily total\s+\+489/i);
+    assert.match(await page.locator(".rto-report-metrics").innerText(), /EV registrations\s+[\d,]+↑ \+91/i);
     assert.match(await page.locator(".rto-current-daily-change.is-up").first().innerText(), /↑ \+91/);
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);

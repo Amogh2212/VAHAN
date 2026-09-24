@@ -689,7 +689,7 @@ function sourceEvidenceMetricBlock(label, total, daily, comparison = "Current cy
   const isCorrection = Number(dailyValue) < 0;
   const arrow = isCorrection ? "↓" : "↑";
   const change = verified
-    ? `<b class="rto-current-daily-change ${isCorrection ? "is-down" : "is-up"}" aria-label="${escapeHtml(`${arrow} ${signed(dailyValue)} verified today`)}">${arrow} ${escapeHtml(signed(dailyValue))}</b>`
+    ? `<b class="rto-current-daily-change ${isCorrection ? "is-down" : "is-up"}" aria-label="${escapeHtml(`${arrow} ${signed(dailyValue)} verified Daily change`)}">${arrow} ${escapeHtml(signed(dailyValue))}</b>`
     : "";
   return `<article><span>${escapeHtml(label)}</span><strong>${escapeHtml(fmt(total))}${change}</strong><small>${escapeHtml(verified ? `${comparison} · verified Daily change` : comparison)}</small></article>`;
 }
@@ -722,9 +722,9 @@ function renderCurrentEvidenceDetail(entry) {
       ${sourceEvidenceMetricBlock("EV registrations", entry.evMonthToDate, { value: daily.ev, status: daily.status })}
       ${sourceEvidenceMetricBlock("ICE registrations", entry.iceMonthToDate, { value: daily.ice, status: daily.status })}
       ${metricBlock("Total registrations", entry.totalMonthToDate, complete ? "EV + ICE combined" : "Partial source coverage")}
-      ${metricBlock("Daily total", dailyAvailable ? signed(daily.total) : "Unavailable", dailyAvailable ? `${date} · verified previous-day match` : "Needs a matching previous-day scope")}
+      ${metricBlock("Daily total", dailyAvailable ? signed(daily.total) : "Unavailable", dailyAvailable ? `${date} · verified previous-day match` : daily.reason ?? "Daily comparison unavailable")}
     </section>
-    <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes are calculated from this RTO’s six matching prior-day registration scopes. The full 100-RTO report and rank remain unavailable until the whole cohort is complete." : "This RTO needs six matching prior-day registration scopes before a Daily value can be shown. Missing source scopes are not treated as zero."}</p></section>
+    <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes use this RTO’s six current and previous-day registration scopes." : escapeHtml(daily.reason ?? "The matching source observations could not verify a Daily change.")}</p></section>
     ${renderCurrentFuelDistribution(entry)}
     <section class="rto-report-evidence">
       <div class="rto-report-section-head"><div><h3>Registration trend</h3><span>${state.trendMode === "date" ? "Daily registration history" : "Current-cycle month-to-date registrations by vehicle class"}; click a line or legend item to focus it.</span></div><div class="rto-report-trend-toggle" role="group" aria-label="Trend grouping"><button type="button" class="${state.trendMode === "date" ? "active" : ""}" data-trend-mode="date" aria-pressed="${state.trendMode === "date"}">Date</button><button type="button" class="${state.trendMode === "category" ? "active" : ""}" data-trend-mode="category" aria-pressed="${state.trendMode === "category"}">Vehicle category</button></div></div>
