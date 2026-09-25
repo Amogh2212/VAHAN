@@ -827,7 +827,7 @@ function preservationCases() {
 function aliasCases() {
   const definitions = [
     ["ALIAS-EV", "EV registrations in Maharashtra in Jan 2025.", { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelSegment: "EV", selectedFuelTypes: BATTERY_EV }, ["G:state", "D:month", "F:family"]],
-    ["ALIAS-BOV", "BOV registrations in Maharashtra in Jan 2025.", { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelSegment: "EV", selectedFuelTypes: BATTERY_EV }, ["G:state", "D:month", "F:family"]],
+    ["ALIAS-BOV", "BOV registrations in Maharashtra in Jan 2025.", { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelSegment: "EV", fuelType: "ELECTRIC", selectedFuelTypes: ["ELECTRIC(BOV)"] }, ["G:state", "D:month", "F:exact"]],
     ["ALIAS-PHEV", "PHEV registrations in Maharashtra in Jan 2025.", { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelType: "PLUG-IN HYBRID EV", selectedFuelTypes: ["PLUG-IN HYBRID EV"] }, ["G:state", "D:month", "F:exact"]],
     ["ALIAS-LPG", "LPG registrations in Rajasthan in Jul 2024.", { state: "Rajasthan", from: "2024-07", to: "2024-07", fuelSegment: "NON_EV", selectedFuelTypes: LPG_FAMILY }, ["G:state", "D:month", "F:family"]],
     ["ALIAS-2W", "2W registrations in Delhi in Jan 2025.", { state: "Delhi", from: "2025-01", to: "2025-01", vehicleCategories: TWO_WHEELER, selectedVehicleCategories: TWO_WHEELER }, ["G:state", "D:month", "V:group"]],
@@ -915,7 +915,7 @@ function normalizationCases() {
     [
       "NORMALIZE-BOV-DOTTED",
       "B.O.V. registrations in Maharashtra in January 2025.",
-      { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelSegment: "EV", selectedFuelTypes: BATTERY_EV },
+      { state: "Maharashtra", from: "2025-01", to: "2025-01", fuelSegment: "EV", fuelType: "ELECTRIC", selectedFuelTypes: ["ELECTRIC(BOV)"] },
       ["punctuation", "abbreviation", "BOV"],
     ],
     [

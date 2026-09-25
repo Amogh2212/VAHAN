@@ -10338,7 +10338,7 @@
         "modes": [
           "G:state",
           "D:month",
-          "F:family"
+          "F:exact"
         ],
         "combination": "alias",
         "surface": [
@@ -10364,11 +10364,10 @@
           "to": "2025-01",
           "metric": "registrations",
           "fuelSegment": "EV",
-          "fuelType": null,
+          "fuelType": "ELECTRIC",
           "fuelFilters": [],
           "selectedFuelTypes": [
-            "ELECTRIC(BOV)",
-            "PURE EV"
+            "ELECTRIC(BOV)"
           ],
           "vehicleCategories": [],
           "selectedVehicleCategories": [],
@@ -12051,11 +12050,10 @@
           "to": "2025-01",
           "metric": "registrations",
           "fuelSegment": "EV",
-          "fuelType": null,
+          "fuelType": "ELECTRIC",
           "fuelFilters": [],
           "selectedFuelTypes": [
-            "ELECTRIC(BOV)",
-            "PURE EV"
+            "ELECTRIC(BOV)"
           ],
           "vehicleCategories": [],
           "selectedVehicleCategories": [],

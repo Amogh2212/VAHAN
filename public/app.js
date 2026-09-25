@@ -1153,7 +1153,7 @@ async function pollLiveRefresh(jobId, requestId, query) {
         if (latestData) {
           render({
             ...latestData,
-            dataStatus: "fetch_failed",
+            dataStatus: latestData.rows?.length ? "stale" : "fetch_failed",
             liveRefresh: latestData.liveRefresh
               ? { ...latestData.liveRefresh, status: "failed", error: message }
               : null,
@@ -1172,6 +1172,15 @@ async function pollLiveRefresh(jobId, requestId, query) {
 
     if (requestId === activeQueryRequestId && activeRefreshJobId === jobId) {
       activeRefreshJobId = null;
+      if (data.liveRefresh?.status === "failed" && !data.rows?.length && latestData?.rows?.length) {
+        render({
+          ...latestData,
+          dataStatus: "stale",
+          liveRefresh: data.liveRefresh,
+          warnings: [...new Set([...(latestData.warnings ?? []), ...(data.warnings ?? [])])],
+        }, query, requestId);
+        return;
+      }
       // A refresh response may update monthly rows without carrying the
       // optional chart payload. Preserve the chart already shown for this
       // query instead of replacing it with the aggregate ALL fallback.
@@ -1191,7 +1200,7 @@ async function pollLiveRefresh(jobId, requestId, query) {
     if (latestData) {
       render({
         ...latestData,
-        dataStatus: "fetch_failed",
+        dataStatus: latestData.rows?.length ? "stale" : "fetch_failed",
         liveRefresh: latestData.liveRefresh
           ? { ...latestData.liveRefresh, status: "failed", error: message }
           : null,
