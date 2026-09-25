@@ -46,6 +46,7 @@ import {
   queryRtos,
   readRegistrationsCsv,
   replaceRegistrationRows,
+  savedFuelContextCandidates,
   upsertRegistrationRows,
 } from "./lib/registrations.mjs";
 import {
@@ -4168,7 +4169,6 @@ function completeLoadedMonthKeys(filters, rows) {
   const stateFilter = filters.state;
   const rtoFilter = filters.rto;
   const rtoSearch = filters.rtoSearch ?? filters.rto;
-  const requestedContext = filterContext(filters);
   const loadedKeys = new Set();
   const fuelsByMonth = new Map();
 
@@ -4180,7 +4180,7 @@ function completeLoadedMonthKeys(filters, rows) {
     } else if (!rtoFilter && !rtoSearch) {
       if (row.rto !== ALL_RTO) continue;
     }
-    if (!rowMatchesContext(row, requestedContext)) continue;
+    if (!rowMatchesAnswerContext(row, filters)) continue;
     const key = monthKey(row.year, row.month);
     if (!requiredFuelTypes.size) {
       loadedKeys.add(key);
@@ -4205,8 +4205,6 @@ function findMissingMonths(filters, rows) {
   const stateFilter = filters.state;
   const rtoFilter = filters.rto; // resolved formal RTO name (or null)
   const rtoSearch = filters.rtoSearch ?? filters.rto; // search needle
-  const requestedContext = filterContext(filters);
-
   // Get all year-month keys present in CSV for this location
   const loadedKeys = new Set();
   for (const row of rows) {
@@ -4218,7 +4216,7 @@ function findMissingMonths(filters, rows) {
     } else if (!rtoFilter && !rtoSearch) {
       if (row.rto !== ALL_RTO) continue;
     }
-    if (!rowMatchesContext(row, requestedContext)) continue;
+    if (!rowMatchesAnswerContext(row, filters)) continue;
     loadedKeys.add(`${row.year}-${row.month}`);
   }
 
@@ -4293,6 +4291,26 @@ async function refreshMonthsForAnswerFromDb(filters) {
 
 function rowMatchesContext(row, requestedContext) {
   return FILTER_CONTEXT_FIELDS.every((field) => String(row[field] ?? ALL_FILTER) === requestedContext[field]);
+}
+
+function rowMatchesAnswerContext(row, filters) {
+  const requestedContext = filterContext(filters);
+  return savedFuelContextCandidates(filters).includes(String(row.fuel_filter ?? ALL_FILTER))
+    && FILTER_CONTEXT_FIELDS.every((field) => field === "fuel_filter"
+      || String(row[field] ?? ALL_FILTER) === requestedContext[field]);
+}
+
+function preferAnswerFuelContextRows(rows, filters) {
+  const contexts = savedFuelContextCandidates(filters);
+  const selected = new Map();
+  for (const row of rows) {
+    if (!rowMatchesAnswerContext(row, filters)) continue;
+    const rank = contexts.indexOf(String(row.fuel_filter ?? ALL_FILTER));
+    const key = [row.year, row.month, row.state, row.rto, row.fuel_type,
+      row.vehicle_category_filter, row.norms_filter, row.vehicle_class_filter].join("|");
+    if (!selected.has(key) || rank < selected.get(key).rank) selected.set(key, { row, rank });
+  }
+  return [...selected.values()].map(({ row }) => row);
 }
 
 function hasRequiredScrapeFilters(filters) {
@@ -4727,7 +4745,7 @@ function filterRows(rows, filters) {
     if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     return true;
   });
-  const baseRows = dimensionRows.filter((row) => rowMatchesContext(row, requestedContext));
+  const baseRows = preferAnswerFuelContextRows(dimensionRows, filters);
   const [exclusion] = sideFilterExclusionDefinitions(filters);
   if (!exclusion) return baseRows;
 
@@ -5462,7 +5480,8 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         job.persistenceStatus = persistence.skipped ? "skipped" : "saved";
       }
 
-      const combinedRows = mergeRegistrationRows(baseRows, freshRows);
+      const freshAnswerRows = filterRows(freshRows, filters);
+      const combinedRows = preferAnswerFuelContextRows(mergeRegistrationRows(baseRows, freshAnswerRows), filters);
       const missingMonths = findMissingAnswerMonths(filters, combinedRows);
       job.status = runs.some((run) => !run.success) || missingMonths.length > 0 ? "failed" : "complete";
       job.error = job.status === "failed"
@@ -5691,6 +5710,7 @@ export async function queryData(input, {
   // valid Neon row must still produce an answer without a new scrape.
   const queryUsesDatabase = useDatabaseStorage();
   let immediateRows = queryUsesDatabase ? [] : filterRows(rows, filters);
+  let immediateRowsNeedFiltering = queryUsesDatabase;
   if (queryUsesDatabase && !filters.ambiguousRtos) {
     try {
       const variants = answerFilterVariants({ ...filters, state: filters.state ?? INDIA_TOTAL });
@@ -5701,6 +5721,7 @@ export async function queryData(input, {
     } catch (error) {
       databaseUnavailable = true;
       immediateRows = filterRows(rows, filters);
+      immediateRowsNeedFiltering = false;
       console.warn(`[data] Neon query failed, using CSV rows: ${safeErrorMessage(error)}`);
     }
   }
@@ -5714,7 +5735,7 @@ export async function queryData(input, {
       ? await findMissingAnswerMonthsFromDb(filters)
       : findMissingAnswerMonths(filters, rows)
     : [];
-  const answerRows = immediateRows;
+  const answerRows = immediateRowsNeedFiltering ? filterRows(immediateRows, filters) : immediateRows;
   const missingMonths = loadedMissingMonths;
   const dataQualityWarnings = [];
   if (requestedMonths.length && !refreshGroups.length && !refreshEligibility.eligible) {
@@ -5770,7 +5791,7 @@ export async function queryData(input, {
     missingMonths,
     llmFilters,
     liveRefresh: liveRefreshJob ? liveRefreshInfo(liveRefreshJob) : null,
-    preFiltered: false,
+    preFiltered: true,
     freshnessInfo: freshness(rows),
     dataQualityWarnings,
     refreshContext,

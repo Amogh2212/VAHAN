@@ -5,6 +5,7 @@ import {
   publicDashboardRefreshEligibility,
 } from "../lib/query-refresh-audit.mjs";
 import { enforceRateLimit } from "../lib/http-security.mjs";
+import { savedFuelContextCandidates } from "../lib/registrations.mjs";
 
 const {
   dashboardPayload,
@@ -217,6 +218,41 @@ const payloadFor = (overrides = {}) => dashboardPayload({
   ...overrides,
 });
 assert.equal(payloadFor().dataStatus, "complete", "cached contract should render complete data");
+const bovFilters = {
+  from: "2025-01",
+  to: "2025-01",
+  state: "Maharashtra",
+  fuelSegment: "EV",
+  fuelType: "ELECTRIC",
+  selectedFuelTypes: ["ELECTRIC(BOV)"],
+};
+assert.deepEqual(savedFuelContextCandidates(bovFilters),
+  ["ELECTRIC(BOV)", "ELECTRIC(BOV)|PURE EV"],
+  "an exact B.O.V. query may read the B.O.V. row from the combined source checkbox");
+const bovRow = {
+  year: 2025, month: 1, state: "Maharashtra", rto: "All Vahan4 Running Office",
+  fuel_segment: "EV", fuel_type: "ELECTRIC(BOV)", fuel_filter: "ELECTRIC(BOV)|PURE EV",
+  vehicle_category_filter: "ALL", norms_filter: "ALL", vehicle_class_filter: "ALL",
+  vehicle_count: 5356,
+};
+const pureEvRow = { ...bovRow, fuel_type: "PURE EV", vehicle_count: 16874 };
+const bovPayload = dashboardPayload({
+  filters: bovFilters, rows: [bovRow, pureEvRow], missingMonths: [],
+});
+assert.equal(bovPayload.summary.total, 5356, "the saved B.O.V. component must exclude PURE EV");
+assert.deepEqual(bovPayload.fuelBreakdown, [{ fuelType: "ELECTRIC(BOV)", count: 5356 }]);
+const exactBovPayload = dashboardPayload({
+  filters: bovFilters,
+  rows: [bovRow, pureEvRow, { ...bovRow, fuel_filter: "ELECTRIC(BOV)", vehicle_count: 5300 }],
+  missingMonths: [],
+});
+assert.equal(exactBovPayload.summary.total, 5300,
+  "an exact source context must replace, not add to, the combined-context fallback");
+assert.equal(dashboardPayload({
+  filters: bovFilters, rows: [bovRow], missingMonths: [], preFiltered: true,
+  scraperRuns: [{ year: 2025, months: [1], success: false, rows: [], error: "upstream unavailable" }],
+  liveRefresh: { status: "failed", requiredMonths: ["2025-01"] },
+}).dataStatus, "stale", "a failed refresh must retain the saved B.O.V. component");
 assert.equal(
   payloadFor({
     rows: [],
