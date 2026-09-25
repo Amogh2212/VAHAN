@@ -477,7 +477,7 @@ const FUEL_FILTER_ALIASES = [
   { aliases: ["petrol e20 hybrid cng", "petrol e20/hybrid/cng", "e20 hybrid cng"], value: "PETROL(E20)/HYBRID/CNG", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/HYBRID/CNG" },
   { aliases: ["petrol e20 lpg", "petrol e20/lpg", "e20 lpg"], value: "PETROL(E20)/LPG", fuelSegment: "NON_EV", fuelType: "PETROL(E20)/LPG" },
   { aliases: ["petrol lpg", "petrol/lpg"], value: "PETROL/LPG", fuelSegment: "NON_EV", fuelType: "PETROL/LPG" },
-  { aliases: ["electric bov", "electric(bov)", "battery operated vehicle"], value: "ELECTRIC(BOV)", fuelSegment: "EV", fuelType: "ELECTRIC" },
+  { aliases: ["electric bov", "electric(bov)", "battery operated vehicle", "bov"], value: "ELECTRIC(BOV)", fuelSegment: "EV", fuelType: "ELECTRIC" },
   { aliases: ["plug in hybrid", "plug-in hybrid", "phev"], value: "PLUG-IN HYBRID EV", fuelSegment: "EV", fuelType: "PLUG-IN HYBRID EV" },
   { aliases: ["pure ev", "battery ev"], value: "PURE EV", fuelSegment: "EV", fuelType: "PURE EV" },
   { aliases: ["strong hybrid"], value: "STRONG HYBRID EV", fuelSegment: "EV", fuelType: "STRONG HYBRID EV" },
@@ -1925,9 +1925,6 @@ function parseFuelRuleDimension(positiveText, filterText, { excludesEv = false }
   if (hasFuzzyWord(filterText, ["diesel"])) fuelType = "DIESEL";
   if (/\bcng\b/i.test(filterText)) fuelType = "CNG";
   let fuelMatches = findMatchingFilterDefinitions(filterText, FUEL_FILTER_ALIASES);
-  if (isBroadBovAcronym(positiveText)) {
-    fuelMatches = fuelMatches.filter((definition) => definition.value !== "ELECTRIC(BOV)");
-  }
   if (fuelMatches.length) {
     fuelSegment = fuelSegment ?? fuelMatches[0].fuelSegment ?? null;
     fuelType = fuelMatches[0].fuelType ?? fuelType;
@@ -2209,7 +2206,7 @@ function semanticFuelSelection(text, vocabulary) {
     .map((definition) => definition.value);
 
   if (/\b(non[-\s]?ev)\b/i.test(normalized)) return [];
-  if (isBroadBovAcronym(text)) return exactVocabularyLabels(BATTERY_ELECTRIC_FUELS, vocabulary.fuelTypes);
+  if (isBroadBovAcronym(text)) return exactVocabularyLabels(["ELECTRIC(BOV)"], vocabulary.fuelTypes);
   if (/\b(?:plug[-\s]?in\s+hybrid|phev)\b/i.test(normalized)) return exactVocabularyLabels(["PLUG-IN HYBRID EV"], vocabulary.fuelTypes);
   if (/\bstrong\s+hybrid\b/i.test(normalized)) return exactVocabularyLabels(["STRONG HYBRID EV"], vocabulary.fuelTypes);
   if (hasFuzzyWord(normalized, ["hybrid"])) return exactVocabularyLabels(HYBRID_FUELS, vocabulary.fuelTypes);
@@ -2504,8 +2501,8 @@ function deterministicInterpretationEvidence(query, ruleFilters, rulePlan, vocab
   const hasExactHybridFuelDefinition = positiveFuelMatches.some((match) => (
     match.matchType === "exact" && normalizeLookup(match.definition.value).includes("hybrid")
   ));
-  if (/\b(?:ev|bov)\b/i.test(normalizedPositive) && !hasExactEvFuelDefinition) {
-    evidence.push(interpretationEvidenceEntry("fuel", "exact", normalizedPositive.match(/\b(?:ev|bov)\b/i)?.[0], BATTERY_ELECTRIC_FUELS));
+  if (/\bev\b/i.test(normalizedPositive) && !hasExactEvFuelDefinition) {
+    evidence.push(interpretationEvidenceEntry("fuel", "exact", "ev", BATTERY_ELECTRIC_FUELS));
   }
   if (/\blpg\b/i.test(normalizedPositive) && !hasExactLpgFuelDefinition) {
     evidence.push(interpretationEvidenceEntry("fuel", "exact", "lpg", LPG_FUELS));
@@ -5493,7 +5490,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         llmFilters,
         persistenceStatus: job.persistenceStatus,
         liveRefresh: liveRefreshInfo(job),
-        preFiltered: false,
+        preFiltered: true,
         freshnessInfo: freshness(combinedRows),
         fuelDistribution: await publicFuelDistributionForQuery(filters, combinedRows),
       });
@@ -5517,7 +5514,7 @@ function startLiveRefreshJob({ filters, baseRows, refreshGroups, llmFilters, aud
         missingMonths: findMissingAnswerMonths(filters, baseRows),
         llmFilters,
         liveRefresh: liveRefreshInfo(job),
-        preFiltered: false,
+        preFiltered: true,
         freshnessInfo: freshness(baseRows),
         fuelDistribution: await publicFuelDistributionForQuery(filters, baseRows),
       });
@@ -5747,7 +5744,7 @@ export async function queryData(input, {
   const liveRefreshJob = refreshGroups.length
     ? startLiveRefreshJob({
         filters,
-        baseRows: [],
+        baseRows: answerRows,
         refreshGroups,
         llmFilters,
         auditId: audit.id,
