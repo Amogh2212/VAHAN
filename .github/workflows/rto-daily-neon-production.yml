@@ -80,7 +80,7 @@ jobs:
         continue-on-error: true
         run: >-
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
-          --neon --work-queue --allow-partial --time-budget-minutes 315 --workers 2 --preserve-history
+          --neon --work-queue --retry-failed --retry-incomplete --time-budget-minutes 315 --workers 2 --preserve-history
 
       - name: Create sanitized production summary
         if: always()
@@ -102,4 +102,4 @@ jobs:
 
       - name: Record Daily registration evidence status
         if: always()
-        run: node scripts/check-daily-registration-availability.mjs artifacts/rto-daily-neon-production-summary.json --warn-only
+        run: node scripts/check-daily-registration-availability.mjs artifacts/rto-daily-neon-production-summary.json
