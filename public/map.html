@@ -87,6 +87,13 @@
                 <span class="level-4">30%+</span>
               </div>
             </div>
+            <div class="map-state-picker">
+              <label for="mapStateSelect">Find a state or UT</label>
+              <select id="mapStateSelect" aria-describedby="mapStatePickerHelp">
+                <option value="">Choose a state or UT</option>
+              </select>
+              <p id="mapStatePickerHelp">Select a place here to zoom in and open its details, including small UTs.</p>
+            </div>
             <div class="map-stage" id="mapStage">
               <svg id="indiaMap" class="india-map" viewBox="0 0 620 760" role="group" aria-label="Interactive India state EV registration map"></svg>
               <button type="button" class="map-zoom-out" id="mapZoomOutBtn" hidden disabled>Zoom out</button>
@@ -99,7 +106,7 @@
               <h2 id="selectedStateTitle">Select a state</h2>
             </div>
             <div class="map-state-summary" id="stateSummary">
-              <p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>
+              <p class="compare-empty">Choose a state or UT above the map, or select its shape, to inspect EV share and available RTO rows.</p>
             </div>
             <div class="map-bucket-list" id="mapBucketList" aria-live="polite"></div>
             <div class="map-rto-list" id="rtoList"></div>

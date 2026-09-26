@@ -1,4 +1,5 @@
 const mapSvg = document.querySelector("#indiaMap");
+const mapStateSelect = document.querySelector("#mapStateSelect");
 const mapTooltip = document.querySelector("#mapTooltip");
 const coverageText = document.querySelector("#coverageText");
 const mapFilters = document.querySelector("#mapFilters");
@@ -28,6 +29,7 @@ const featureSidebar = document.querySelector("#featureSidebar");
 
 const fmt = new Intl.NumberFormat("en-IN");
 const pctFmt = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 1 });
+let stateSelectionRequest = 0;
 const CLIENT_FETCH_STATES = [
   "Andaman and Nicobar Islands",
   "Andhra Pradesh",
@@ -431,19 +433,23 @@ function setZoomOutVisible(isVisible) {
 }
 
 function resetZoom() {
+  stateSelectionRequest += 1;
   selectedState = null;
+  if (mapStateSelect) mapStateSelect.value = "";
   latestStateDetailData = null;
   mapSvg.setAttribute("viewBox", "0 0 620 760");
   setZoomOutVisible(false);
   applyMapData([...stateData.values()]);
   selectedStateTitle.textContent = "Select a state";
-  stateSummary.innerHTML = `<p class="compare-empty">Click a loaded state to inspect EV share and available RTO rows.</p>`;
+  stateSummary.innerHTML = `<p class="compare-empty">Choose a state or UT above the map, or select its shape, to inspect EV share and available RTO rows.</p>`;
   renderBucketList();
   rtoList.innerHTML = "";
 }
 
 async function selectState(state) {
+  const request = ++stateSelectionRequest;
   selectedState = state;
+  if (mapStateSelect) mapStateSelect.value = CLIENT_FETCH_STATES.includes(state) ? state : "";
   zoomToState(state);
   setZoomOutVisible(true);
   applyMapData([...stateData.values()]);
@@ -455,8 +461,10 @@ async function selectState(state) {
     const response = await fetch(`/api/map/state/${encodeURIComponent(state)}/rtos?${params}`);
     if (!response.ok) throw new Error(`RTO drill-down failed: ${response.status}`);
     const data = await response.json();
+    if (request !== stateSelectionRequest) return;
     renderStateDetail(data);
   } catch (error) {
+    if (request !== stateSelectionRequest) return;
     stateSummary.innerHTML = `<p class="compare-empty">${escapeHtml(error.message)}</p>`;
   }
 }
@@ -936,6 +944,19 @@ if (appFrame && sidebarTrigger && featureSidebar) {
   featureSidebar.addEventListener("pointerleave", closeSidebar);
   featureSidebar.addEventListener("focusin", openSidebar);
   featureSidebar.addEventListener("focusout", closeSidebar);
+}
+
+if (mapStateSelect) {
+  for (const state of [...CLIENT_FETCH_STATES].sort((a, b) => a.localeCompare(b))) {
+    const option = document.createElement("option");
+    option.value = state;
+    option.textContent = state;
+    mapStateSelect.append(option);
+  }
+  mapStateSelect.addEventListener("change", () => {
+    if (mapStateSelect.value) selectState(mapStateSelect.value);
+    else resetZoom();
+  });
 }
 
 renderMapSkeleton();
