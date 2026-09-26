@@ -102,4 +102,17 @@ const partial = buildMonthlySalesReport({
 assert.equal(partial.insightFacts.comparableMonths, false);
 assert.equal(partial.sections[0].metrics.delta, null);
 assert.match(partial.sections[0].narrative, /comparison is unavailable/);
+const genericFuel = (year, monthNumber, fuelType, count) => ({
+  ...row(year, monthNumber, "Maharashtra", count), fuel_type: fuelType,
+});
+const mixedGranularity = buildMonthlySalesReport({
+  rows: [
+    genericFuel(2026, 7, "PETROL", 90), genericFuel(2026, 7, "ELECTRIC(BOV)", 10),
+    genericFuel(2026, 8, "ALL", 120),
+  ],
+  month: "2026-08", expectedStates: ["Maharashtra"],
+});
+assert.equal(mixedGranularity.insightFacts.evShare, null);
+assert.equal(mixedGranularity.insightFacts.previousEvShare, 0.1);
+assert.doesNotMatch(monthlyInsightFacts(mixedGranularity).statements.join(" "), /EV share/);
 console.log("Report insight summary checks passed.");
