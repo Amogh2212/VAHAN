@@ -50,6 +50,14 @@ assert.deepEqual(
   { label: "ALL", counts: {}, explicitZero: true },
   "an explicit empty official table is a verified zero-registration result, not a scrape failure",
 );
+assert.deepEqual(
+  parsePublicMonthlyRows([
+    { yearAsString: "2026-January", registeredVehicleCount: 3 },
+    { yearAsString: "2026-March", registeredVehicleCount: 19 },
+  ], { year: 2026, label: "ELECTRIC(BOV)", months: [1, 2, 3] }),
+  { label: "ELECTRIC(BOV)", counts: { 1: 3, 2: 0, 3: 19 }, sparseZeroMonths: [2] },
+  "a successful monthly response may omit a zero month shown as 0 in the dashboard",
+);
 const fourWheelerQuery = publicMonthlyQueryString({
   stateCode: "UP",
   vehicleSubCategories: ["LIGHT MOTOR VEHICLE", "LIGHT PASSENGER VEHICLE"],
@@ -118,7 +126,7 @@ assert.match(
 );
 assert.match(
   source,
-  /if \(!reportItem\.fuels\?\.length\) \{\s*const response = await fetchPublicMonthlyTableDirect\(client, monthlyParams\);\s*return \[parsePublicMonthlyRows\(response, \{ year: reportItem\.year, label: "ALL" \}\)\];/,
+  /if \(!reportItem\.fuels\?\.length\) \{\s*const response = await fetchPublicMonthlyTableDirect\(client, monthlyParams\);\s*return \[parsePublicMonthlyRows\(response, \{ year: reportItem\.year, label: "ALL", months: reportItem\.items\.map\(\(item\) => item\.month\) \}\)\];/,
   "an unfiltered aggregate must use one official aggregate request rather than fail on missing rare-fuel rows",
 );
 assert.match(

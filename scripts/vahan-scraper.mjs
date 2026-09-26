@@ -1024,7 +1024,7 @@ function publicMonthFromLabel(value) {
   return { year: Number(match[1]), month: monthFromHeader(match[2]) };
 }
 
-export function parsePublicMonthlyRows(rows, { year, label }) {
+export function parsePublicMonthlyRows(rows, { year, label, months = [] }) {
   if (!Array.isArray(rows)) throw new Error("Public dashboard returned an invalid monthly response.");
   // A successful Public Dashboard query can legitimately return an empty
   // table when the selected filter had no registrations (for example, a
@@ -1042,7 +1042,16 @@ export function parsePublicMonthlyRows(rows, { year, label }) {
   if (!Object.keys(counts).length) {
     throw new Error(`Public dashboard returned no monthly values for ${label}.`);
   }
-  return { label, counts };
+  // The public monthly table can omit a zero-valued month even though its
+  // rendered Monthly view shows 0. Only fill gaps inside a successful response
+  // for the requested year; an HTTP error or wrong-year response still fails.
+  const sparseZeroMonths = [];
+  for (const month of months) {
+    if (counts[month] !== undefined) continue;
+    counts[month] = 0;
+    sparseZeroMonths.push(month);
+  }
+  return sparseZeroMonths.length ? { label, counts, sparseZeroMonths } : { label, counts };
 }
 
 async function publicOptionValue(page, selector, wanted, { optional = false } = {}) {
@@ -1254,7 +1263,7 @@ async function scrapePublicFuelReportDirect(reportItem) {
     vehicleMakers: [],
     vehicleSubCategories,
     vehicleEmissions,
-    timePeriod: "0",
+    timePeriod: "2",
     calendarType: "3",
     vehicleCategoryGroup: [],
     evType: [],
@@ -1273,7 +1282,7 @@ async function scrapePublicFuelReportDirect(reportItem) {
   // neither required nor guaranteed by the Public Dashboard.
   if (!reportItem.fuels?.length) {
     const response = await fetchPublicMonthlyTableDirect(client, monthlyParams);
-    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL" })];
+    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL", months: reportItem.items.map((item) => item.month) })];
   }
   const fuelOptions = publicHtmlSelectOptions(html, "vehicleFuel");
   const rows = [];
@@ -1286,7 +1295,7 @@ async function scrapePublicFuelReportDirect(reportItem) {
       ...monthlyParams,
       vehicleFuels: [vehicleFuel],
     });
-    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
+    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel, months: reportItem.items.map((item) => item.month) }));
   }
   if (!rows.length) throw new Error("Public dashboard returned no matching fuel filters.");
   return rows;
@@ -1359,7 +1368,7 @@ async function scrapePublicFuelReport(page, reportItem) {
     vehicleMakers: [],
     vehicleSubCategories,
     vehicleEmissions,
-    timePeriod: "0",
+    timePeriod: "2",
     calendarType: "3",
     vehicleCategoryGroup: [],
     evType: [],
@@ -1375,7 +1384,7 @@ async function scrapePublicFuelReport(page, reportItem) {
   };
   if (!reportItem.fuels?.length) {
     const response = await fetchPublicMonthlyTable(page, monthlyParams);
-    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL" })];
+    return [parsePublicMonthlyRows(response, { year: reportItem.year, label: "ALL", months: reportItem.items.map((item) => item.month) })];
   }
   const rows = [];
   for (const fuel of reportItem.fuels) {
@@ -1387,7 +1396,7 @@ async function scrapePublicFuelReport(page, reportItem) {
       ...monthlyParams,
       vehicleFuels: [vehicleFuels],
     });
-    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel }));
+    rows.push(parsePublicMonthlyRows(response, { year: reportItem.year, label: fuel, months: reportItem.items.map((item) => item.month) }));
   }
   if (!rows.length) throw new Error("Public dashboard returned no matching fuel filters.");
   return rows;
