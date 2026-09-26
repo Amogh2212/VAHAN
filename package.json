@@ -119,7 +119,7 @@
   "dependencies": {
     "embedded-postgres": "17.10.0-beta.17",
     "pg": "^8.20.0",
-    "playwright": "^1.52.0"
+    "playwright": "^1.63.0"
   },
   "engines": {
     "node": ">=22 <23"
