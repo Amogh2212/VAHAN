@@ -177,6 +177,7 @@ function activateEvidence(readiness) {
 function selectCadence(cadence) {
   state.cadence = cadence;
   state.evidenceReadiness = null;
+  loadMonitoredRtos();
   if (state.readiness) renderReadiness(state.readiness);
   ++state.requestId;
   ++state.detailRequestId;
@@ -1093,6 +1094,95 @@ statusFilter.addEventListener("change", loadReports);
 searchInput.addEventListener("input", () => {
   clearTimeout(state.searchTimer);
   state.searchTimer = setTimeout(loadReports, 220);
+});
+
+const monitoredSearch = document.querySelector("#monitoredRtoSearch");
+const monitoredMatches = document.querySelector("#monitoredRtoMatches");
+const monitoredList = document.querySelector("#monitoredRtoList");
+const monitoredDetail = document.querySelector("#monitoredRtoDetail");
+const monitoredMessage = document.querySelector("#monitoredRtoMessage");
+let monitoredSearchTimer;
+
+async function loadMonitoredRtos() {
+  monitoredSearch.disabled = !state.currentUser;
+  if (!state.currentUser) {
+    monitoredList.innerHTML = '<p>Sign in to save RTOs and see your reports. <a href="/auth/google?returnTo=/rto-reports.html">Sign in</a></p>';
+    return;
+  }
+  try {
+    const [pins, reports] = await Promise.all([
+      apiJson("/api/rto-daily/pins"),
+      apiJson(`/api/rto-reports/monitored?cadence=${encodeURIComponent(state.cadence)}`),
+    ]);
+    const byPin = new Map((reports.reports ?? []).map((report) => [report.pinId, report]));
+    monitoredList.innerHTML = (pins.pins ?? []).length
+      ? (pins.pins ?? []).map((pin) => {
+        const report = byPin.get(pin.id);
+        const status = report?.fixed ? "In the fixed 100" : report?.status === "awaiting_collection"
+          ? "Awaiting collection" : report?.status ?? "Awaiting report";
+        const latestJob = pin.job?.status ? ` · Latest collection: ${pin.job.status}` : "";
+        const reportDate = report?.periodEnd ? ` · Report: ${report.periodEnd}` : "";
+        return `<div class="monitored-rto-item"><div><strong>${escapeHtml(pin.rto)}</strong><span>${escapeHtml(pin.state)} · ${escapeHtml(status)}</span>
+          <small>${escapeHtml(`${latestJob}${reportDate}`)}</small>
+          ${pin.job?.lastError ? `<small>${escapeHtml(pin.job.lastError)}</small>` : ""}</div><div>
+          ${report?.reportId ? `<button type="button" data-monitored-report="${report.reportId}">Open report</button>` : ""}
+          <button type="button" data-monitored-remove="${pin.id}">Remove</button></div></div>`;
+      }).join("")
+      : "<p>No RTOs saved yet.</p>";
+    for (const button of monitoredList.querySelectorAll("[data-monitored-report]")) {
+      button.addEventListener("click", () => openMonitoredReport(Number(button.dataset.monitoredReport)));
+    }
+    for (const button of monitoredList.querySelectorAll("[data-monitored-remove]")) {
+      button.addEventListener("click", async () => {
+        try {
+          await apiJson(`/api/rto-daily/pins/${button.dataset.monitoredRemove}`, { method: "DELETE" });
+          monitoredMessage.textContent = "RTO removed from your monitoring list.";
+          monitoredDetail.hidden = true;
+          await loadMonitoredRtos();
+        } catch (error) { monitoredMessage.textContent = error.message; }
+      });
+    }
+  } catch (error) { monitoredMessage.textContent = error.message; }
+}
+
+async function openMonitoredReport(id) {
+  try {
+    const { report } = await apiJson(`/api/rto-reports/monitored/${id}`);
+    const metrics = report.payload?.metrics?.period ?? {};
+    const display = (value) => value === null || value === undefined ? "Unavailable" : fmt(value);
+    monitoredDetail.hidden = false;
+    monitoredDetail.innerHTML = `<h3>${escapeHtml(report.rto)} · ${escapeHtml(report.cadence)}</h3>
+      <p>${escapeHtml(report.periodStart)} to ${escapeHtml(report.periodEnd)} · ${escapeHtml(report.status)}</p>
+      <p>${escapeHtml(report.payload?.summary ?? "")}</p>
+      <p>EV: ${display(metrics.ev)} · ICE: ${display(metrics.ice)} · Total: ${display(metrics.total)}</p>
+      <p>Outside the fixed 100-RTO ranking.</p>
+      <p><a href="/api/rto-reports/monitored/${id}/pdf">Download PDF</a> · <a href="/api/rto-reports/monitored/${id}/csv">Download CSV</a></p>`;
+  } catch (error) { monitoredMessage.textContent = error.message; }
+}
+
+monitoredSearch?.addEventListener("input", () => {
+  clearTimeout(monitoredSearchTimer);
+  monitoredSearchTimer = setTimeout(async () => {
+    const query = monitoredSearch.value.trim();
+    if (query.length < 2) { monitoredMatches.innerHTML = ""; return; }
+    try {
+      const body = await apiJson(`/api/rto-daily/search?${new URLSearchParams({ q: query, limit: "8" })}`);
+      monitoredMatches.innerHTML = (body.matches ?? []).map((match, index) =>
+        `<button type="button" role="option" data-monitored-match="${index}">${escapeHtml(match.rto)} · ${escapeHtml(match.state)}</button>`).join("");
+      for (const button of monitoredMatches.querySelectorAll("[data-monitored-match]")) {
+        button.addEventListener("click", async () => {
+          const match = body.matches[Number(button.dataset.monitoredMatch)];
+          try {
+            await apiJson("/api/rto-daily/pins", { method: "POST", body: JSON.stringify({ state: match.state, rto: match.rto }) });
+            monitoredMessage.textContent = `${match.rto} will enter the next scheduled collection.`;
+            monitoredSearch.value = "";
+            monitoredMatches.innerHTML = "";
+            await loadMonitoredRtos();
+          } catch (error) { monitoredMessage.textContent = error.message; }
+        });
+      }
+    } catch (error) { monitoredMessage.textContent = error.message; }
+  }, 250);
 });
 
 initSidebar();

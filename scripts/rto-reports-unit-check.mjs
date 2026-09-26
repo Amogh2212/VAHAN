@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   buildRtoReportPayloads,
+  buildMonitoredPeriodRegistrationPayload,
   evaluateRtoReportReadinessGates,
   periodValueForSeries,
   RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO,
@@ -10,6 +11,8 @@ import {
   reportPeriod,
   reportPeriodsForSnapshotDate,
   renderRtoReportCsv,
+  renderMonitoredRtoReportCsv,
+  renderMonitoredRtoReportHtml,
   renderRtoReportHtml,
   rtoReportExportRevision,
   quarantineUnverifiedRtoReport,
@@ -43,6 +46,15 @@ assert.equal(
   }).dailyRegistrationEligible,
   false,
   "warning-only comparison coverage must not make Daily reports usable",
+);
+assert.equal(
+  evaluateRtoReportReadinessGates({
+    run: { status: "running", total_rtos: 125, succeeded_rtos: 100,
+      fixed_total_rtos: 100, fixed_succeeded_rtos: 100 },
+    cohortSize: 100, completeRtos: 100, comparisonEligibleRtos: 100,
+  }).dailyRegistrationEligible,
+  true,
+  "pending extra RTOs must not block the complete fixed cohort",
 );
 assert.ok(rtoReportExportRevision({ revision: 3 }, "csv") > 3, "old CSV caches must not bypass source quarantine");
 assert.ok(rtoReportExportRevision({ revision: 3 }, "pdf") > 3);
@@ -148,6 +160,25 @@ const [daily] = buildRtoReportPayloads({
   oemRows,
   generatedAt: new Date("2026-07-24T18:00:00.000Z"),
 });
+const monitoredWeekly = buildMonitoredPeriodRegistrationPayload({
+  period: reportPeriod("weekly", "2026-07-26"),
+  member: { state: "Alpha", rto: "Alpha RTO" }, totalRows,
+});
+assert.equal(monitoredWeekly.status, "needs_review");
+assert.equal(monitoredWeekly.metrics.period.total, null, "missing dates must never become zero registrations");
+assert.equal(monitoredWeekly.rto.cohortRank, null);
+const monitoredMonthEnd = buildMonitoredPeriodRegistrationPayload({
+  period: { cadence: "monthly", periodStart: "2026-07-01", periodEnd: "2026-07-24" },
+  member: { state: "Alpha", rto: "Alpha RTO" }, totalRows,
+});
+assert.equal(monitoredMonthEnd.status, "ready");
+assert.equal(monitoredMonthEnd.metrics.period.ev, daily.payload.metrics.sourceMonthToDate.ev);
+assert.equal(monitoredMonthEnd.rto.cohortRank, null);
+const monitoredExport = { state: "Alpha", rto: "Alpha RTO", cadence: "weekly",
+  periodStart: "2026-07-20", periodEnd: "2026-07-26", status: monitoredWeekly.status,
+  payload: monitoredWeekly };
+assert.match(renderMonitoredRtoReportCsv(monitoredExport), /needs_review,,,,/);
+assert.match(renderMonitoredRtoReportHtml(monitoredExport), /Unavailable/);
 
 assert.equal(daily.periodEv, 30, "Daily EV registrations must use consecutive month-to-date registration observations");
 assert.equal(daily.periodIce, 30);

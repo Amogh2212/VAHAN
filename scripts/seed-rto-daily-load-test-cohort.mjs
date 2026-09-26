@@ -64,9 +64,20 @@ async function main() {
       `,
       [JSON.stringify(cohort)],
     );
-    const enabled = await tx("select count(*)::int as count from rto_daily_snapshot_configs where enabled = true");
-    if (Number(enabled.rows[0]?.count) !== cohort.length) throw new Error("Hosted load-test cohort seed did not produce exactly 100 enabled RTOs.");
-    return { seeded: result.rowCount, enabled: Number(enabled.rows[0]?.count) };
+    await tx("delete from rto_daily_fixed_cohort");
+    await tx(`insert into rto_daily_fixed_cohort (config_id, cohort_rank)
+      select c.id, source.rank from jsonb_to_recordset($1::jsonb) as source(rank integer, state text, rto text)
+      join rto_daily_snapshot_configs c on c.state = source.state and c.rto = source.rto`, [JSON.stringify(cohort)]);
+    if (args.confirmNeon) {
+      await tx(`update rto_daily_snapshot_configs c set enabled = true, updated_at = now()
+        where exists (select 1 from rto_daily_pins p where p.config_id = c.id)`);
+    }
+    const counts = await tx(`select
+      (select count(*)::int from rto_daily_fixed_cohort) as fixed,
+      (select count(*)::int from rto_daily_snapshot_configs where enabled = true) as enabled`);
+    if (Number(counts.rows[0]?.fixed) !== cohort.length) throw new Error("Production seed did not freeze exactly 100 RTOs.");
+    if (args.confirmEphemeral && Number(counts.rows[0]?.enabled) !== cohort.length) throw new Error("Hosted load-test seed did not produce exactly 100 enabled RTOs.");
+    return { seeded: result.rowCount, enabled: Number(counts.rows[0]?.enabled), fixed: Number(counts.rows[0]?.fixed) };
   });
   console.log(JSON.stringify({ status: "seeded", target: args.confirmNeon ? "neon" : EPHEMERAL_DATABASE, ...seeded }, null, 2));
 }

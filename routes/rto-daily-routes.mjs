@@ -1,6 +1,7 @@
 import { searchRtoCatalog } from "../lib/rto-resolver.mjs";
 import {
   RTO_DAILY_MAX_PINS_PER_USER,
+  RTO_DAILY_MAX_SHARED_EXTRAS,
   createRtoDailyPin,
   deleteRtoDailyPin,
   enqueueRtoDailyJob,
@@ -46,14 +47,13 @@ export function createRtoDailyRouter(services) {
 
   router.get("/api/rto-daily/pins", { auth: "user" }, async ({ user }) => {
     const pins = await listRtoDailyPins({ userId: user.id });
-    return { body: { pins, limit: RTO_DAILY_MAX_PINS_PER_USER, count: pins.length } };
+    return { body: { pins, limit: RTO_DAILY_MAX_PINS_PER_USER, sharedExtraLimit: RTO_DAILY_MAX_SHARED_EXTRAS, count: pins.length } };
   });
 
   router.post("/api/rto-daily/pins", { auth: "user", csrf: true, rateLimit: "expensive", body: "json" }, async ({ user, body }) => {
     const canonical = await services.canonicalRtoInput(body);
     const result = await createRtoDailyPin({ userId: user.id, ...canonical });
-    const job = await enqueueRtoDailyJob({ ...canonical, reason: "pin" });
-    return { status: result.created ? 201 : 200, body: { ...result, job, canonical } };
+    return { status: result.created ? 201 : 200, body: { ...result, canonical, collection: "next_scheduled_run" } };
   });
 
   router.delete("/api/rto-daily/pins/:pinId", { auth: "user", csrf: true, rateLimit: "public" }, async ({ params, user }) => {

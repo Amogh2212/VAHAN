@@ -110,15 +110,19 @@ import {
 } from "./lib/rto-insights.mjs";
 import {
   getRtoReport,
+  getMonitoredRtoReport,
   getRtoReportBatch,
   latestRtoReportReadiness,
   rtoReportReadinessForDate,
   listRtoReportBatches,
+  listMonitoredRtoReports,
   listRtoReportsForBatch,
   loadCachedRtoReportExport,
   renderRtoReportBatchCsv,
   renderRtoReportCsv,
   renderRtoReportHtml,
+  renderMonitoredRtoReportCsv,
+  renderMonitoredRtoReportHtml,
   invalidateRtoReportExports,
   rtoReportExportRevision,
   saveRtoReportExport,
@@ -6958,6 +6962,35 @@ const server = http.createServer(async (request, response) => {
       await enforceRateLimit(request, "public");
     }
     if (await rtoDailyRouter.handle({ request, response, url })) return;
+    if (request.method === "GET" && url.pathname === "/api/rto-reports/monitored") {
+      const user = await requireUser(request);
+      sendJson(response, 200, { reports: await listMonitoredRtoReports({ userId: user.id, cadence: url.searchParams.get("cadence") ?? "daily" }) });
+      return;
+    }
+    const monitoredReportMatch = url.pathname.match(/^\/api\/rto-reports\/monitored\/(\d+)(?:\/(pdf|csv))?$/);
+    if (request.method === "GET" && monitoredReportMatch) {
+      const user = await requireUser(request);
+      const report = await getMonitoredRtoReport({ userId: user.id, reportId: Number(monitoredReportMatch[1]) });
+      if (!report) {
+        sendJson(response, 404, { error: "Monitored RTO report not found." });
+        return;
+      }
+      const format = monitoredReportMatch[2];
+      if (!format) {
+        sendJson(response, 200, { report });
+        return;
+      }
+      await enforceRateLimit(request, "expensive", user.id);
+      const content = format === "pdf"
+        ? renderHtmlTextPdf(renderMonitoredRtoReportHtml(report))
+        : Buffer.from(renderMonitoredRtoReportCsv(report), "utf8");
+      response.writeHead(200, securityHeaders({
+        "content-type": format === "pdf" ? "application/pdf" : "text/csv; charset=utf-8",
+        "content-disposition": `attachment; filename="monitored-rto-${report.cadence}-${report.periodEnd}-${downloadSlug(report.rto)}.${format}"`,
+      }));
+      response.end(content);
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/api/rto-reports/readiness") {
       sendJson(response, 200, await latestRtoReportReadiness());
       return;

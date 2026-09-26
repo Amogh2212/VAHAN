@@ -37,6 +37,7 @@ import {
   pruneRtoReportingData,
   reportHistoryStartDate,
   reconcileRtoReportsForRun,
+  reconcileMonitoredRtoReportsForRun,
 } from "../lib/rto-reports.mjs";
 
 const DEFAULT_WORKERS = Number(process.env.RTO_DAILY_WORKERS ?? 2);
@@ -149,12 +150,13 @@ function usage() {
 
 export function requireCompleteFailureReasons({ finalized, readiness } = {}) {
   const summary = finalized?.summary ?? {};
+  const fixed = summary.fixed?.total ? summary.fixed : summary;
   const reasons = [];
-  if (!finalized?.complete) reasons.push("cycle did not finish before the worker stopped");
-  if (Number(summary.total) !== 100) reasons.push(`expected 100 RTO jobs, found ${Number(summary.total ?? 0)}`);
-  if (Number(summary.succeeded) !== 100) reasons.push(`expected 100 successful RTO jobs, found ${Number(summary.succeeded ?? 0)}`);
-  if (Number(summary.failed) !== 0) reasons.push(`${Number(summary.failed ?? 0)} RTO jobs failed`);
-  if (Number(summary.queued) !== 0 || Number(summary.running) !== 0 || Number(summary.retrying) !== 0 || Number(summary.deferred) !== 0) {
+  if (!finalized?.complete && !summary.fixed?.total) reasons.push("cycle did not finish before the worker stopped");
+  if (Number(fixed.total) !== 100) reasons.push(`expected 100 fixed RTO jobs, found ${Number(fixed.total ?? 0)}`);
+  if (Number(fixed.succeeded) !== 100) reasons.push(`expected 100 successful fixed RTO jobs, found ${Number(fixed.succeeded ?? 0)}`);
+  if (Number(fixed.failed) !== 0) reasons.push(`${Number(fixed.failed ?? 0)} fixed RTO jobs failed`);
+  if (!summary.fixed?.total && (Number(summary.queued) !== 0 || Number(summary.running) !== 0 || Number(summary.retrying) !== 0 || Number(summary.deferred) !== 0)) {
     reasons.push("RTO jobs remain queued, running, retrying, or deferred");
   }
   if (!readiness?.eligible) reasons.push(`report readiness is ${readiness?.reason ?? "not eligible"}`);
@@ -487,6 +489,7 @@ async function main() {
 
 export async function finishRtoDailyReports({ run, args }, services = {
   reconcile: reconcileRtoReportsForRun,
+  reconcileMonitored: reconcileMonitoredRtoReportsForRun,
   pruneReports: pruneRtoReportingData,
   pruneSnapshots: rollupAndPruneRtoDailySnapshots,
 }) {
@@ -495,10 +498,19 @@ export async function finishRtoDailyReports({ run, args }, services = {
     includeAvailableHistory: !args.preserveHistory,
     historyFrom: args.preserveHistory ? null : reportHistoryStartDate(run.snapshotDate),
   });
+  let monitored = null;
+  if (services.reconcileMonitored) {
+    try {
+      monitored = await services.reconcileMonitored({ runId: run.id, snapshotDate: run.snapshotDate });
+    } catch (error) {
+      monitored = { error: String(error.message ?? error) };
+      console.warn(`[rto-reports] monitored report generation failed: ${monitored.error}`);
+    }
+  }
   const skipped = { skipped: "preserve_history" };
   const reportRetention = args.preserveHistory ? skipped : await services.pruneReports();
   const retention = args.preserveHistory ? skipped : await services.pruneSnapshots({ retentionDays: args.retentionDays });
-  return { reportSystem, reportRetention, retention };
+  return { reportSystem: { ...reportSystem, monitored }, reportRetention, retention };
 }
 
 function assertNeonDatabaseUrl() {

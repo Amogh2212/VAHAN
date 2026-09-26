@@ -343,7 +343,7 @@ async function pinOrUnpin() {
       showNotice(`${currentSelection.rto} was removed from your daily pins.`);
     } else {
       await apiJson("/api/rto-daily/pins", { method: "POST", body: JSON.stringify(currentSelection) });
-      showNotice(`${currentSelection.rto} is pinned and has daily priority.`);
+      showNotice(`${currentSelection.rto} is saved for the next scheduled collection.`);
     }
     await Promise.all([loadPins(), loadSelection()]);
   } finally {

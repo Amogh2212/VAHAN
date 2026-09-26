@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Daily, weekly, and monthly registration reports for the frozen top-100 VAHAN RTO cohort." />
     <title>VAHAN Top-100 RTO Reports</title>
-    <link rel="stylesheet" href="/styles.css?v=20260919-current-fuel-distribution-v1" />
+    <link rel="stylesheet" href="/styles.css?v=20260926-monitored-rtos-v1" />
 
   <link rel="stylesheet" href="/atlas.css" />
   </head>
@@ -36,6 +36,20 @@
           </div>
           <span class="status-pill" id="rtoReportReadinessStatus">Checking</span>
           <p class="rto-report-readiness-message" id="rtoReportReadinessMessage" hidden></p>
+        </section>
+
+        <section class="monitored-rto-section" aria-labelledby="monitoredRtosTitle">
+          <div class="monitored-rto-panel">
+            <span class="panel-kicker">Personal monitoring</span>
+            <h2 id="monitoredRtosTitle">My monitored RTOs</h2>
+            <p>Save up to 10 RTOs. Added RTOs enter the next scheduled collection and stay outside the fixed 100-RTO rankings.</p>
+            <label for="monitoredRtoSearch">Add an RTO</label>
+            <input id="monitoredRtoSearch" type="search" autocomplete="off" placeholder="Search an RTO or state" />
+            <div id="monitoredRtoMatches" role="listbox"></div>
+            <p id="monitoredRtoMessage" role="status"></p>
+            <div id="monitoredRtoList"></div>
+            <article id="monitoredRtoDetail" hidden></article>
+          </div>
         </section>
 
         <section class="rto-report-toolbar" aria-label="Report controls">
@@ -99,6 +113,6 @@
       </main>
     </div>
     <script src="/system.js"></script>
-    <script src="/rto-reports.js?v=20260924-daily-comparison-v2" defer></script>
+    <script src="/rto-reports.js?v=20260926-monitored-rtos-v1" defer></script>
   </body>
 </html>
