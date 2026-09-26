@@ -233,6 +233,12 @@ alter table rto_daily_snapshot_configs
 create index if not exists rto_daily_snapshot_configs_queue_idx
   on rto_daily_snapshot_configs (enabled, priority, last_snapshot_date, state, rto);
 
+create table if not exists rto_daily_fixed_cohort (
+  config_id bigint primary key references rto_daily_snapshot_configs(id) on delete cascade,
+  cohort_rank integer not null unique check (cohort_rank between 1 and 100),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists rto_daily_pins (
   id bigserial primary key,
   user_id bigint not null references users(id) on delete cascade,
@@ -736,6 +742,23 @@ create index if not exists rto_reports_batch_rank_idx
 
 create index if not exists rto_reports_lookup_idx
   on rto_reports (state, rto, generated_at desc);
+
+create table if not exists rto_monitored_reports (
+  id bigserial primary key,
+  config_id bigint not null references rto_daily_snapshot_configs(id) on delete cascade,
+  cadence text not null check (cadence in ('daily', 'weekly', 'monthly')),
+  period_start date not null,
+  period_end date not null,
+  status text not null check (status in ('ready', 'ready_with_warnings', 'needs_review', 'failed')),
+  source_checksum text not null,
+  revision integer not null default 1,
+  payload jsonb not null,
+  generated_at timestamptz not null default now(),
+  unique (config_id, cadence, period_start, period_end)
+);
+
+create index if not exists rto_monitored_reports_period_idx
+  on rto_monitored_reports (config_id, cadence, period_end desc);
 
 create table if not exists rto_report_exports (
   id bigserial primary key,

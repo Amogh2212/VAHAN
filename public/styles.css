@@ -6043,3 +6043,15 @@ button:disabled,
 
 
 }
+.monitored-rto-section { padding: 1.25rem; border: 1px solid #d6dfdc; border-radius: .75rem; background: #f7faf8; }
+.monitored-rto-panel { width: 100%; display: grid; gap: .7rem; }
+.monitored-rto-panel h2, .monitored-rto-panel p { margin: 0; }
+.monitored-rto-panel input { width: min(100%, 32rem); padding: .7rem; border: 1px solid #becbc8; border-radius: .5rem; }
+#monitoredRtoMatches { display: grid; width: min(100%, 32rem); }
+#monitoredRtoMatches button { padding: .55rem .7rem; text-align: left; background: #fff; border: 1px solid #d6dfdc; cursor: pointer; }
+#monitoredRtoList { display: grid; gap: .5rem; }
+.monitored-rto-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem; border: 1px solid #d6dfdc; border-radius: .5rem; background: #fff; }
+.monitored-rto-item span, .monitored-rto-item small { display: block; }
+.monitored-rto-item button { margin-left: .4rem; cursor: pointer; }
+#monitoredRtoDetail { padding: 1rem; border: 1px solid #becbc8; border-radius: .5rem; background: #fff; }
+@media (max-width: 640px) { .monitored-rto-item { align-items: flex-start; flex-direction: column; } }

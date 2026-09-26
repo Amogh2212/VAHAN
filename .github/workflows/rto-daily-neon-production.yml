@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       initialize_cohort:
-        description: Only seed the cohort for first-time setup. Leave disabled to resume today's existing queue.
+        description: Seed the fixed cohort for first-time setup; leave disabled to resume today's queue.
         required: false
         default: false
         type: boolean
@@ -71,8 +71,8 @@ jobs:
       - name: Apply Neon schema
         run: node --env-file=.env scripts/apply-neon-schema.mjs
 
-      - name: Initialize fixed 100-RTO production cohort
-        if: ${{ inputs.initialize_cohort == true }}
+      - name: Sync fixed 100-RTO cohort and monitored RTOs
+        if: ${{ github.event_name == 'schedule' || inputs.initialize_cohort == true }}
         run: npm run rto-daily:production:seed
 
       - name: Run 100-RTO collection with partial-evidence handling
@@ -80,7 +80,7 @@ jobs:
         continue-on-error: true
         run: >-
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
-          --neon --work-queue --allow-partial --time-budget-minutes 315 --workers 2 --preserve-history
+          --neon --work-queue --allow-partial --time-budget-minutes 315 --workers 2 --preserve-history --require-complete
 
       - name: Create sanitized production summary
         if: always()
@@ -100,6 +100,6 @@ jobs:
         if: always()
         run: test "${{ steps.collect.outcome }}" = "success"
 
-      - name: Record Daily registration evidence status
+      - name: Enforce fixed-cohort Daily registration evidence
         if: always()
-        run: node scripts/check-daily-registration-availability.mjs artifacts/rto-daily-neon-production-summary.json --warn-only
+        run: node scripts/check-daily-registration-availability.mjs artifacts/rto-daily-neon-production-summary.json

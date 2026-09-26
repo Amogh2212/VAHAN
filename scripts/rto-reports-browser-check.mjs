@@ -179,6 +179,27 @@ async function main() {
     assert.match(await page.locator(".rto-current-daily-change.is-up").first().innerText(), /↑ \+91/);
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
+    const monitoredPage = await browser.newPage({ viewport: { width: 900, height: 800 } });
+    await monitoredPage.route("**/api/rto-reports/**", fulfillEmptyReportApi);
+    await monitoredPage.route("**/api/me", (route) => json(route, { user: { id: "5", name: "Example" }, csrfToken: "test" }));
+    await monitoredPage.route("**/api/rto-daily/pins", (route) => json(route, { pins: [
+      { id: 8, state: "Maharashtra", rto: "Pune Central RTO", job: { status: "success" } },
+    ], limit: 10 }));
+    await monitoredPage.route("**/api/rto-reports/monitored**", (route) => {
+      const url = new URL(route.request().url());
+      return json(route, url.pathname === "/api/rto-reports/monitored"
+        ? { reports: [{ pinId: 8, state: "Maharashtra", rto: "Pune Central RTO", fixed: false,
+          reportId: 77, periodEnd: "2026-07-24", status: "ready" }] }
+        : { report: { id: 77, state: "Maharashtra", rto: "Pune Central RTO", cadence: "daily",
+          periodStart: "2026-07-24", periodEnd: "2026-07-24", status: "ready",
+          payload: { summary: "Verified daily registrations.", metrics: { period: { ev: 5, ice: 10, total: 15 } } } } });
+    });
+    await monitoredPage.goto(`${BASE_URL}/rto-reports.html`, { waitUntil: "networkidle" });
+    await monitoredPage.locator("[data-monitored-report='77']").click();
+    await monitoredPage.locator("#monitoredRtoDetail").getByText(/Total: 15/).waitFor();
+    assert.match(await monitoredPage.locator("#monitoredRtoDetail").innerText(), /Total: 15/);
+    assert.equal(await monitoredPage.locator("#monitoredRtoDetail a").count(), 2);
+    await monitoredPage.close();
 
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
     console.log("RTO report browser checks passed.");
