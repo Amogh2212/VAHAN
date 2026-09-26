@@ -1,0 +1,67 @@
+name: Map EV evidence refresh
+
+on:
+  schedule:
+    # 00:00 UTC is 05:30 IST, after the RTO Daily collection starts.
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: map-ev-evidence-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PGSSL: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Select current Indian calendar range
+        run: |
+          test -n "$DATABASE_URL"
+          echo "MAP_YEAR=$(TZ=Asia/Kolkata date +%Y)" >> "$GITHUB_ENV"
+          echo "MAP_MONTH=$(TZ=Asia/Kolkata date +%-m)" >> "$GITHUB_ENV"
+      - name: Refresh all-fuel monthly totals
+        id: totals
+        continue-on-error: true
+        run: |
+          months=$(seq -s, 1 "$MAP_MONTH")
+          node scripts/vahan-scraper.mjs --mode scrape --years "$MAP_YEAR" --months "$months" --output-dir outputs/map-refresh-total --no-resume
+      - name: Refresh battery EV fuel months
+        id: ev
+        continue-on-error: true
+        run: |
+          months=$(seq -s, 1 "$MAP_MONTH")
+          node scripts/vahan-scraper.mjs --mode scrape --years "$MAP_YEAR" --months "$months" --fuels 'ELECTRIC(BOV),PURE EV' --output-dir outputs/map-refresh-ev --no-resume
+      - name: Audit saved state-month evidence
+        if: always()
+        run: |
+          mkdir -p outputs/map-refresh-audit
+          node scripts/audit-map-evidence.mjs --database "$MAP_YEAR-01" "$MAP_YEAR-$(printf '%02d' "$MAP_MONTH")" > outputs/map-refresh-audit/report.json
+      - name: Upload source and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-ev-evidence-${{ github.run_id }}
+          path: |
+            outputs/map-refresh-total
+            outputs/map-refresh-ev
+            outputs/map-refresh-audit/report.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Enforce complete evidence
+        if: always()
+        run: |
+          test "${{ steps.totals.outcome }}" = success
+          node -e 'const fs=require("fs"); const r=require("./outputs/map-refresh-audit/report.json"); const known=new Set(["Andaman and Nicobar Islands","Arunachal Pradesh","Ladakh","Lakshadweep","Sikkim","Telangana"]); const unexpected=r.states.filter(s=>s.status!=="complete"&&!known.has(s.state)); const errors="outputs/map-refresh-ev/vahan_fuel_monthly_errors.jsonl"; const aliases={"Andaman & Nicobar Island":"Andaman and Nicobar Islands"}; const failed=fs.existsSync(errors)?fs.readFileSync(errors,"utf8").trim().split("\n").filter(Boolean).map(line=>JSON.parse(line).item.state):[]; const newFailures=failed.filter(state=>!known.has(aliases[state]??state)); if(r.statesChecked!==36||unexpected.length||newFailures.length) { console.error(`Map evidence incomplete: ${r.completeStates}/${r.statesChecked} states; unexpected missing: ${unexpected.map(s=>s.state)}; unexpected source failures: ${newFailures}`); process.exit(1) } console.log(`Map evidence complete for ${r.completeStates}/36 states; known source omissions remain unavailable.`)'

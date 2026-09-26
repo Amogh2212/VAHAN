@@ -1970,7 +1970,6 @@ async function scrape(args) {
     }
   } finally {
     await browser?.close();
-    await closePool();
   }
 
   if (args.persist) {

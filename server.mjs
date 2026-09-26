@@ -7,6 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { auditMapStateEvidence, MAP_EV_FUELS, MAP_EV_FUEL_CONTEXT } from "./lib/map-evidence.mjs";
 import { hasDatabaseUrl } from "./lib/db.mjs";
 import {
   configuredQueryAgentMode,
@@ -4789,7 +4790,10 @@ function filterMapRows(rows, filters) {
     if (shouldApplyFuelFilter && filters.fuelSegment && row.fuel_segment !== filters.fuelSegment) return false;
     if (shouldApplyFuelFilter && filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     for (const field of FILTER_CONTEXT_FIELDS) {
+      if (field === "fuel_filter" && filters.metric === "ev_share" && requestedContext[field] === ALL_FILTER &&
+        String(row[field] ?? ALL_FILTER) === MAP_EV_FUEL_CONTEXT && MAP_EV_FUELS.includes(row.fuel_type)) continue;
       if (requestedContext[field] !== ALL_FILTER && String(row[field] ?? ALL_FILTER) !== requestedContext[field]) return false;
+      if (requestedContext[field] === ALL_FILTER && String(row[field] ?? ALL_FILTER) !== ALL_FILTER) return false;
     }
     return true;
   });
@@ -4821,6 +4825,10 @@ function mapRefreshGroupsForFilters(filters, rows) {
 }
 
 function mapSavedStateCount(filters, rows) {
+  if (filters.metric === "ev_share" && filters.from && filters.to) {
+    return auditMapStateEvidence(rows, { states: VAHAN_FETCH_STATES, from: filters.from, to: filters.to, context: filterContext(filters) })
+      .filter((item) => item.status === "complete").length;
+  }
   const groups = availableMonthGroups(monthsByYear(filters.from, filters.to));
   if (!groups.length) return 0;
   return VAHAN_FETCH_STATES.filter((state) =>
@@ -4973,9 +4981,14 @@ async function loadMapRows(filters, { rtoScope = "aggregate" } = {}) {
   const queryFilters = rtoScope === "aggregate" ? mapAggregateFilters(filters) : filters;
   if (hasDatabaseUrl()) {
     try {
-      return await queryRegistrationRows(queryFilters, {
+      const baseRows = await queryRegistrationRows(queryFilters, {
         stateRtoMode: rtoScope === "all" ? "all" : "aggregate",
       });
+      if (filters.metric !== "ev_share" || filters.fuelFilters?.length || filters.selectedFuelTypes?.length) return baseRows;
+      const evRows = await queryRegistrationRows({ ...queryFilters, fuelFilters: MAP_EV_FUELS, selectedFuelTypes: MAP_EV_FUELS }, {
+        stateRtoMode: rtoScope === "all" ? "all" : "aggregate",
+      });
+      return [...baseRows, ...evRows];
     } catch (error) {
       console.warn(`[map] Neon read failed, falling back to CSV: ${safeErrorMessage(error)}`);
     }
@@ -4985,12 +4998,12 @@ async function loadMapRows(filters, { rtoScope = "aggregate" } = {}) {
 
 function mapSummaryPayload(rows, filters, liveRefresh = null) {
   const resultRows = filterMapRows(rows, filters);
-  const states = summarizeMapStateRows(resultRows);
+  const states = summarizeMapStateRows(resultRows, filters);
   return {
     filters,
     states,
     coverage: {
-      availableStates: states.filter((item) => item.rowCount > 0).length,
+      availableStates: states.filter((item) => item.status === "complete" || (!item.status && item.rowCount > 0)).length,
       totalStates: states.length,
       rowCount: resultRows.length,
       latestMonth: freshness(rows).latestMonth,
@@ -5125,11 +5138,12 @@ async function publicFuelDistributionForQuery(filters, rows) {
 
 function freshMapGroupsForFilters(filters) {
   return availableMonthGroups(monthsByYear(filters.from, filters.to)).flatMap((group) =>
-    orderedMapFetchStates().map((state) => ({
-      year: group.year,
-      months: group.months,
-      states: [state],
-    })),
+    orderedMapFetchStates().flatMap((state) => [
+      { year: group.year, months: group.months, states: [state], label: `${state} total` },
+      ...(filters.metric === "ev_share" && !filters.fuelFilters?.length && !filters.selectedFuelTypes?.length
+        ? [{ year: group.year, months: group.months, states: [state], label: `${state} battery EV`, filters: { fuelFilters: MAP_EV_FUELS } }]
+        : []),
+    ]),
   );
 }
 
@@ -5240,7 +5254,27 @@ function mapRefreshDisplayRows(job) {
   return mergeRegistrationRows(job.baseRows, job.liveRows);
 }
 
-function summarizeMapStateRows(rows) {
+function summarizeMapStateRows(rows, filters = {}) {
+  if (filters.metric === "ev_share" && (!filters.from || !filters.to)) {
+    return VAHAN_FETCH_STATES.map((state) => ({
+      state, total: null, evTotal: null, evShare: null, status: "incomplete",
+      missingMonths: [], rowCount: 0, rtoCount: 0,
+    }));
+  }
+  if (filters.metric === "ev_share" && filters.from && filters.to) {
+    const normalizedRows = rows.map((row) => ({ ...row, state: normalizeMapStateName(row.state) }));
+    const audits = auditMapStateEvidence(normalizedRows, { states: VAHAN_FETCH_STATES, from: filters.from, to: filters.to, context: filterContext(filters) });
+    return audits.map((audit) => ({
+      state: audit.state,
+      total: audit.total,
+      evTotal: audit.evTotal,
+      evShare: audit.evShare,
+      status: audit.status,
+      missingMonths: audit.missingMonths,
+      rowCount: normalizedRows.filter((row) => row.state === audit.state && row.rto === ALL_RTO).length,
+      rtoCount: new Set(normalizedRows.filter((row) => row.state === audit.state && row.rto !== ALL_RTO).map((row) => row.rto)).size,
+    })).sort((a, b) => a.state.localeCompare(b.state));
+  }
   const byState = new Map();
   for (const state of INDIA_STATES) {
     byState.set(state, {
@@ -5288,7 +5322,26 @@ function summarizeMapStateRows(rows) {
     .sort((a, b) => a.state.localeCompare(b.state));
 }
 
-function summarizeMapRtoRows(rows) {
+function summarizeMapRtoRows(rows, filters = {}) {
+  if (filters.metric === "ev_share" && (!filters.from || !filters.to)) return [];
+  if (filters.metric === "ev_share" && filters.from && filters.to) {
+    const rtoNames = [...new Set(rows.filter((row) => row.rto && row.rto !== ALL_RTO).map((row) => row.rto))];
+    const rtoRows = rows.filter((row) => row.rto && row.rto !== ALL_RTO)
+      .map((row) => ({ ...row, state: row.rto, rto: ALL_RTO }));
+    return auditMapStateEvidence(rtoRows, { states: rtoNames, from: filters.from, to: filters.to, context: filterContext(filters) })
+      .map((audit) => ({
+        rto: audit.state,
+        total: audit.total,
+        evTotal: audit.evTotal,
+        evShare: audit.evShare,
+        status: audit.status,
+        missingMonths: audit.missingMonths,
+        rowCount: rtoRows.filter((row) => row.state === audit.state).length,
+        months: audit.months.filter((item) => item.total !== null || item.ev !== null).map((item) => item.month),
+        topFuels: [],
+      }))
+      .sort((a, b) => (b.evTotal ?? -1) - (a.evTotal ?? -1) || a.rto.localeCompare(b.rto));
+  }
   const byRto = new Map();
   for (const row of rows) {
     if (row.rto === ALL_RTO) continue;
@@ -6095,10 +6148,13 @@ async function buildTelegramSummary({
   const resultRows = filterMapRows(refresh.rows, filters);
   const data = mapSummaryPayload(refresh.rows, filters);
   const summaryStates = data.states.filter((item) => isTelegramSummaryState(item.state));
-  const coverage = telegramSummaryCoverage(resultRows);
+  const coverage = {
+    ...telegramSummaryCoverage(resultRows),
+    availableStates: summaryStates.filter((item) => item.status === "complete").length,
+  };
   const ranked = sortStatesByEvShare(summaryStates);
   const bottom = [...ranked].reverse().slice(0, 5);
-  const missing = summaryStates.filter((item) => item.rowCount === 0).map((item) => item.state);
+  const missing = summaryStates.filter((item) => item.status === "incomplete" || item.rowCount === 0).map((item) => item.state);
   const topRows = ranked.slice(0, 5).map((item, index) => `${index + 1}. ${item.state}: ${telegramPercent(item.evShare)}`).join("\n");
   const bottomRows = bottom.map((item, index) => `${index + 1}. ${item.state}: ${telegramPercent(item.evShare)}`).join("\n");
   const fetchedStateCount = telegramSummaryFetchStateCount(refresh.refreshGroups);
@@ -6137,8 +6193,8 @@ async function checkTelegramBigChangeAlerts(filters = {}) {
   if (!currentMonth || !previousMonth) return;
   const currentRows = await loadMapRows({ ...filters, from: currentMonth, to: currentMonth, metric: "ev_share" });
   const previousRows = await loadMapRows({ ...filters, from: previousMonth, to: previousMonth, metric: "ev_share" });
-  const current = new Map(summarizeMapStateRows(currentRows).map((item) => [item.state, item]));
-  const previous = new Map(summarizeMapStateRows(previousRows).map((item) => [item.state, item]));
+  const current = new Map(summarizeMapStateRows(currentRows, { ...filters, from: currentMonth, to: currentMonth, metric: "ev_share" }).map((item) => [item.state, item]));
+  const previous = new Map(summarizeMapStateRows(previousRows, { ...filters, from: previousMonth, to: previousMonth, metric: "ev_share" }).map((item) => [item.state, item]));
   const threshold = TELEGRAM_ALERT_THRESHOLD_POINTS / 100;
   const changes = [];
   for (const [state, item] of current) {
@@ -7520,7 +7576,7 @@ const server = http.createServer(async (request, response) => {
       const filters = mapFiltersFromUrl(url);
       const rows = await loadMapRows({ ...filters, state }, { rtoScope: "all" });
       const stateRows = filterMapRows(rows, { ...filters, state });
-      const stateSummary = summarizeMapStateRows(stateRows).find((item) => item.state === state) ?? {
+      const stateSummary = summarizeMapStateRows(stateRows, filters).find((item) => item.state === state) ?? {
         state,
         total: 0,
         evTotal: 0,
@@ -7532,7 +7588,7 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, {
         filters: { ...filters, state },
         state: stateSummary,
-        rtos: summarizeMapRtoRows(stateRows),
+        rtos: summarizeMapRtoRows(stateRows, filters),
       });
       return;
     }

@@ -99,6 +99,20 @@ function percent(value) {
   return value === null || value === undefined ? "No data" : `${pctFmt.format(value * 100)}%`;
 }
 
+function mapIssueLabel(issue) {
+  return ({
+    missing_total: "total registrations missing",
+    missing_ev_fuels: "EV fuel counts missing",
+    ev_exceeds_total: "EV count exceeds total",
+    duplicate_total_scope: "conflicting total rows",
+    duplicate_ev_scope: "conflicting EV rows",
+    invalid_count: "invalid saved count",
+    missing_capture_time: "source date missing",
+    scope_timestamp_mismatch: "total and EV counts were saved at different times",
+    stale_current_month: "current month needs a refresh",
+  })[issue] ?? "source evidence incomplete";
+}
+
 function signedPercentPoints(value) {
   if (value === null || value === undefined) return "No data";
   const sign = value > 0 ? "+" : "";
@@ -112,7 +126,7 @@ function signedCount(value) {
 }
 
 function mapValue(item, filters = latestMapFilters) {
-  if (!item || item.rowCount === 0) return null;
+  if (!item || item.status === "incomplete" || item.rowCount === 0) return null;
   return mapMetric(filters) === "registrations" ? item.total : item.evShare;
 }
 
@@ -339,8 +353,8 @@ function showTooltip(event, state) {
     <strong>${escapeHtml(state)}</strong>
     <span>${escapeHtml(primaryLabel)}: ${escapeHtml(primaryValue)}</span>
     ${comparisonRows}
-    <span>EV: ${fmt.format(item?.evTotal ?? 0)}</span>
-    <span>Total: ${fmt.format(item?.total ?? 0)}</span>
+    <span>EV: ${item?.evTotal == null ? "Unavailable" : fmt.format(item.evTotal)}</span>
+    <span>Total: ${item?.total == null ? "Unavailable" : fmt.format(item.total)}</span>
     <span>RTOs: ${fmt.format(item?.rtoCount ?? 0)}</span>
   `;
   mapTooltip.hidden = false;
@@ -466,13 +480,17 @@ function renderStateDetail(data) {
   stateSummary.innerHTML = `
     <div class="map-metric-grid">
       <div class="metric"><span>${escapeHtml(primaryLabel)}</span><strong>${escapeHtml(primaryValue)}</strong></div>
-      <div class="metric"><span>EV registrations</span><strong>${fmt.format(item.evTotal)}</strong></div>
-      <div class="metric"><span>Total</span><strong>${fmt.format(item.total)}</strong></div>
+      <div class="metric"><span>EV registrations</span><strong>${item.evTotal == null ? "Unavailable" : fmt.format(item.evTotal)}</strong></div>
+      <div class="metric"><span>Total</span><strong>${item.total == null ? "Unavailable" : fmt.format(item.total)}</strong></div>
       <div class="metric"><span>Saved RTOs</span><strong>${fmt.format(item.rtoCount)}</strong></div>
       ${comparisonMetrics}
     </div>
     <a class="back-link map-query-link" href="/?query=${encodeURIComponent(query)}">Run dashboard query</a>
   `;
+  if (item.missingMonths?.length) {
+    const missing = item.missingMonths.map((entry) => `${entry.month}: ${entry.issues.map(mapIssueLabel).join(", ")}`).join("; ");
+    stateSummary.insertAdjacentHTML("beforeend", `<p class="compare-empty">State figure unavailable. ${escapeHtml(missing)}. Refresh the missing months before comparing with VAHAN.</p>`);
+  }
 
   if (!item.rowCount) {
     rtoList.innerHTML = `<p class="compare-empty">No saved data is available for this state in the selected range.</p>`;
@@ -495,7 +513,7 @@ function renderStateDetail(data) {
           </div>
           <div class="rto-card-metrics">
             <span>${mapMetric(data.filters) === "registrations" ? `${fmt.format(rto.total)} registrations` : `${percent(rto.evShare)} EV`}</span>
-            <span>${fmt.format(rto.evTotal)} / ${fmt.format(rto.total)}</span>
+            <span>${rto.evTotal == null ? "Unavailable" : fmt.format(rto.evTotal)} / ${rto.total == null ? "Unavailable" : fmt.format(rto.total)}</span>
           </div>
           <div class="rto-fuels">${rto.topFuels.map((fuel) => `<span>${escapeHtml(fuel.fuelType)} ${fmt.format(fuel.count)}</span>`).join("")}</div>
           <a class="back-link" href="/?query=${encodeURIComponent(rtoQuery)}">Run query</a>
@@ -597,9 +615,11 @@ function renderMapData(data) {
     coverageText.textContent =
       `${fmt.format(data.coverage.availableStates)} of ${fmt.format(data.coverage.totalStates)} states have saved rows. Latest loaded month: ${data.coverage.latestMonth ?? "not available"}.`;
     const rows = data.liveRefresh.scraper?.runs?.reduce((sum, run) => sum + (run.rowsScraped ?? 0), 0) ?? 0;
-    setMapStatus(data.liveRefresh.source === "saved"
-      ? "Saved data already covers this map. No scraper fetch was needed."
-      : `Fetch complete. Added ${fmt.format(rows)} scraped rows to the heat map.`, "success");
+    const complete = data.coverage.availableStates === data.coverage.totalStates;
+    setMapStatus(complete
+      ? (data.liveRefresh.source === "saved" ? "Saved data covers every state and month in this range." : `Fetch complete. Added ${fmt.format(rows)} source rows to the map.`)
+      : `Fetch finished, but only ${fmt.format(data.coverage.availableStates)} of ${fmt.format(data.coverage.totalStates)} states have complete EV evidence. Unavailable states need another source refresh.`,
+    complete ? "success" : "warning");
   } else if (data.liveRefresh?.status === "failed") {
     coverageText.textContent =
       `${fmt.format(data.coverage.availableStates)} of ${fmt.format(data.coverage.totalStates)} states have saved rows. Latest loaded month: ${data.coverage.latestMonth ?? "not available"}.`;
