@@ -177,8 +177,8 @@ function renderMetricGrid(metrics = {}) {
   return `
     <div class="monthly-report-metrics">
       <article><span>Total</span><strong>${fmt.format(metrics.total ?? 0)}</strong></article>
-      <article><span>Previous month</span><strong>${fmt.format(metrics.previousTotal ?? 0)}</strong></article>
-      <article><span>Change</span><strong>${formatDelta(metrics.delta ?? 0)}</strong></article>
+      <article><span>Previous month</span><strong>${metrics.previousTotal === null ? "Unavailable" : fmt.format(metrics.previousTotal ?? 0)}</strong></article>
+      <article><span>Change</span><strong>${metrics.delta === null ? "Unavailable" : formatDelta(metrics.delta ?? 0)}</strong></article>
       <article><span>Market share</span><strong>${formatPercent(metrics.marketShare)}</strong></article>
     </div>
   `;
@@ -566,6 +566,7 @@ function renderReport(report) {
         <span>${fmt.format(report.coverage.categorySectionsAvailable)} / ${fmt.format(report.coverage.categorySectionsTotal)} segment sections</span>
       </div>
     </section>
+    ${report.insightSummary ? `<section class="panel monthly-report-insight" aria-label="What changed this month"><span class="panel-kicker">Monthly insight</span><h2>What changed this month?</h2><p>${escapeHtml(report.insightSummary.text)}</p><small>${report.insightSummary.source === "groq" ? "AI-assisted wording from verified VAHAN figures" : "Summary from verified VAHAN figures"}</small></section>` : ""}
     ${renderCoverageAction(report)}
     ${report.sections.map(renderSection).join("")}
     <section class="panel monthly-report-section">

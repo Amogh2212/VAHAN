@@ -436,6 +436,8 @@ function renderReportDetail(report) {
       </div>
     </header>
 
+    ${isDaily && report.insightSummary ? `<section class="rto-report-insight" aria-label="What changed today"><span class="panel-kicker">Daily insight</span><h3>What changed today?</h3><p>${escapeHtml(report.insightSummary.text)}</p><small>${report.insightSummary.source === "groq" ? "AI-assisted wording from verified VAHAN figures" : "Summary from verified VAHAN figures"}</small></section>` : ""}
+
     <section class="rto-report-metrics" aria-label="Headline metrics">
       ${isDaily
         ? `${dailyMetricBlock("Previous-day registrations", daily?.previousDayRegistrations)}

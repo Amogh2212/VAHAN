@@ -6094,3 +6094,19 @@ button:disabled,
 .monitored-rto-item button { margin-left: .4rem; cursor: pointer; }
 #monitoredRtoDetail { padding: 1rem; border: 1px solid #becbc8; border-radius: .5rem; background: #fff; }
 @media (max-width: 640px) { .monitored-rto-item { align-items: flex-start; flex-direction: column; } }
+
+.rto-report-insight,
+.monthly-report-insight {
+  margin: 16px 0;
+  padding: 18px 20px;
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--accent, #147d64);
+  border-radius: var(--radius-sm);
+  background: var(--surface, #fff);
+}
+.rto-report-insight h3,
+.monthly-report-insight h2 { margin: 5px 0 8px; }
+.rto-report-insight p,
+.monthly-report-insight p { margin: 0 0 10px; line-height: 1.55; }
+.rto-report-insight small,
+.monthly-report-insight small { color: var(--text-secondary); }

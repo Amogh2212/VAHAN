@@ -36,6 +36,7 @@ import {
   monthlySalesSegmentRefreshContexts,
   renderMonthlySalesReportHtml,
 } from "./lib/monthly-sales-report.mjs";
+import { dailyRtoInsightFacts, monthlyInsightFacts, summarizeInsight } from "./lib/report-insight-summary.mjs";
 import {
   REGISTRATION_HEADERS,
   loadRegistrationRowsFromDb,
@@ -6518,13 +6519,15 @@ async function buildMonthlySalesReportForUrl(url) {
   const rows = await loadRows();
   const makerRows = await loadMakerRows();
   const locationScope = await monthlyLocationScope(input.location, rows);
-  return buildMonthlySalesReport({
+  const report = buildMonthlySalesReport({
     rows: filterRowsForMonthlyLocation(rows, locationScope),
     makerRows: filterRowsForMonthlyLocation(makerRows, locationScope),
     ...input,
     locationScope,
     sourceLabel: SOURCE_LABEL,
   });
+  report.insightSummary = await summarizeInsight(monthlyInsightFacts(report));
+  return report;
 }
 
 async function monthlySalesRecentRefresh(input = {}) {
@@ -7090,8 +7093,12 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       const format = rtoReportExportMatch[2];
+      if (format === "pdf" && report.payload?.cadence === "daily") {
+        report.insightSummary = await summarizeInsight(dailyRtoInsightFacts(report));
+      }
       const exportRevision = rtoReportExportRevision(report, format);
-      const cached = await loadCachedRtoReportExport({
+      const dynamicDailyPdf = format === "pdf" && report.payload?.cadence === "daily";
+      const cached = dynamicDailyPdf ? null : await loadCachedRtoReportExport({
         scopeType: "report",
         scopeId: report.id,
         format,
@@ -7102,7 +7109,7 @@ const server = http.createServer(async (request, response) => {
         content = format === "pdf"
           ? await withExpensiveSlot(() => renderRtoRegistrationReportPdf(report))
           : Buffer.from(renderRtoReportCsv(report), "utf8");
-        await saveRtoReportExport({
+        if (!dynamicDailyPdf) await saveRtoReportExport({
           scopeType: "report",
           scopeId: report.id,
           format,
@@ -7124,6 +7131,9 @@ const server = http.createServer(async (request, response) => {
       if (!report) {
         sendJson(response, 404, { error: "RTO report not found." });
         return;
+      }
+      if (report.payload?.cadence === "daily") {
+        report.insightSummary = await summarizeInsight(dailyRtoInsightFacts(report));
       }
       sendJson(response, 200, { report });
       return;
