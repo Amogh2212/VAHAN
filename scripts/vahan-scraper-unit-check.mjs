@@ -131,6 +131,11 @@ assert.match(
 );
 assert.match(
   source,
+  /timePeriod: "0",\s*calendarType: "3"/,
+  "the collector must use the Public Dashboard monthly-registration request mode",
+);
+assert.match(
+  source,
   /if \(!reportRow\.label \|\| \(\/total\/i\.test\(reportRow\.label\) && !reportRow\.explicitZero\)\) continue;/,
   "an explicit empty official table must be emitted as a zero row for the query refresh",
 );

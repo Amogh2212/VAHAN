@@ -23,6 +23,7 @@ const DEFAULT_DELAY_MS = 1200;
 const DEFAULT_TIMEOUT_MS = 45_000;
 const CONTROL_TIMEOUT_MS = 20_000;
 const MAX_SCRAPE_ATTEMPTS = 3;
+const MAX_DIRECT_SCRAPE_ATTEMPTS = 6;
 const ALL_RTO_LABEL = "All Vahan4 Running Office";
 const APPLICATION_TIME_ZONE = "Asia/Calcutta";
 
@@ -1263,7 +1264,7 @@ async function scrapePublicFuelReportDirect(reportItem) {
     vehicleMakers: [],
     vehicleSubCategories,
     vehicleEmissions,
-    timePeriod: "2",
+    timePeriod: "0",
     calendarType: "3",
     vehicleCategoryGroup: [],
     evType: [],
@@ -1303,7 +1304,7 @@ async function scrapePublicFuelReportDirect(reportItem) {
 
 async function scrapeDirectReportWithRetries(outputDir, reportItem) {
   let lastError = null;
-  for (let attempt = 1; attempt <= MAX_SCRAPE_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= MAX_DIRECT_SCRAPE_ATTEMPTS; attempt += 1) {
     try {
       return {
         reportRows: await scrapePublicFuelReportDirect(reportItem),
@@ -1312,12 +1313,12 @@ async function scrapeDirectReportWithRetries(outputDir, reportItem) {
     } catch (error) {
       lastError = error;
       console.error(
-        `[scraper] direct attempt ${attempt}/${MAX_SCRAPE_ATTEMPTS} failed for ${reportItem.year} ${reportItem.state} ${reportItem.rto || "All RTOs"}: ${error.message}`,
+        `[scraper] direct attempt ${attempt}/${MAX_DIRECT_SCRAPE_ATTEMPTS} failed for ${reportItem.year} ${reportItem.state} ${reportItem.rto || "All RTOs"}: ${error.message}`,
       );
       if (/Could not find public-dashboard (?:RTO|fuel option)|does not expose the requested fuel|returned no matching fuel filters/i.test(error.message)) {
         break;
       }
-      if (attempt < MAX_SCRAPE_ATTEMPTS) await sleep(1000);
+      if (attempt < MAX_DIRECT_SCRAPE_ATTEMPTS) await sleep(Math.min(1000 * 2 ** (attempt - 1), 8000));
     }
   }
   throw lastError;
@@ -1368,7 +1369,7 @@ async function scrapePublicFuelReport(page, reportItem) {
     vehicleMakers: [],
     vehicleSubCategories,
     vehicleEmissions,
-    timePeriod: "2",
+    timePeriod: "0",
     calendarType: "3",
     vehicleCategoryGroup: [],
     evType: [],
