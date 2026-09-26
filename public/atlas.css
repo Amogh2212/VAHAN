@@ -1,6 +1,30 @@
 /* Compatibility entrypoint for shared route styling. */
 @import url("/system.css");
 
+/* Keep the report's two-position view switch above the shared button theme. */
+.rto-reports-page .rto-report-trend-toggle button {
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.rto-reports-page .rto-report-trend-toggle button:hover,
+.rto-reports-page .rto-report-trend-toggle button[aria-checked="true"] {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.rto-reports-page .rto-report-trend-toggle button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
 /* Map legend selection state: this file loads after the shared system layer. */
 .map-legend button {
   min-height: 42px;

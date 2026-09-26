@@ -303,18 +303,24 @@ body::before {
 
 .rto-report-readiness {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 24px;
+  grid-template-columns: minmax(240px, 1fr) auto auto;
+  gap: 12px 24px;
   align-items: center;
-  padding: 18px 0;
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 18px 20px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
 }
 
 .rto-report-readiness-message {
   grid-column: 1 / -1;
   min-width: 0;
   margin: 0;
+  max-width: 100ch;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .rto-report-readiness > :first-child,
@@ -329,6 +335,7 @@ body::before {
 
 .rto-report-readiness-metrics {
   display: flex;
+  flex-wrap: wrap;
   gap: 28px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -1013,30 +1020,62 @@ body::before {
 .rto-report-legend .trend-reset { color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
 
 .rto-report-trend-toggle {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(270px, 100%);
+  flex: none;
+  padding: 4px;
   border: 1px solid var(--border-subtle);
-  border-radius: 9px;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--bg-surface) 88%, var(--border-subtle));
 }
 
-.rto-report-trend-toggle button {
+.rto-report-trend-toggle::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .16);
+  transition: transform .18s ease;
+}
+
+.rto-report-trend-toggle[data-mode="category"]::before {
+  transform: translateX(100%);
+}
+
+.rto-reports-page .rto-report-trend-toggle button {
+  position: relative;
+  z-index: 1;
+  min-height: 38px;
   border: 0;
-  border-radius: 6px;
-  padding: 6px 10px;
+  border-radius: 999px;
+  padding: 6px 8px;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
-.rto-report-trend-toggle button.active,
-.rto-report-trend-toggle button:hover,
-.rto-report-trend-toggle button:focus-visible {
-  background: var(--bg-surface);
+.rto-reports-page .rto-report-trend-toggle button[aria-checked="true"],
+.rto-reports-page .rto-report-trend-toggle button:hover {
   color: var(--text-primary);
+}
+
+.rto-reports-page .rto-report-trend-toggle button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+  .rto-report-section-head:has(.rto-report-trend-toggle) {
+    flex-wrap: wrap;
+  }
 }
 
 .rto-report-legend i.ev {

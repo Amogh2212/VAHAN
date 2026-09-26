@@ -142,6 +142,32 @@ async function main() {
     assert.match(await page.locator("#rtoReportListMeta").innerText(), /20 Jul - 26 Jul/);
 
     await page.getByRole("tab", { name: "Daily" }).click();
+    await page.locator("#rtoReportBatchDate").fill("2026-07-23");
+    await page.locator("#rtoReportBatchDate").dispatchEvent("change");
+    await page.getByRole("heading", { name: "Registration trend" }).waitFor({ state: "visible" });
+    const trendGrouping = page.getByRole("radiogroup", { name: "Trend grouping" });
+    const switchStyle = await trendGrouping.evaluate((group) => ({
+      radius: getComputedStyle(group).borderRadius,
+      buttonBorder: getComputedStyle(group.querySelector("button")).borderWidth,
+      knobWidth: getComputedStyle(group, "::before").width,
+    }));
+    assert.equal(switchStyle.buttonBorder, "0px", `trend switch buttons must share one track: ${JSON.stringify(switchStyle)}`);
+    assert.equal(await trendGrouping.getByRole("radio", { name: "Date" }).getAttribute("aria-checked"), "true");
+    await trendGrouping.getByRole("radio", { name: "Vehicle category" }).click();
+    assert.equal(await trendGrouping.getByRole("radio", { name: "Vehicle category" }).getAttribute("aria-checked"), "true");
+    assert.match(await page.locator(".rto-report-trend").innerText(), /2W/);
+    const combinedTooltip = page.locator(".rto-report-trend .trend-point-tooltip.combined").first();
+    const tooltipBounds = await combinedTooltip.evaluate((tooltip) => {
+      const box = tooltip.querySelector("rect").getBBox();
+      const lines = [...tooltip.querySelectorAll("text")];
+      const last = lines.at(-1).getBBox();
+      return { bottom: box.y + box.height, textBottom: last.y + last.height, heading: lines[0].textContent };
+    });
+    assert.ok(tooltipBounds.textBottom <= tooltipBounds.bottom - 4, "all registration lines must fit inside the tooltip");
+    assert.equal(tooltipBounds.heading, "3W", "category tooltips must show the category label");
+    await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-category-switch.png"), fullPage: true });
+    await trendGrouping.getByRole("radio", { name: "Vehicle category" }).press("ArrowLeft");
+    assert.equal(await trendGrouping.getByRole("radio", { name: "Date" }).getAttribute("aria-checked"), "true");
     await page.locator("#rtoReportBatchDate").fill("2026-07-24");
     await page.locator("#rtoReportBatchDate").dispatchEvent("change");
     await page.waitForFunction(() => document.querySelector("#rtoReportBatchCsv")?.getAttribute("href") === "/api/rto-reports/batches/901.csv");
@@ -250,7 +276,16 @@ async function fulfillReportApi(route) {
         iceMonthToDate: 984,
         totalMonthToDate: 2237,
         daily: { ev: 91, ice: 398, total: 489, status: "available" },
-        scopes: [],
+        scopes: [
+          { fuelGroup: "EV", vehicleCategory: "2W", total: 80 },
+          { fuelGroup: "ICE", vehicleCategory: "2W", total: 220 },
+          { fuelGroup: "EV", vehicleCategory: "3W", total: 12 },
+          { fuelGroup: "ICE", vehicleCategory: "3W", total: 35 },
+        ],
+        trend: [
+          { date: "2026-07-22", ev: 20, ice: 45, total: 65 },
+          { date: "2026-07-23", ev: 22, ice: 43, total: 65 },
+        ],
       }],
       run: { id: 76, snapshotDate: "2026-07-23", reportCohortSize: 100 },
     });

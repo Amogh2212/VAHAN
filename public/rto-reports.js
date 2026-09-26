@@ -112,7 +112,7 @@ function renderReadiness(readiness) {
     const partialRtos = (readiness.missingRtos ?? []).filter((entry) => Number(entry.validReports) < 6);
     const verifiedPartialScopes = partialRtos.reduce((total, entry) => total + Number(entry.validReports ?? 0), 0);
     const examples = partialRtos.slice(0, 3)
-      .map((entry) => `${entry.rto} (${fmt(entry.validReports)}/6 scopes)`)
+      .map((entry) => `${entry.rto}: ${fmt(entry.validReports)}/6`)
       .join("; ");
     title.textContent = partialRtos.length ? "Daily registrations partially collected" : "Daily registrations unavailable";
     status.className = "status-pill status-needs-review";
@@ -123,7 +123,7 @@ function renderReadiness(readiness) {
     if (message) {
       message.hidden = false;
       message.textContent = partialRtos.length
-        ? `Verified scopes are retained for operational review but excluded from the Daily total until all six scopes are available. ${examples}${partialRtos.length > 3 ? "; …" : ""}`
+        ? `Verified scopes stay available for review. Incomplete RTOs are excluded from the Daily total. Examples: ${examples}${partialRtos.length > 3 ? "; …" : ""}`
         : readiness.dailyRegistrationReason || "Consecutive compatible monthly-registration observations are incomplete.";
     }
     return;
@@ -728,7 +728,7 @@ function renderCurrentEvidenceDetail(entry) {
     <section class="rto-report-quality"><strong>${dailyAvailable ? "Individual Daily value verified" : "Daily value unavailable"}</strong><p>${dailyAvailable ? "EV, ICE, and total Daily changes use this RTO’s six current and previous-day registration scopes." : escapeHtml(daily.reason ?? "The matching source observations could not verify a Daily change.")}</p></section>
     ${renderCurrentFuelDistribution(entry)}
     <section class="rto-report-evidence">
-      <div class="rto-report-section-head"><div><h3>Registration trend</h3><span>${state.trendMode === "date" ? "Daily registration history" : "Current-cycle month-to-date registrations by vehicle class"}; click a line or legend item to focus it.</span></div><div class="rto-report-trend-toggle" role="group" aria-label="Trend grouping"><button type="button" class="${state.trendMode === "date" ? "active" : ""}" data-trend-mode="date" aria-pressed="${state.trendMode === "date"}">Date</button><button type="button" class="${state.trendMode === "category" ? "active" : ""}" data-trend-mode="category" aria-pressed="${state.trendMode === "category"}">Vehicle category</button></div></div>
+      <div class="rto-report-section-head"><div><h3>Registration trend</h3><span>${state.trendMode === "date" ? "Daily registration history" : "Current-cycle month-to-date registrations by vehicle category"}; click a line or legend item to focus it.</span></div><div class="rto-report-trend-toggle" role="radiogroup" aria-label="Trend grouping" data-mode="${state.trendMode}"><button type="button" role="radio" data-trend-mode="date" aria-checked="${state.trendMode === "date"}" tabindex="${state.trendMode === "date" ? "0" : "-1"}">Date</button><button type="button" role="radio" data-trend-mode="category" aria-checked="${state.trendMode === "category"}" tabindex="${state.trendMode === "category" ? "0" : "-1"}">Vehicle category</button></div></div>
       <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry, state.trendMode), true)}</div>
     </section>
   `;
@@ -745,12 +745,20 @@ function renderCurrentEvidenceDetail(entry) {
       state.trendFocus = null;
       renderCurrentEvidenceDetail(entry);
     });
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      event.preventDefault();
+      state.trendMode = state.trendMode === "date" ? "category" : "date";
+      state.trendFocus = null;
+      renderCurrentEvidenceDetail(entry);
+      reportDetail.querySelector(`[data-trend-mode="${state.trendMode}"]`)?.focus();
+    });
   }
 }
 
 function currentEvidenceTrend(entry, mode = "date") {
   if (mode === "date") return Array.isArray(entry.trend) ? entry.trend : [];
-  const scopes = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
+  const scopes = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, scope.total == null ? null : Number(scope.total)]));
   return ["2W", "3W", "4W"].map((vehicleCategory) => {
     const ev = scopes.get(`EV/${vehicleCategory}`);
     const ice = scopes.get(`ICE/${vehicleCategory}`);
@@ -859,7 +867,8 @@ function trendSvg(rows, isDaily = false) {
     ].filter((point) => point && visibleFields.includes(point.field));
     if (!pointsForDate.length) return "";
 
-    const tooltipWidth = 146;
+    const pointLabel = row.label ?? shortDate(row.date);
+    const tooltipWidth = 230;
     const tooltipHeight = 38;
     const shouldCombine = pointsForDate.length > 1
       && Math.abs(pointsForDate[0].pointY - pointsForDate[1].pointY) < tooltipHeight + 10;
@@ -868,14 +877,16 @@ function trendSvg(rows, isDaily = false) {
     const guideBottom = Math.min(pad.top + chartHeight, Math.max(...pointsForDate.map((point) => point.pointY)) + 10);
     const pointMarkup = pointsForDate.map((point) => {
       const valueLabel = `${point.label}: ${fmt(point.value)}`;
-      return `<g class="trend-point-group ${point.field}" tabindex="0" role="img" aria-label="${escapeHtml(shortDate(row.date))}, ${escapeHtml(valueLabel)}"><title>${escapeHtml(shortDate(row.date))}: ${escapeHtml(valueLabel)}</title><circle class="trend-point" cx="${pointX}" cy="${point.pointY}" r="5"></circle></g>`;
+      return `<g class="trend-point-group ${point.field}" tabindex="0" role="img" aria-label="${escapeHtml(pointLabel)}, ${escapeHtml(valueLabel)}"><title>${escapeHtml(pointLabel)}: ${escapeHtml(valueLabel)}</title><circle class="trend-point" cx="${pointX}" cy="${point.pointY}" r="5"></circle></g>`;
     }).join("");
+    const combinedHeight = 31 + pointsForDate.length * 16;
+    const combinedY = Math.max(6, Math.min(height - combinedHeight - 6, guideTop - combinedHeight - 8));
     const tooltipMarkup = shouldCombine
-      ? `<g class="trend-point-tooltip combined" pointer-events="none"><rect x="${tooltipX}" y="${Math.max(6, guideTop - 62)}" width="${tooltipWidth}" height="62" rx="7"></rect><text class="trend-point-tooltip-date" x="${tooltipX + 10}" y="${Math.max(6, guideTop - 62) + 15}">${escapeHtml(shortDate(row.date))}</text>${pointsForDate.map((point, pointIndex) => `<text class="trend-point-tooltip-value" x="${tooltipX + 10}" y="${Math.max(6, guideTop - 62) + 31 + pointIndex * 16}">${escapeHtml(`${point.label}: ${fmt(point.value)}`)}</text>`).join("")}</g>`
+      ? `<g class="trend-point-tooltip combined" pointer-events="none"><rect x="${tooltipX}" y="${combinedY}" width="${tooltipWidth}" height="${combinedHeight}" rx="7"></rect><text class="trend-point-tooltip-date" x="${tooltipX + 10}" y="${combinedY + 17}">${escapeHtml(pointLabel)}</text>${pointsForDate.map((point, pointIndex) => `<text class="trend-point-tooltip-value" x="${tooltipX + 10}" y="${combinedY + 35 + pointIndex * 16}">${escapeHtml(`${point.label}: ${fmt(point.value)}`)}</text>`).join("")}</g>`
       : pointsForDate.map((point) => {
         const tooltipY = Math.max(6, point.pointY - tooltipHeight - 14);
         const valueLabel = `${point.label}: ${fmt(point.value)}`;
-        return `<g class="trend-point-tooltip ${point.field}" pointer-events="none"><rect x="${tooltipX}" y="${tooltipY}" width="${tooltipWidth}" height="${tooltipHeight}" rx="7"></rect><text class="trend-point-tooltip-date" x="${tooltipX + 10}" y="${tooltipY + 15}">${escapeHtml(shortDate(row.date))}</text><text class="trend-point-tooltip-value" x="${tooltipX + 10}" y="${tooltipY + 31}">${escapeHtml(valueLabel)}</text></g>`;
+        return `<g class="trend-point-tooltip ${point.field}" pointer-events="none"><rect x="${tooltipX}" y="${tooltipY}" width="${tooltipWidth}" height="${tooltipHeight}" rx="7"></rect><text class="trend-point-tooltip-date" x="${tooltipX + 10}" y="${tooltipY + 15}">${escapeHtml(pointLabel)}</text><text class="trend-point-tooltip-value" x="${tooltipX + 10}" y="${tooltipY + 31}">${escapeHtml(valueLabel)}</text></g>`;
       }).join("");
     return `<g class="trend-date-group" tabindex="-1"><rect class="trend-date-hit" x="${Math.max(pad.left, pointX - 14)}" y="${pad.top}" width="${Math.min(28, width - pad.right - Math.max(pad.left, pointX - 14))}" height="${chartHeight}"></rect><line class="trend-hover-guide" x1="${pointX}" x2="${pointX}" y1="${guideTop}" y2="${guideBottom}"></line>${pointMarkup}${tooltipMarkup}</g>`;
   }).join("");
@@ -1073,6 +1084,11 @@ batchDateInput?.addEventListener("change", () => {
     return;
   }
   state.currentEvidenceMode = false;
+  state.evidenceReadiness = null;
+  statusFilter.disabled = false;
+  if (periodLabel) periodLabel.textContent = "Report period";
+  if (periodHelp) periodHelp.textContent = "Select a generated report period.";
+  if (state.readiness) renderReadiness(state.readiness);
   selectBatch(batch.id);
 });
 
