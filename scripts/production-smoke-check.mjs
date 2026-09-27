@@ -136,7 +136,14 @@ async function main() {
 
     const map = await fetchJson("/api/map/summary?from=2025-12&to=2025-12");
     assert(map.response.ok, `map summary failed with ${map.response.status}: ${map.body.error}`);
-    assert(map.body.coverage?.availableStates > 0, "map summary should include saved state coverage");
+    assert(Array.isArray(map.body.states) && map.body.states.length > 0, "map summary should include state rows");
+    assert(
+      map.body.coverage?.totalStates === map.body.states.length
+        && Number.isInteger(map.body.coverage?.availableStates)
+        && map.body.coverage.availableStates >= 0
+        && map.body.coverage.availableStates <= map.body.coverage.totalStates,
+      "map summary should report internally consistent saved state coverage",
+    );
 
     const oversized = await fetchJson("/api/query", {
       method: "POST",
