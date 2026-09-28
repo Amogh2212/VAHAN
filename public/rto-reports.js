@@ -16,6 +16,10 @@ const state = {
   evidenceReadiness: null,
   trendFocus: null,
   trendMode: "date",
+  scope: "fixed",
+  monitoredReports: [],
+  monitoredReport: null,
+  monitoredRequestId: 0,
 };
 
 const OEM_CATEGORIES = Object.freeze(["2W", "3W", "4W"]);
@@ -186,6 +190,10 @@ function selectCadence(cadence) {
     tab.classList.toggle("active", active);
     tab.setAttribute("aria-selected", String(active));
   }
+  if (state.scope === "monitored") {
+    loadSelectedRtoReports();
+    return;
+  }
   const matching = batchesForCadence(cadence);
   renderPeriodPicker(matching);
   const currentEvidence = cadence === "daily" ? (state.readiness?.currentCycleEvidence ?? []) : [];
@@ -230,6 +238,10 @@ async function selectBatch(batchId) {
 }
 
 async function loadReports() {
+  if (state.scope === "monitored") {
+    renderReportList();
+    return;
+  }
   if (state.currentEvidenceMode) {
     const q = searchInput.value.trim().toLowerCase();
     state.reports = (activeEvidenceReadiness()?.currentCycleEvidence ?? []).filter((entry) => !q || `${entry.state} ${entry.rto}`.toLowerCase().includes(q));
@@ -272,8 +284,9 @@ function renderBatch() {
   const download = document.querySelector("#rtoReportBatchCsv");
   // Current-cycle evidence is displayed in the normal list/detail workspace even
   // though it has not yet produced a generated Daily report batch.
-  document.body.classList.toggle("rto-reports-no-batch", !state.batch && !state.currentEvidenceMode);
+  document.body.classList.toggle("rto-reports-no-batch", !state.batch && !state.currentEvidenceMode && state.scope !== "monitored");
   document.body.classList.toggle("rto-reports-current-evidence", state.currentEvidenceMode);
+  document.body.classList.toggle("rto-reports-monitored-scope", state.scope === "monitored");
   if (!state.batch) {
     strip.hidden = true;
     download.hidden = true;
@@ -347,6 +360,31 @@ function openDatePicker() {
 }
 
 function renderReportList() {
+  if (state.scope === "monitored") {
+    document.querySelector("#rtoReportListTitle").textContent = "My selected RTOs";
+    const q = searchInput.value.trim().toLowerCase();
+    const reports = state.monitoredReports.filter((entry) => !q || `${entry.state} ${entry.rto}`.toLowerCase().includes(q));
+    document.querySelector("#rtoReportListMeta").textContent = `${fmt(reports.length)} shown | ${state.cadence} reports`;
+    if (!state.currentUser) {
+      reportList.innerHTML = '<p class="result-empty">Sign in to view reports for your selected RTOs.</p>';
+      return;
+    }
+    reportList.innerHTML = reports.map((entry) => {
+      const selected = entry.reportId && entry.reportId === state.monitoredReport?.id;
+      const period = entry.periodEnd ? `${entry.periodEnd} · ${entry.summary ?? ""}` : "Awaiting the next scheduled collection";
+      const supporting = entry.fixed ? "In the fixed 100" : period;
+      const status = entry.fixed ? "Fixed 100" : entry.status === "ready" ? "Ready" : entry.status === "needs_review" ? "Review" : "Awaiting";
+      return `<button type="button" class="rto-report-list-item${selected ? " active" : ""}" ${entry.reportId && !entry.fixed ? `data-monitored-report="${entry.reportId}"` : "disabled"}>
+        <span class="rto-report-rank">${entry.fixed ? "100" : "•"}</span>
+        <span class="rto-report-list-copy"><strong>${escapeHtml(entry.rto)}</strong><small>${escapeHtml(entry.state)} | ${escapeHtml(supporting)}</small></span>
+        <span class="rto-report-list-status ${status === "Ready" ? "status-ready" : status === "Review" ? "status-needs-review" : ""}">${status}</span>
+      </button>`;
+    }).join("") || `<p class="result-empty">${state.monitoredReports.length ? "No selected RTOs match this search." : "No RTOs selected yet. Add one in My monitored RTOs above."}</p>`;
+    for (const button of reportList.querySelectorAll("[data-monitored-report]")) {
+      button.addEventListener("click", () => selectMonitoredReport(Number(button.dataset.monitoredReport)));
+    }
+    return;
+  }
   if (state.currentEvidenceMode) {
     document.querySelector("#rtoReportListTitle").textContent = "Current RTO evidence";
     document.querySelector("#rtoReportListMeta").textContent = `${fmt(state.reports.length)} shown | month-to-date source evidence`;
@@ -416,12 +454,15 @@ function renderReportDetail(report) {
   const payload = report.payload ?? {};
   const metrics = payload.metrics ?? {};
   const isDaily = payload.cadence === "daily";
+  const isMonitored = report.monitored === true;
+  const isRegistrationTrend = isDaily || isMonitored;
   const daily = payload.dailyRegistration;
   const categories = payload.categories ?? [];
   const oems = payload.oems ?? [];
   const selectedOemRows = oemRowsForCategory(oems, state.oemCategory, isDaily);
   const warnings = payload.quality?.warnings ?? [];
   const explanations = report.explanations ?? [];
+  const reportApiBase = isMonitored ? `/api/rto-reports/monitored/${report.id}` : `/api/rto-reports/${report.id}`;
   reportDetail.innerHTML = `
     <header class="rto-report-detail-head">
       <div>
@@ -431,8 +472,8 @@ function renderReportDetail(report) {
       </div>
       <div class="rto-report-detail-actions">
         <span class="status-pill ${statusClass(report.status)}">${escapeHtml(statusLabel(report.status))}</span>
-        <a class="secondary-action" href="/api/rto-reports/${report.id}/csv">CSV</a>
-        <a class="secondary-action" href="/api/rto-reports/${report.id}/pdf">PDF</a>
+        <a class="secondary-action" href="${reportApiBase}/csv">CSV</a>
+        <a class="secondary-action" href="${reportApiBase}/pdf">PDF</a>
       </div>
     </header>
 
@@ -445,13 +486,19 @@ function renderReportDetail(report) {
            ${dailyMetricBlock("Today's ICE registrations", daily?.iceRegistrations)}
            ${dailyMetricBlock("Today's EV share", daily?.evShare, "percent")}
            ${dailyMetricBlock("Today's rank", daily?.rank, "rank")}`
-        : `${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
+        : isMonitored
+          ? `${metricBlock("EV registrations", metrics.period?.ev, "For the selected report period")}
+             ${metricBlock("ICE registrations", metrics.period?.ice, "For the selected report period")}
+             ${metricBlock("Total registrations", metrics.period?.total, "Unavailable when source coverage is incomplete")}`
+          : `${metricBlock("Active EV stock", metrics.stock?.ev, `Net stock change: ${signed(metrics.period?.ev)}`)}
            ${metricBlock("Active ICE stock", metrics.stock?.ice, `Net stock change: ${signed(metrics.period?.ice)}`)}
            ${metricBlock("EV stock share", percent(metrics.stock?.evShare), "Share of the selected stock categories")}
            ${metricBlock("EV stock rank", payload.rto?.cohortRank ? `#${payload.rto.cohortRank}` : "N/A", payload.rto?.previousRank ? `Previous #${payload.rto.previousRank}` : "No prior rank")}`}
     </section>
     <p class="rto-report-quality">${escapeHtml(isDaily
       ? (daily?.reason ?? "Daily values are calculated from consecutive, compatible Public Dashboard monthly-registration observations.")
+      : isMonitored
+        ? (payload.source?.limitation ?? "Registrations are based on saved evidence for this selected RTO.")
       : (payload.source?.limitation ?? "Active-stock observations are not daily registration counts. Unchanged stock does not establish source freshness."))}</p>
 
     ${isDaily ? `
@@ -480,9 +527,9 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>${isDaily ? "Daily registrations" : "Observed active stock"}</h3><span>${isDaily ? "Verified registrations for each calendar day (IST)" : "EV and ICE snapshot totals; gaps mean no verified observation"}</span></div>
+        <div><h3>${isRegistrationTrend ? "Registrations during the report period" : "Observed active stock"}</h3><span>${isRegistrationTrend ? "Verified daily registrations for each calendar day (IST)" : "EV and ICE snapshot totals; gaps mean no verified observation"}</span></div>
       </div>
-      <div class="rto-report-trend">${trendSvg(payload.trend ?? [], isDaily)}</div>
+      <div class="rto-report-trend">${trendSvg(payload.trend ?? [], isRegistrationTrend)}</div>
     </section>
 
     ${isDaily ? `<section class="rto-report-evidence">
@@ -490,7 +537,7 @@ function renderReportDetail(report) {
         <div><h3>Vehicle categories</h3><span>Daily registration contribution from compatible month-to-date observations</span></div>
       </div>
       <div class="rto-report-category-bars">${categoryBars(categories, true)}</div>
-    </section>${renderDailyOemEvidence(payload.oemEvidence)}` : `<section class="rto-report-evidence">
+    </section>${renderDailyOemEvidence(payload.oemEvidence)}` : isMonitored ? "" : `<section class="rto-report-evidence">
       <div class="rto-report-section-head">
         <div><h3>Vehicle categories</h3><span>${isDaily ? "Daily registration contribution" : "2W, 3W, and 4W stock contribution"}</span></div>
       </div>
@@ -525,7 +572,7 @@ function renderReportDetail(report) {
       ${isDaily ? `<span>Report date: ${escapeHtml(daily?.date ?? payload.period?.end)} · Asia/Kolkata</span><span>${escapeHtml(payload.source?.freshnessReason ?? "Upstream freshness is unverified.")}</span>` : ""}
       <span>Totals: ${escapeHtml(payload.source?.totalsTable ?? "Unavailable")}</span>
       <span>OEMs: ${escapeHtml(payload.source?.oemTable ?? "Unavailable under the current source contract")}</span>
-      <span>Cohort ${escapeHtml(report.cohortHash?.slice(0, 10) ?? "unknown")} | revision ${fmt(report.revision)}</span>
+      <span>${isMonitored ? "Personal selection · outside the fixed 100-RTO ranking" : `Cohort ${escapeHtml(report.cohortHash?.slice(0, 10) ?? "unknown")}`} | revision ${fmt(report.revision)}</span>
     </footer>
   `;
   for (const button of reportDetail.querySelectorAll("[data-oem-category]")) {
@@ -1117,7 +1164,6 @@ searchInput.addEventListener("input", () => {
 const monitoredSearch = document.querySelector("#monitoredRtoSearch");
 const monitoredMatches = document.querySelector("#monitoredRtoMatches");
 const monitoredList = document.querySelector("#monitoredRtoList");
-const monitoredDetail = document.querySelector("#monitoredRtoDetail");
 const monitoredMessage = document.querySelector("#monitoredRtoMessage");
 let monitoredSearchTimer;
 
@@ -1148,34 +1194,109 @@ async function loadMonitoredRtos() {
       }).join("")
       : "<p>No RTOs saved yet.</p>";
     for (const button of monitoredList.querySelectorAll("[data-monitored-report]")) {
-      button.addEventListener("click", () => openMonitoredReport(Number(button.dataset.monitoredReport)));
+      button.addEventListener("click", async () => {
+        const reportId = Number(button.dataset.monitoredReport);
+        await selectRtoScope("monitored");
+        await selectMonitoredReport(reportId);
+        document.querySelector(".rto-report-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
     for (const button of monitoredList.querySelectorAll("[data-monitored-remove]")) {
       button.addEventListener("click", async () => {
         try {
           await apiJson(`/api/rto-daily/pins/${button.dataset.monitoredRemove}`, { method: "DELETE" });
           monitoredMessage.textContent = "RTO removed from your monitoring list.";
-          monitoredDetail.hidden = true;
           await loadMonitoredRtos();
+          if (state.scope === "monitored") await loadSelectedRtoReports();
         } catch (error) { monitoredMessage.textContent = error.message; }
       });
     }
   } catch (error) { monitoredMessage.textContent = error.message; }
 }
 
-async function openMonitoredReport(id) {
+async function loadSelectedRtoReports() {
+  const requestId = ++state.monitoredRequestId;
+  ++state.requestId;
+  ++state.detailRequestId;
+  state.currentEvidenceMode = false;
+  state.batch = null;
+  state.report = null;
+  state.monitoredReport = null;
+  state.monitoredReports = [];
+  statusFilter.disabled = true;
+  batchDateInput.disabled = true;
+  batchDateInput.value = "";
+  if (periodLabel) periodLabel.textContent = "Report period";
+  if (periodHelp) periodHelp.textContent = "Latest saved report for each selected RTO.";
+  periodStatus.textContent = "Latest available";
+  document.querySelector("#rtoReportBatchStrip").hidden = true;
+  document.querySelector("#rtoReportBatchCsv").hidden = true;
+  renderBatch();
+  reportList.innerHTML = '<p class="result-empty">Loading your selected RTOs.</p>';
+  if (!state.currentUser) {
+    renderReportList();
+    renderEmptyDetail("Sign in to view selected RTO reports", "Your saved RTOs and their reports appear here after sign-in.");
+    return;
+  }
+  try {
+    const body = await apiJson(`/api/rto-reports/monitored?cadence=${encodeURIComponent(state.cadence)}`);
+    if (requestId !== state.monitoredRequestId || state.scope !== "monitored") return;
+    state.monitoredReports = body.reports ?? [];
+    renderReportList();
+    const firstReport = state.monitoredReports.find((entry) => entry.reportId && !entry.fixed);
+    if (firstReport) await selectMonitoredReport(firstReport.reportId);
+    else renderEmptyDetail("No selected RTO report is ready", state.monitoredReports.length
+      ? "These selected RTOs are in the fixed 100. Switch to Fixed 100 to review their evidence."
+      : "Add RTOs in My monitored RTOs above; they will appear after the next scheduled collection.");
+  } catch (error) {
+    if (requestId !== state.monitoredRequestId) return;
+    renderReportList();
+    renderError(error.message);
+  }
+}
+
+async function selectMonitoredReport(id) {
+  const requestId = ++state.detailRequestId;
   try {
     const { report } = await apiJson(`/api/rto-reports/monitored/${id}`);
-    const metrics = report.payload?.metrics?.period ?? {};
-    const display = (value) => value === null || value === undefined ? "Unavailable" : fmt(value);
-    monitoredDetail.hidden = false;
-    monitoredDetail.innerHTML = `<h3>${escapeHtml(report.rto)} · ${escapeHtml(report.cadence)}</h3>
-      <p>${escapeHtml(report.periodStart)} to ${escapeHtml(report.periodEnd)} · ${escapeHtml(report.status)}</p>
-      <p>${escapeHtml(report.payload?.summary ?? "")}</p>
-      <p>EV: ${display(metrics.ev)} · ICE: ${display(metrics.ice)} · Total: ${display(metrics.total)}</p>
-      <p>Outside the fixed 100-RTO ranking.</p>
-      <p><a href="/api/rto-reports/monitored/${id}/pdf">Download PDF</a> · <a href="/api/rto-reports/monitored/${id}/csv">Download CSV</a></p>`;
-  } catch (error) { monitoredMessage.textContent = error.message; }
+    if (requestId !== state.detailRequestId || state.scope !== "monitored") return;
+    state.monitoredReport = { ...report, summary: report.payload?.summary ?? "", monitored: true };
+    state.report = state.monitoredReport;
+    renderReportList();
+    renderReportDetail(state.monitoredReport);
+  } catch (error) {
+    if (requestId !== state.detailRequestId) return;
+    renderError(error.message);
+  }
+}
+
+function selectRtoScope(scope) {
+  if (scope === state.scope) return;
+  state.scope = scope;
+  for (const button of document.querySelectorAll("[data-rto-scope]")) {
+    const active = button.dataset.rtoScope === scope;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  const scopeLabel = document.querySelector("#rtoReportScopeLabel");
+  const subtitle = document.querySelector("#rtoReportSubtitle");
+  if (scopeLabel) scopeLabel.textContent = scope === "monitored" ? "Personal RTO selection" : "Fixed 100-RTO cohort";
+  if (subtitle) subtitle.textContent = scope === "monitored"
+    ? "Reports for the RTOs you selected, kept separate from fixed-cohort rankings."
+    : "Daily, weekly, and monthly reports for each frozen cohort member.";
+  searchInput.value = "";
+  if (scope === "monitored") {
+    return loadSelectedRtoReports();
+  }
+  state.monitoredReport = null;
+  state.report = null;
+  state.monitoredReports = [];
+  renderBatch();
+  if (state.readiness) selectCadence(state.cadence);
+}
+
+for (const button of document.querySelectorAll("[data-rto-scope]")) {
+  button.addEventListener("click", () => selectRtoScope(button.dataset.rtoScope));
 }
 
 monitoredSearch?.addEventListener("input", () => {

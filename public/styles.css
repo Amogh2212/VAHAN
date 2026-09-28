@@ -357,10 +357,60 @@ body::before {
 
 .rto-report-toolbar {
   display: grid;
-  grid-template-columns: auto minmax(320px, 360px) minmax(220px, 1fr) minmax(160px, 200px) auto;
+  grid-template-columns: minmax(210px, auto) auto minmax(270px, 330px) minmax(200px, 1fr) minmax(150px, 190px) auto;
   gap: 12px;
   align-items: end;
   padding: 20px 0;
+}
+
+.rto-report-scope-control {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rto-report-scope-control legend {
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rto-report-scope-switch {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 3px;
+  min-height: 42px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+
+.rto-report-scope-switch button {
+  min-height: 0;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.rto-report-scope-switch button.active,
+.rto-report-scope-switch button:hover {
+  background: var(--accent, #4f46b8);
+  color: #fff;
+}
+
+.rto-report-scope-switch button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }
 
 .rto-reports-current-evidence .rto-report-toolbar {
@@ -1342,9 +1392,42 @@ body::before {
   min-height: 320px;
 }
 
+.rto-reports-no-batch.rto-reports-monitored-scope .rto-report-toolbar {
+  grid-template-columns: auto auto minmax(220px, 1fr);
+  justify-content: stretch;
+}
+
+.rto-reports-no-batch.rto-reports-monitored-scope .rto-report-search-control,
+.rto-reports-no-batch.rto-reports-monitored-scope .rto-report-list-panel {
+  display: block;
+}
+
+.rto-reports-no-batch.rto-reports-monitored-scope .rto-report-workspace {
+  grid-template-columns: 340px minmax(0, 1fr);
+  min-height: 520px;
+}
+
+.rto-reports-no-batch.rto-reports-monitored-scope .rto-report-list-panel {
+  border-bottom: 0;
+}
+
+.rto-reports-monitored-scope .rto-report-period-control,
+.rto-reports-monitored-scope .rto-report-status-control,
+.rto-reports-monitored-scope .rto-report-batch-download {
+  display: none;
+}
+
+.rto-reports-monitored-scope .rto-report-readiness {
+  display: none;
+}
+
+.rto-reports-monitored-scope .rto-report-detail {
+  display: block;
+}
+
 @media (max-width: 1120px) {
   .rto-report-toolbar {
-    grid-template-columns: auto 1fr 1fr;
+    grid-template-columns: auto auto 1fr;
   }
 
   .rto-report-search-control {
@@ -1379,6 +1462,14 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .rto-report-scope-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rto-report-scope-switch button {
+    white-space: normal;
+  }
+
   .rto-report-tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
@@ -1397,6 +1488,10 @@ body::before {
   }
 
   .rto-report-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .rto-reports-no-batch.rto-reports-monitored-scope .rto-report-workspace {
     grid-template-columns: 1fr;
   }
 
