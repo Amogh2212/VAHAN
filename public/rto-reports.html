@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Daily, weekly, and monthly registration reports for the frozen top-100 VAHAN RTO cohort." />
-    <title>VAHAN Top-100 RTO Reports</title>
-    <link rel="stylesheet" href="/styles.css?v=20260926-report-insight-v1" />
+    <meta name="description" content="Daily, weekly, and monthly registration reports for the fixed 100-RTO cohort and your selected RTOs." />
+    <title>VAHAN RTO Reports</title>
+    <link rel="stylesheet" href="/styles.css?v=20260927-rto-report-scope-v1" />
 
-  <link rel="stylesheet" href="/atlas.css?v=20260926-report-insight-v1" />
+  <link rel="stylesheet" href="/atlas.css?v=20260927-rto-report-scope-v1" />
   </head>
   <body class="atlas-page tracked-page rto-reports-page rto-reports-no-batch" data-atlas-route="rto-reports">
     <a class="skip-link" href="#mainContent">Skip to RTO reports</a>
@@ -19,7 +19,7 @@
           <div class="hero-title-row">
 
             <div>
-              <p class="eyebrow">Fixed 100-RTO cohort</p>
+              <p class="eyebrow" id="rtoReportScopeLabel">Fixed 100-RTO cohort</p>
               <h1>RTO reports</h1>
               <p class="compare-empty" id="rtoReportSubtitle">Daily, weekly, and monthly reports for each frozen cohort member.</p>
             </div>
@@ -48,11 +48,17 @@
             <div id="monitoredRtoMatches" role="listbox"></div>
             <p id="monitoredRtoMessage" role="status"></p>
             <div id="monitoredRtoList"></div>
-            <article id="monitoredRtoDetail" hidden></article>
           </div>
         </section>
 
         <section class="rto-report-toolbar" aria-label="Report controls">
+          <fieldset class="rto-report-scope-control">
+            <legend>RTO set</legend>
+            <div class="rto-report-scope-switch" role="group" aria-label="Choose RTO set">
+              <button type="button" class="active" aria-pressed="true" data-rto-scope="fixed">Fixed 100</button>
+              <button type="button" aria-pressed="false" data-rto-scope="monitored">My selected RTOs</button>
+            </div>
+          </fieldset>
           <div class="rto-report-tabs" role="tablist" aria-label="Report cadence">
             <button type="button" class="rto-report-tab active" role="tab" aria-selected="true" data-cadence="daily">Daily</button>
             <button type="button" class="rto-report-tab" role="tab" aria-selected="false" data-cadence="weekly">Weekly</button>
@@ -113,6 +119,6 @@
       </main>
     </div>
     <script src="/system.js"></script>
-    <script src="/rto-reports.js?v=20260926-report-insight-v1" defer></script>
+    <script src="/rto-reports.js?v=20260927-rto-report-scope-v1" defer></script>
   </body>
 </html>
