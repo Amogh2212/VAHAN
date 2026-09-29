@@ -38,6 +38,7 @@ import {
   renderMonthlySalesReportHtml,
 } from "./lib/monthly-sales-report.mjs";
 import { dailyRtoInsightFacts, monthlyInsightFacts, summarizeInsight } from "./lib/report-insight-summary.mjs";
+import { getRtoTopMakers } from "./lib/rto-top-makers.mjs";
 import {
   REGISTRATION_HEADERS,
   loadRegistrationRowsFromDb,
@@ -7048,6 +7049,12 @@ const server = http.createServer(async (request, response) => {
         "content-disposition": `attachment; filename="monitored-rto-${report.cadence}-${report.periodEnd}-${downloadSlug(report.rto)}.${format}"`,
       }));
       response.end(content);
+      return;
+    }
+    if (request.method === "GET" && url.pathname === "/api/rto-reports/top-makers") {
+      await enforceRateLimit(request, "expensive");
+      const canonical = await canonicalRtoInput({ state: url.searchParams.get("state"), rto: url.searchParams.get("rto") });
+      sendJson(response, 200, await getRtoTopMakers(canonical));
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/rto-reports/readiness") {

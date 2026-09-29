@@ -97,6 +97,8 @@ async function main() {
     assert.equal(await page.locator("#rtoReportReadinessStatus").innerText(), "100 / 100");
     assert.equal(await page.locator(".rto-report-list-item").count(), 100);
     assert.equal(await page.getByRole("heading", { name: "Pune Central RTO" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "Current top 5 makers" }).isVisible(), true);
+    assert.match(await page.locator("#rtoTopMakers").innerText(), /Example Motors\s+25/);
     assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
@@ -199,6 +201,7 @@ async function main() {
     assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "SOURCE EVIDENCE");
     assert.equal(await page.locator(".rto-report-list-item").count(), 1);
     assert.match(await page.locator(".rto-report-detail").innerText(), /6\/6 verified monthly-registration scopes/i);
+    assert.match(await page.locator("#rtoTopMakers").innerText(), /Example Motors\s+25/);
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-source-evidence.png"), fullPage: true });
     assert.match(await page.locator(".rto-report-detail").innerText(), /Daily total\s+\+489/i);
     assert.match(await page.locator(".rto-report-metrics").innerText(), /EV registrations\s+[\d,]+↑ \+91/i);
@@ -243,6 +246,10 @@ async function main() {
 
 async function fulfillReportApi(route) {
   const url = new URL(route.request().url());
+  if (url.pathname === "/api/rto-reports/top-makers") {
+    await json(route, { observedAt: "2026-09-30T08:00:00.000Z", metricKind: "active_stock", makers: [{ maker: "Example Motors", count: 25, rank: 1 }] });
+    return;
+  }
   if (url.pathname === "/api/rto-reports/readiness") {
     await json(route, {
       eligible: true,

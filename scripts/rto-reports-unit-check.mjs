@@ -18,6 +18,20 @@ import {
   quarantineUnverifiedRtoReport,
 } from "../lib/rto-reports.mjs";
 import { loadRtoReportWithOptionalFactorContext } from "../lib/rto-report-context.mjs";
+import { getRtoTopMakers } from "../lib/rto-top-makers.mjs";
+
+const makerScope = await getRtoTopMakers({
+  state: "Test State",
+  rto: "Test RTO - ZZ1",
+  fetchSegment: async (filters) => {
+    assert.equal(filters.vehicleCategories.length, 6);
+    assert.ok(filters.fuels.includes("PURE EV") && filters.fuels.includes("PETROL"));
+    return { metricKind: "active_stock", source: "vahan-public-dashboard", scrapedAt: "2026-09-30T08:00:00.000Z", validation: { contract: "public-stock-v2" }, makers: [{ maker: "Example Motors", count: 25, rank: 1 }] };
+  },
+});
+assert.deepEqual(makerScope.makers, [{ maker: "Example Motors", count: 25, rank: 1 }]);
+assert.equal(makerScope.metricKind, "active_stock", "current maker rankings must not be labeled as Daily registrations");
+await assert.rejects(getRtoTopMakers({ state: "Invalid State", rto: "Invalid RTO - ZZ2", fetchSegment: async () => ({ metricKind: "registration_month_to_date", validation: { contract: "public-registration-mtd-v1" } }) }), /unverified/);
 
 assert.equal(RTO_REPORT_EXPECTED_OEMS, 5);
 assert.equal(RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO, 30);
