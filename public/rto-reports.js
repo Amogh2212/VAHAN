@@ -374,14 +374,27 @@ function renderReportList() {
       const period = entry.periodEnd ? `${entry.periodEnd} · ${entry.summary ?? ""}` : "Awaiting the next scheduled collection";
       const supporting = entry.fixed ? "In the fixed 100" : period;
       const status = entry.fixed ? "Fixed 100" : entry.status === "ready" ? "Ready" : entry.status === "needs_review" ? "Review" : "Awaiting";
-      return `<button type="button" class="rto-report-list-item${selected ? " active" : ""}" ${entry.reportId && !entry.fixed ? `data-monitored-report="${entry.reportId}"` : "disabled"}>
+      return `<div class="rto-selected-rto-row"><button type="button" class="rto-report-list-item${selected ? " active" : ""}" ${entry.reportId && !entry.fixed ? `data-monitored-report="${entry.reportId}"` : "disabled"}>
         <span class="rto-report-rank">${entry.fixed ? "100" : "•"}</span>
         <span class="rto-report-list-copy"><strong>${escapeHtml(entry.rto)}</strong><small>${escapeHtml(entry.state)} | ${escapeHtml(supporting)}</small></span>
         <span class="rto-report-list-status ${status === "Ready" ? "status-ready" : status === "Review" ? "status-needs-review" : ""}">${status}</span>
-      </button>`;
-    }).join("") || `<p class="result-empty">${state.monitoredReports.length ? "No selected RTOs match this search." : "No RTOs selected yet. Add one in My monitored RTOs above."}</p>`;
+      </button><button type="button" class="rto-selected-rto-remove" data-monitored-remove="${entry.pinId}" aria-label="Remove ${escapeHtml(entry.rto)} from My selected RTOs">Remove</button></div>`;
+    }).join("") || `<p class="result-empty">${state.monitoredReports.length ? "No selected RTOs match this search." : "No RTOs selected yet. Add an RTO above."}</p>`;
     for (const button of reportList.querySelectorAll("[data-monitored-report]")) {
       button.addEventListener("click", () => selectMonitoredReport(Number(button.dataset.monitoredReport)));
+    }
+    for (const button of reportList.querySelectorAll("[data-monitored-remove]")) {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await apiJson(`/api/rto-daily/pins/${button.dataset.monitoredRemove}`, { method: "DELETE" });
+          showMonitoredMessage("RTO removed from My selected RTOs.");
+          await loadSelectedRtoReports();
+        } catch (error) {
+          showMonitoredMessage(error.message);
+          button.disabled = false;
+        }
+      });
     }
     return;
   }
@@ -1161,55 +1174,22 @@ searchInput.addEventListener("input", () => {
 
 const monitoredSearch = document.querySelector("#monitoredRtoSearch");
 const monitoredMatches = document.querySelector("#monitoredRtoMatches");
-const monitoredList = document.querySelector("#monitoredRtoList");
 const monitoredMessage = document.querySelector("#monitoredRtoMessage");
 let monitoredSearchTimer;
+
+function showMonitoredMessage(message) {
+  monitoredMessage.textContent = message;
+  monitoredMessage.hidden = !message;
+}
 
 async function loadMonitoredRtos() {
   monitoredSearch.disabled = !state.currentUser;
   if (!state.currentUser) {
-    monitoredList.innerHTML = '<p>Sign in to save RTOs and see your reports. <a href="/auth/google?returnTo=/rto-reports.html">Sign in</a></p>';
-    return;
+    monitoredMessage.hidden = false;
+    monitoredMessage.innerHTML = 'Sign in to save RTOs. <a href="/auth/google?returnTo=/rto-reports.html">Sign in</a>';
+  } else if (monitoredMessage.querySelector("a")) {
+    showMonitoredMessage("");
   }
-  try {
-    const [pins, reports] = await Promise.all([
-      apiJson("/api/rto-daily/pins"),
-      apiJson(`/api/rto-reports/monitored?cadence=${encodeURIComponent(state.cadence)}`),
-    ]);
-    const byPin = new Map((reports.reports ?? []).map((report) => [report.pinId, report]));
-    monitoredList.innerHTML = (pins.pins ?? []).length
-      ? (pins.pins ?? []).map((pin) => {
-        const report = byPin.get(pin.id);
-        const status = report?.fixed ? "In the fixed 100" : report?.status === "awaiting_collection"
-          ? "Awaiting collection" : report?.status ?? "Awaiting report";
-        const latestJob = pin.job?.status ? ` · Latest collection: ${pin.job.status}` : "";
-        const reportDate = report?.periodEnd ? ` · Report: ${report.periodEnd}` : "";
-        return `<div class="monitored-rto-item"><div><strong>${escapeHtml(pin.rto)}</strong><span>${escapeHtml(pin.state)} · ${escapeHtml(status)}</span>
-          <small>${escapeHtml(`${latestJob}${reportDate}`)}</small>
-          ${pin.job?.lastError ? `<small>${escapeHtml(pin.job.lastError)}</small>` : ""}</div><div>
-          ${report?.reportId ? `<button type="button" data-monitored-report="${report.reportId}">Open report</button>` : ""}
-          <button type="button" data-monitored-remove="${pin.id}">Remove</button></div></div>`;
-      }).join("")
-      : "<p>No RTOs saved yet.</p>";
-    for (const button of monitoredList.querySelectorAll("[data-monitored-report]")) {
-      button.addEventListener("click", async () => {
-        const reportId = Number(button.dataset.monitoredReport);
-        await selectRtoScope("monitored");
-        await selectMonitoredReport(reportId);
-        document.querySelector(".rto-report-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
-    for (const button of monitoredList.querySelectorAll("[data-monitored-remove]")) {
-      button.addEventListener("click", async () => {
-        try {
-          await apiJson(`/api/rto-daily/pins/${button.dataset.monitoredRemove}`, { method: "DELETE" });
-          monitoredMessage.textContent = "RTO removed from your monitoring list.";
-          await loadMonitoredRtos();
-          if (state.scope === "monitored") await loadSelectedRtoReports();
-        } catch (error) { monitoredMessage.textContent = error.message; }
-      });
-    }
-  } catch (error) { monitoredMessage.textContent = error.message; }
 }
 
 async function loadSelectedRtoReports() {
@@ -1245,7 +1225,7 @@ async function loadSelectedRtoReports() {
     if (firstReport) await selectMonitoredReport(firstReport.reportId);
     else renderEmptyDetail("No selected RTO report is ready", state.monitoredReports.length
       ? "These selected RTOs are in the fixed 100. Switch to Fixed 100 to review their evidence."
-      : "Add RTOs in My monitored RTOs above; they will appear after the next scheduled collection.");
+      : "Add an RTO above; its report will appear after the next scheduled collection.");
   } catch (error) {
     if (requestId !== state.monitoredRequestId) return;
     renderReportList();
@@ -1311,14 +1291,14 @@ monitoredSearch?.addEventListener("input", () => {
           const match = body.matches[Number(button.dataset.monitoredMatch)];
           try {
             await apiJson("/api/rto-daily/pins", { method: "POST", body: JSON.stringify({ state: match.state, rto: match.rto }) });
-            monitoredMessage.textContent = `${match.rto} will enter the next scheduled collection.`;
+            showMonitoredMessage(`${match.rto} added. It will enter the next scheduled collection.`);
             monitoredSearch.value = "";
             monitoredMatches.innerHTML = "";
-            await loadMonitoredRtos();
-          } catch (error) { monitoredMessage.textContent = error.message; }
+            if (state.scope === "monitored") await loadSelectedRtoReports();
+          } catch (error) { showMonitoredMessage(error.message); }
         });
       }
-    } catch (error) { monitoredMessage.textContent = error.message; }
+    } catch (error) { showMonitoredMessage(error.message); }
   }, 250);
 });
 

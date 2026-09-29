@@ -208,23 +208,28 @@ async function main() {
     const monitoredPage = await browser.newPage({ viewport: { width: 900, height: 800 } });
     await monitoredPage.route("**/api/rto-reports/**", fulfillEmptyReportApi);
     await monitoredPage.route("**/api/me", (route) => json(route, { user: { id: "5", name: "Example" }, csrfToken: "test" }));
-    await monitoredPage.route("**/api/rto-daily/pins", (route) => json(route, { pins: [
-      { id: 8, state: "Maharashtra", rto: "Pune Central RTO", job: { status: "success" } },
-    ], limit: 10 }));
+    let removedPin = false;
+    await monitoredPage.route("**/api/rto-daily/pins/8", (route) => {
+      removedPin = true;
+      return json(route, { removed: true });
+    });
     await monitoredPage.route("**/api/rto-reports/monitored**", (route) => {
       const url = new URL(route.request().url());
       return json(route, url.pathname === "/api/rto-reports/monitored"
-        ? { reports: [{ pinId: 8, state: "Maharashtra", rto: "Pune Central RTO", fixed: false,
+        ? { reports: removedPin ? [] : [{ pinId: 8, state: "Maharashtra", rto: "Pune Central RTO", fixed: false,
           reportId: 77, periodEnd: "2026-07-24", status: "ready" }] }
         : { report: { id: 77, state: "Maharashtra", rto: "Pune Central RTO", cadence: "daily",
           periodStart: "2026-07-24", periodEnd: "2026-07-24", status: "ready",
           payload: { summary: "Verified daily registrations.", metrics: { period: { ev: 5, ice: 10, total: 15 } } } } });
     });
     await monitoredPage.goto(`${BASE_URL}/rto-reports.html`, { waitUntil: "networkidle" });
+    assert.equal(await monitoredPage.locator("#monitoredRtoList").count(), 0);
+    await monitoredPage.getByRole("button", { name: "My selected RTOs" }).click();
     await monitoredPage.locator("[data-monitored-report='77']").click();
-    await monitoredPage.locator("#monitoredRtoDetail").getByText(/Total: 15/).waitFor();
-    assert.match(await monitoredPage.locator("#monitoredRtoDetail").innerText(), /Total: 15/);
-    assert.equal(await monitoredPage.locator("#monitoredRtoDetail a").count(), 2);
+    await monitoredPage.locator("#rtoReportDetail").getByText("Verified daily registrations.", { exact: true }).waitFor();
+    await monitoredPage.getByRole("button", { name: "Remove Pune Central RTO from My selected RTOs" }).click();
+    assert.equal(removedPin, true);
+    await monitoredPage.getByText("No RTOs selected yet", { exact: false }).waitFor();
     await monitoredPage.close();
 
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
