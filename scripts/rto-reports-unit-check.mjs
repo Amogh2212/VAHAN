@@ -388,7 +388,7 @@ assert.equal(dailyRanking.find((report) => report.rto === "RTO 100").cohortRank,
 
 const csv = renderRtoReportCsv({ ...weeklyStock, cadence: "weekly", periodStart: "2026-07-24", periodEnd: "2026-07-24" });
 assert.match(csv, /Example Motors/);
-assert.match(csv, /Other \/ untracked/);
+assert.doesNotMatch(csv, /Other \/ untracked/);
 
 const html = renderRtoReportHtml(weeklyStock.payload);
 assert.match(html, /Dynamic top-maker stock/);

@@ -546,7 +546,7 @@ function renderReportDetail(report) {
 
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>OEM stock</h3><span>Source top five per fuel and category, plus Other / untracked. N/A means not reported, not zero.</span></div>
+        <div><h3>OEM stock</h3><span>Source top five per fuel and category. N/A means not reported, not zero.</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
           ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
@@ -850,6 +850,7 @@ function reportEvLabel(report) {
 
 function oemRowsForCategory(oems, category, isDaily = false) {
   return oems.flatMap((source) => {
+    if (source.oem === "Other / untracked") return [];
     const row = source.categories?.find((item) => item.vehicleCategory === category);
     const values = isDaily ? row?.period : row?.stock;
     if (!row || ![values?.ev, values?.ice].some(Number.isFinite)) return [];
@@ -972,7 +973,7 @@ function renderDailyOemEvidence(evidence = {}) {
   return `
     <section class="rto-report-evidence">
       <div class="rto-report-section-head">
-        <div><h3>Top-five OEM evidence</h3><span>Partial month-to-date evidence; Other / untracked reconciles each segment to its registration headline</span></div>
+        <div><h3>Top-five OEM evidence</h3><span>Month-to-date evidence for the five makers returned in each segment</span></div>
         <div class="rto-report-oem-category-filter" role="group" aria-label="OEM vehicle category">
           ${OEM_CATEGORIES.map((category) => `<button type="button" class="${state.oemCategory === category ? "active" : ""}" data-oem-category="${category}" aria-pressed="${state.oemCategory === category}">${category} OEMs</button>`).join("")}
         </div>
@@ -980,10 +981,7 @@ function renderDailyOemEvidence(evidence = {}) {
       <div class="rto-report-table-wrap">
         <table class="rto-report-table">
           <thead><tr><th>Fuel</th><th>Rank</th><th>OEM</th><th>Month-to-date registrations</th><th>Evidence</th></tr></thead>
-          <tbody>${segments.flatMap((segment) => [
-            ...segment.topFive.map((row) => `<tr><td>${escapeHtml(segment.fuelGroup)}</td><td>#${fmt(row.rank)}</td><td>${escapeHtml(row.name)}</td><td>${fmt(row.count)}</td><td>Source top five</td></tr>`),
-            `<tr><td>${escapeHtml(segment.fuelGroup)}</td><td>—</td><td>Other / untracked</td><td>${fmt(segment.otherUntracked)}</td><td>Headline minus top five</td></tr>`,
-          ]).join("")}</tbody>
+          <tbody>${segments.flatMap((segment) => segment.topFive.map((row) => `<tr><td>${escapeHtml(segment.fuelGroup)}</td><td>#${fmt(row.rank)}</td><td>${escapeHtml(row.name)}</td><td>${fmt(row.count)}</td><td>Source top five</td></tr>`)).join("")}</tbody>
         </table>
       </div>
     </section>
