@@ -97,8 +97,10 @@ async function main() {
     assert.equal(await page.locator("#rtoReportReadinessStatus").innerText(), "100 / 100");
     assert.equal(await page.locator(".rto-report-list-item").count(), 100);
     assert.equal(await page.getByRole("heading", { name: "Pune Central RTO" }).isVisible(), true);
-    assert.equal(await page.getByRole("heading", { name: "Current top 5 makers" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "Current makers reported" }).isVisible(), true);
     assert.match(await page.locator("#rtoTopMakers").innerText(), /Example Motors\s+25/);
+    assert.doesNotMatch(await page.locator("#rtoTopMakers").innerText(), /Others/);
+    assert.match(await page.locator("#rtoTopMakers").innerText(), /complete top-five OEM ranking is unavailable/i);
     assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
@@ -247,7 +249,7 @@ async function main() {
 async function fulfillReportApi(route) {
   const url = new URL(route.request().url());
   if (url.pathname === "/api/rto-reports/top-makers") {
-    await json(route, { observedAt: "2026-09-30T08:00:00.000Z", metricKind: "active_stock", makers: [{ maker: "Example Motors", count: 25, rank: 1 }] });
+    await json(route, { observedAt: "2026-09-30T08:00:00.000Z", metricKind: "active_stock", rankingComplete: false, makers: [{ maker: "Example Motors", count: 25, rank: 1 }] });
     return;
   }
   if (url.pathname === "/api/rto-reports/readiness") {

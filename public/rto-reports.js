@@ -847,8 +847,9 @@ async function loadTopMakers(stateName, rto) {
       ? new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" }).format(new Date(data.observedAt))
       : "Observation time unavailable";
     const makers = Array.isArray(data.makers) ? data.makers : [];
-    panel.innerHTML = `<div class="rto-report-section-head"><div><h3>Current top 5 makers</h3><span>Active registrations in the report's 2W, 3W and 4W EV/ICE categories · observed ${escapeHtml(observed)} IST. Separate from the selected report period.</span></div></div>
-      ${makers.length ? `<div class="rto-report-table-wrap"><table class="rto-report-table"><thead><tr><th>Rank</th><th>Maker</th><th>Active registrations</th></tr></thead><tbody>${makers.map((maker) => `<tr><td>#${fmt(maker.rank)}</td><td>${escapeHtml(maker.maker)}</td><td>${fmt(maker.count)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="result-empty">No makers were returned for this verified source scope.</p>`}`;
+    panel.innerHTML = `<div class="rto-report-section-head"><div><h3>${data.rankingComplete ? "Current top 5 makers" : "Current makers reported"}</h3><span>Active registrations in the report's 2W, 3W and 4W EV/ICE categories · observed ${escapeHtml(observed)} IST. Separate from the selected report period.</span></div></div>
+      ${makers.length ? `<div class="rto-report-table-wrap"><table class="rto-report-table"><thead><tr><th>Rank</th><th>Maker</th><th>Active registrations</th></tr></thead><tbody>${makers.map((maker) => `<tr><td>#${fmt(maker.rank)}</td><td>${escapeHtml(maker.maker)}</td><td>${fmt(maker.count)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="result-empty">No makers were returned for this verified source scope.</p>`}
+      ${!data.rankingComplete ? `<p class="result-empty">VAHAN returned ${makers.length} named maker${makers.length === 1 ? "" : "s"} in its five-row chart. A complete top-five OEM ranking is unavailable from this source.</p>` : ""}`;
   } catch (error) {
     topMakersCache.delete(key);
     if (panel.isConnected) panel.innerHTML = `<div class="rto-report-section-head"><div><h3>Current top 5 makers</h3><span>VAHAN maker rankings are unavailable for this RTO right now.</span></div></div><p class="result-empty">${escapeHtml(error.message)}</p>`;

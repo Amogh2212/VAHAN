@@ -31,6 +31,36 @@ const makerScope = await getRtoTopMakers({
 });
 assert.deepEqual(makerScope.makers, [{ maker: "Example Motors", count: 25, rank: 1 }]);
 assert.equal(makerScope.metricKind, "active_stock", "current maker rankings must not be labeled as Daily registrations");
+assert.equal(makerScope.rankingComplete, false);
+const withoutAggregate = await getRtoTopMakers({
+  state: "Aggregate State",
+  rto: "Aggregate RTO - ZZ3",
+  fetchSegment: async () => ({
+    metricKind: "active_stock", source: "vahan-public-dashboard", scrapedAt: "2026-09-30T08:00:00.000Z",
+    validation: { contract: "public-stock-v2" }, total: 500,
+    makers: [
+      { maker: "Others", count: 100, rank: 1 },
+      { maker: "Maker A", count: 90, rank: 2 },
+      { maker: "Maker B", count: 80, rank: 3 },
+      { maker: "Maker C", count: 70, rank: 4 },
+      { maker: "Maker D", count: 60, rank: 5 },
+    ],
+  }),
+});
+assert.deepEqual(withoutAggregate.makers.map(({ maker, rank }) => [maker, rank]), [
+  ["Maker A", 1], ["Maker B", 2], ["Maker C", 3], ["Maker D", 4],
+]);
+assert.equal(withoutAggregate.rankingComplete, false, "a fifth maker must not be invented when the source returns an aggregate row");
+const completeMakers = await getRtoTopMakers({
+  state: "Complete State",
+  rto: "Complete RTO - ZZ4",
+  fetchSegment: async () => ({
+    metricKind: "active_stock", validation: { contract: "public-stock-v2" },
+    makers: [90, 80, 70, 60, 50].map((count, index) => ({ maker: `Maker ${index + 1}`, count, rank: index + 1 })),
+  }),
+});
+assert.equal(completeMakers.rankingComplete, true);
+assert.equal(completeMakers.makers.length, 5);
 await assert.rejects(getRtoTopMakers({ state: "Invalid State", rto: "Invalid RTO - ZZ2", fetchSegment: async () => ({ metricKind: "registration_month_to_date", validation: { contract: "public-registration-mtd-v1" } }) }), /unverified/);
 
 assert.equal(RTO_REPORT_EXPECTED_OEMS, 5);
