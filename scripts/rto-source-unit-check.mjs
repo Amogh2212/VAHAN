@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "./public-dashboard-request-unit-check.mjs";
 import {
   PUBLIC_MONTHLY_MAKER_UNAVAILABLE_REASON,
   fetchPublicRtoRegistrationSegment,
@@ -94,6 +95,18 @@ assert.equal(monthlyRequest.searchParams.get("timePeriod"), "0");
 assert.equal(monthlyRequest.searchParams.get("archiveTypePA"), "");
 assert.equal(monthlyMock.requests.some((u) => u.pathname.endsWith("top5Makerchart")), false, "unproven yearly maker evidence must not be fetched as monthly OEM data");
 await assert.rejects(fetchPublicRtoRegistrationSegment({ ...options, targetMonth: "2026-08", fetchImpl: source({ total: 27 }).fetchImpl }), /missing evidence is not zero/);
+const missingOctoberSource = source({ total: 27 });
+await assert.rejects(fetchPublicRtoRegistrationSegment({ ...options, targetMonth: "2026-10", fetchImpl: missingOctoberSource.fetchImpl }), /missing evidence is not zero/);
+assert.equal(missingOctoberSource.requests.filter((u) => u.pathname.endsWith("durationWiseRegistrationTable")).length, 1,
+  "a successful sparse response must stay missing, without transport retries or zero filling");
+const recoveringSource = source({ total: 27 });
+let monthlyCalls = 0;
+const recoveredMonthly = await fetchPublicRtoRegistrationSegment({ ...options, targetMonth: "2026-09", fetchImpl: async (url, init) => {
+  if (new URL(url).pathname.endsWith("durationWiseRegistrationTable") && ++monthlyCalls === 1) return new Response("missing route", { status: 404 });
+  return recoveringSource.fetchImpl(url, init);
+} });
+assert.equal(recoveredMonthly.total, 27);
+assert.equal(monthlyCalls, 2, "an intermittent monthly 404 must recover within the same scope attempt");
 assert.throws(() => parsePublicMonthlyCounts([
   { yearAsString: "2026 September", registeredVehicleCount: "27" },
   { yearAsString: "2026 September", registeredVehicleCount: "28" },

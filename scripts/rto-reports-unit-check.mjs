@@ -387,8 +387,33 @@ const rolloverRows = totalRows
 const [rolloverDaily] = buildRtoReportPayloads({
   period: reportPeriod("daily", "2026-08-01"), cohort, totalRows: rolloverRows,
 });
-assert.equal(rolloverDaily.periodEv, null);
-assert.match(rolloverDaily.payload.dailyRegistration.reason, /Month-boundary baseline/);
+const firstDayRows = rolloverRows.filter((row) => row.snapshot_date === "2026-08-01");
+assert.equal(rolloverDaily.periodEv, firstDayRows.filter((row) => row.fuel_group === "EV").reduce((sum, row) => sum + Number(row.report_total), 0),
+  "first-day registrations equal the explicit current-month totals, without subtracting July");
+assert.equal(rolloverDaily.payload.dailyRegistration.baselineEligible, true);
+assert.equal(rolloverDaily.payload.dailyRegistration.freshness.status, "month_start_observation_verified");
+const [firstDayOnly] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-08-01"), cohort, totalRows: firstDayRows });
+assert.equal(firstDayOnly.periodEv, rolloverDaily.periodEv, "a first-day observation needs no prior-month baseline");
+const explicitFirstDayZeroRows = firstDayRows.map((row) => {
+  const zero = structuredClone(row);
+  zero.report_total = 0;
+  zero.explicit_zero = true;
+  zero.quality_flags.sourceEvidence.validation.monthToDateTotal = 0;
+  zero.quality_flags.sourceEvidence.validation.zeroConfirmed = true;
+  return zero;
+});
+const [explicitFirstDayZero] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-08-01"), cohort, totalRows: explicitFirstDayZeroRows });
+assert.equal(explicitFirstDayZero.periodEv, 0, "six explicit source zeros are valid first-day counts");
+assert.equal(explicitFirstDayZero.payload.dailyRegistration.baselineEligible, true);
+const [missingFirstDayScope] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-08-01"), cohort, totalRows: firstDayRows.slice(1) });
+assert.equal(missingFirstDayScope.periodEv, null, "missing first-day evidence must never become zero");
+const [secondDayOnly] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-08-02"), cohort,
+  totalRows: firstDayRows.map((row) => {
+    const changed = structuredClone(row);
+    changed.snapshot_date = "2026-08-02";
+    return changed;
+  }) });
+assert.equal(secondDayOnly.periodEv, null, "later days still require a compatible previous-day observation");
 // Stock rendering remains independently supported for the weekly cadence.
 const [weeklyStock] = buildRtoReportPayloads({
   period: reportPeriod("weekly", "2026-07-24"), cohort,

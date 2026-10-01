@@ -11,6 +11,11 @@ on:
         required: false
         default: false
         type: boolean
+      retry_failed:
+        description: Retry today's failed RTOs after source recovery; successful observations are preserved.
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   group: vahan-rto-daily-neon-production
@@ -81,6 +86,7 @@ jobs:
         run: >-
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
           --neon --work-queue --allow-partial --time-budget-minutes 315 --workers 2 --preserve-history --require-complete
+          ${{ github.event_name == 'workflow_dispatch' && inputs.retry_failed == true && '--retry-failed' || '' }}
 
       - name: Create sanitized production summary
         if: always()
