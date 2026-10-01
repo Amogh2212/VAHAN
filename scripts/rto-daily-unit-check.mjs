@@ -27,8 +27,10 @@ assert.match(productionWorkflow, /initialize_cohort:[\s\S]*?default: false/,
   "manual production runs must not reseed an existing daily queue by default");
 assert.match(productionWorkflow, /--neon --work-queue --allow-partial --time-budget-minutes 315/,
   "production queue runs must continue pending RTOs without automatically requeueing known partial failures");
-assert.doesNotMatch(productionWorkflow, /--retry-failed|--retry-incomplete/,
-  "production queue runs must not spend the daily budget repeating deterministic partial failures");
+assert.match(productionWorkflow, /github.event_name == 'workflow_dispatch' && inputs.retry_failed == true && '--retry-failed'/,
+  "an explicit manual recovery run must requeue failed jobs without resetting scheduled runs");
+assert.doesNotMatch(productionWorkflow, /--retry-incomplete/,
+  "successful jobs must retain their first valid observations during recovery");
 assert.throws(() => parseArgs(["--preserve-history", "--date=2000-01-01"]), /historical reruns are forbidden/);
 for (const preserveHistory of [true, false]) {
   const calls = [];
