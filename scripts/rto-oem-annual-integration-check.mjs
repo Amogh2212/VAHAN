@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import pg from "pg";
+import { annualSourceFixture } from "./fixtures/rto-oem-annual.mjs";
+import { fetchAnnualOemSegment, saveAnnualOemObservation, getAnnualOemRankings } from "../lib/rto-oem-annual.mjs";
+import { RTO_DAILY_CATEGORY_FILTERS, RTO_DAILY_FUEL_FILTERS } from "../lib/rto-daily-snapshots.mjs";
+const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid");
+if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) throw new Error("Integration checks require a local database.");
+const client = new pg.Client({ connectionString: url.href, ssl: false });
+const schema = `annual_oem_test_${process.pid}`;
+const params = { state: "Uttarakhand", rto: "DEHRADUN RTO - UK7", date: "2026-10-01" };
+const cohort = Array.from({ length: 100 }, (_, index) => ({ rank: index + 1, state: index ? "Test state" : params.state, rto: index ? `Test RTO ${index}` : params.rto }));
+const execute = (sql, values) => client.query(sql, values);
+const transact = async (callback) => { await execute("begin"); try { const result = await callback(execute); await execute("commit"); return result; } catch (error) { await execute("rollback"); throw error; } };
+const makeEvidence = async (date, scenario = {}) => {
+  const evidence = await fetchAnnualOemSegment({ ...params, year: Number(date.slice(0,4)), ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV, fetchImpl: annualSourceFixture(scenario).fetchImpl });
+  evidence.observedAt = `${date}T10:00:00Z`;
+  return evidence;
+};
+const run = async (date) => (await execute("insert into rto_oem_annual_collection_runs (source_cohort_run_id,cohort_hash,cohort,calendar_year,observation_date) values (1,'test',$1::jsonb,$2,$3) returning id", [JSON.stringify(cohort),Number(date.slice(0,4)),date])).rows[0].id;
+await client.connect();
+try {
+  await execute(`create schema ${schema}`);
+  await execute(`set search_path to ${schema}`);
+  await execute(await fs.readFile(new URL("../db/rto-oem-annual.sql", import.meta.url), "utf8"));
+  const runId = await run(params.date);
+  const context = { runId, ...params, fuelGroup: "EV", vehicleCategory: "2W" };
+  const first = await makeEvidence(params.date);
+  await saveAnnualOemObservation({ ...context, evidence: first }, transact);
+  let result = await getAnnualOemRankings(params, execute);
+  assert.equal(result.segments[0].makers[0].name, "Maker A");
+  assert.equal(result.segments[1].status, "unavailable");
+  const replacement = await makeEvidence(params.date, { labels: ["Maker C"], counts: [30] });
+  await saveAnnualOemObservation({ ...context, evidence: replacement }, transact);
+  result = await getAnnualOemRankings(params, execute);
+  assert.equal(result.segments[0].makers.length, 1);
+  assert.equal(result.segments[0].makers[0].name, "Maker C");
+  assert.equal((await execute("select count(*)::int as n from rto_oem_annual_observations")).rows[0].n, 1);
+  await assert.rejects(saveAnnualOemObservation({ ...context, date: "2026-10-02", evidence: { ...replacement, observedAt: "2026-10-02T10:00:00Z" } }, transact), /frozen collection run/);
+  await assert.rejects(saveAnnualOemObservation({ ...context, rto: "Foreign RTO", evidence: replacement }, transact));
+  await assert.rejects(saveAnnualOemObservation({ ...context, evidence: { ...first, total: 1 } }, transact), /persistence payload/);
+  await assert.rejects(saveAnnualOemObservation({ ...context, fuelGroup: "ICE", evidence: first }, transact), /fuel\/category/);
+  await assert.rejects(saveAnnualOemObservation({ ...context, evidence: { ...first, observedAt: "2026-10-02T10:00:00Z" } }, transact), /IST date/);
+  assert.equal((await getAnnualOemRankings({ ...params, date: "2026-09-30" }, execute)).segments[0].status, "unavailable");
+  const nextDate = "2026-10-02";
+  await saveAnnualOemObservation({ ...context, runId: await run(nextDate), date: nextDate, evidence: undefined, errorReason: "Source HTTP 404" }, transact);
+  assert.equal((await getAnnualOemRankings({ ...params, date: nextDate }, execute)).segments[0].reason, "Source HTTP 404");
+  assert.equal((await getAnnualOemRankings(params, execute)).segments[0].makers[0].name, "Maker C");
+  assert.equal((await getAnnualOemRankings({ ...params, date: "2027-01-01" }, execute)).segments[0].status, "unavailable");
+  const zeroDate = "2027-01-01";
+  await saveAnnualOemObservation({ ...context, runId: await run(zeroDate), date: zeroDate, evidence: await makeEvidence(zeroDate, { total: 0, labels: [], counts: [] }) }, transact);
+  assert.equal((await getAnnualOemRankings({ ...params, date: zeroDate }, execute)).segments[0].explicitZero, true);
+  // A database failure after the upsert must roll the whole response back.
+  await assert.rejects(saveAnnualOemObservation({ ...context, evidence: first }, async (callback) => transact(async (q) => { await callback(q); throw new Error("Simulated persistence failure"); })), /Simulated/);
+  assert.equal((await getAnnualOemRankings(params, execute)).segments[0].makers[0].name, "Maker C");
+  console.log("Annual OEM PostgreSQL checks passed: replacement, rollback, frozen scope, date selection, failure isolation and year boundary.");
+} finally {
+  await execute("set search_path to public").catch(() => {});
+  await execute(`drop schema if exists ${schema} cascade`).catch(() => {});
+  await client.end();
+}
