@@ -1,9 +1,9 @@
 name: RTO Daily Neon Production Collection
 
 on:
-  # GitHub Actions cron is UTC: 21:00 UTC is 02:30 IST on the following day.
+  # GitHub Actions cron is UTC: 14:30 UTC is 20:00 IST on the same day.
   schedule:
-    - cron: "0 21 * * *"
+    - cron: "30 14 * * *"
   workflow_dispatch:
     inputs:
       initialize_cohort:
