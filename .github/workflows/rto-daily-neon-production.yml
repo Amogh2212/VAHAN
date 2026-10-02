@@ -25,7 +25,22 @@ permissions:
   contents: read
 
 jobs:
+  schedule_gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run_collection: ${{ steps.check.outputs.run_collection }}
+    steps:
+      - name: Skip collection on October 2, 2026
+        id: check
+        run: |
+          if [ "$(date -u +%F)" = "2026-10-02" ]; then
+            echo "run_collection=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_collection=true" >> "$GITHUB_OUTPUT"
+          fi
   collect:
+    needs: schedule_gate
+    if: needs.schedule_gate.outputs.run_collection == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
