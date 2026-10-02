@@ -1,0 +1,25 @@
+.rto-annual-oem { min-width: 0; }
+.rto-oem-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin: 18px 0; }
+.rto-oem-selector { display: flex; gap: 4px; margin: 0; }
+.rto-oem-selector button { min-width: 56px; min-height: 40px; padding: 8px 14px; border: 1px solid transparent; border-radius: 4px; background: #f1f2f6; color: #586174; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.rto-oem-selector button:hover { background: #e6efef; color: #176b73; }
+.rto-oem-selector button[aria-checked="true"] { background: #e6efef; color: #176b73; border-color: #176b73; }
+.rto-oem-selector [data-annual-fuel]::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #176b73; }
+.rto-oem-selector [data-annual-fuel="ICE"]::before { background: #a9b7c4; }
+.rto-oem-selector button:focus-visible { outline: 3px solid #182139; outline-offset: 3px; }
+.rto-annual-oem-result { margin-top: 16px; }
+.rto-annual-oem-result > p { font-size: 13px; line-height: 1.6; }
+.rto-annual-oem-result h4 { margin: 0 0 12px; font-size: 14px; }
+.rto-oem-ranking { list-style: none; margin: 0; padding: 0; }
+.rto-oem-ranking li { margin: 0; padding: 12px 0; border-bottom: 1px solid #dde1e8; }
+.rto-oem-ranking-label { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
+.rto-oem-ranking-label span { min-width: 0; overflow-wrap: anywhere; color: #182139; }
+.rto-oem-ranking-label b { color: #586174; margin-right: 8px; }
+.rto-oem-ranking-label strong { flex-shrink: 0; font-variant-numeric: tabular-nums; color: #182139; }
+.rto-oem-bar { height: 6px; background: #f1f2f6; border-radius: 3px; overflow: hidden; }
+.rto-oem-bar i { display: block; height: 100%; background: #176b73; }
+.rto-annual-oem[data-fuel="ICE"] .rto-oem-bar i { background: #a9b7c4; }
+.rto-annual-oem-note, .rto-annual-oem-provenance { color: #586174; font-size: 14px; line-height: 1.5; }
+.rto-annual-oem-provenance { margin-top: 20px; overflow-wrap: anywhere; }
+.rto-annual-oem-provenance a { color: #176b73; text-underline-offset: 3px; }
+@media (max-width: 480px) { .rto-oem-ranking-label { gap: 8px; } .rto-oem-selector { gap: 6px; } }

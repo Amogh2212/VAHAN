@@ -49,7 +49,7 @@
     "check:vahan-final-comparison:browser": "node scripts/final-vahan-comparison-browser-check.mjs",
     "check:oem": "node scripts/monthly-oem-unit-check.mjs && node scripts/report-insight-summary-unit-check.mjs",
     "check:rto-daily": "node scripts/rto-daily-unit-check.mjs && node scripts/rto-source-unit-check.mjs && node scripts/db-retry-unit-check.mjs",
-    "check:rto-reports": "node scripts/rto-reports-unit-check.mjs && node scripts/daily-rto-contract-check.mjs && node scripts/check-daily-registration-availability-unit-check.mjs && node scripts/text-pdf-unit-check.mjs",
+    "check:rto-reports": "node scripts/rto-reports-unit-check.mjs && node scripts/daily-rto-contract-check.mjs && node scripts/check-daily-registration-availability-unit-check.mjs && node scripts/text-pdf-unit-check.mjs && npm run check:oem-annual",
     "check:rto-daily-contract:integration": "node --env-file=.env.local-postgres scripts/daily-rto-contract-integration-check.mjs",
     "check:rto-reports:integration": "node --env-file=.env scripts/rto-reports-integration-check.mjs",
     "check:rto-reports:browser": "node --env-file=.env scripts/rto-reports-browser-check.mjs",
@@ -117,7 +117,11 @@
     "rto-insights:geofabrik:dry-run": "node --env-file=.env scripts/import-geofabrik-rto-signals.mjs",
     "rto-insights:geofabrik:import": "node --env-file=.env scripts/import-geofabrik-rto-signals.mjs --write",
     "report:monthly": "node --env-file=.env scripts/generate-monthly-sales-report.mjs",
-    "report:daily-ev:try": "node --env-file=.env scripts/generate-daily-ev-report-try.mjs"
+    "report:daily-ev:try": "node --env-file=.env scripts/generate-daily-ev-report-try.mjs",
+    "check:oem-annual": "node scripts/rto-oem-annual-unit-check.mjs",
+    "check:oem-annual:integration": "node --env-file=.env.local-postgres scripts/rto-oem-annual-integration-check.mjs",
+    "rto-oem-annual:collect": "node scripts/collect-rto-oem-annual.mjs",
+    "rto-oem-annual:schema": "node scripts/apply-rto-oem-annual-schema.mjs"
   },
   "dependencies": {
     "embedded-postgres": "17.10.0-beta.17",

@@ -14,6 +14,7 @@ const BATCHES = [
   batch(902, "weekly", "2026-07-20", "2026-07-26"),
   batch(903, "monthly", "2026-07-01", "2026-07-31"),
 ];
+let annualRequests = 0;
 const REPORTS = Array.from({ length: 100 }, (_, index) => reportSummary(index + 1));
 
 async function waitForHealth(child) {
@@ -97,10 +98,25 @@ async function main() {
     assert.equal(await page.locator("#rtoReportReadinessStatus").innerText(), "100 / 100");
     assert.equal(await page.locator(".rto-report-list-item").count(), 100);
     assert.equal(await page.getByRole("heading", { name: "Pune Central RTO" }).isVisible(), true);
-    assert.equal(await page.getByRole("heading", { name: "Current makers reported" }).isVisible(), true);
-    assert.match(await page.locator("#rtoTopMakers").innerText(), /Example Motors\s+25/);
-    assert.doesNotMatch(await page.locator("#rtoTopMakers").innerText(), /Others/);
-    assert.match(await page.locator("#rtoTopMakers").innerText(), /complete top-five OEM ranking is unavailable/i);
+    assert.equal(await page.getByRole("heading", { name: "Top 5 makers", exact: true }).isVisible(), true);
+    await page.locator(".rto-oem-ranking li").first().waitFor();
+    assert.equal(await page.getByRole("radio", { name: "EV", exact: true }).getAttribute("aria-checked"), "true");
+    const initialAnnualRequests = annualRequests;
+    for (const fuel of ["EV", "ICE"]) for (const category of ["2W", "3W", "4W"]) {
+      await page.getByRole("radio", { name: fuel, exact: true }).click();
+      await page.getByRole("radio", { name: category, exact: true }).click();
+      assert.match(await page.locator(".rto-oem-ranking li").first().innerText(), new RegExp(`${fuel} ${category} maker`));
+      assert.equal(await page.locator(".rto-oem-ranking li").count(), 5);
+    }
+    assert.equal(annualRequests, initialAnnualRequests, "selector changes use saved responses");
+    await page.getByRole("radio", { name: "EV", exact: true }).click();
+    assert.equal(await page.getByRole("radio", { name: "4W", exact: true }).getAttribute("aria-checked"), "true");
+    await page.getByRole("radio", { name: "EV", exact: true }).press("ArrowRight");
+    assert.equal(await page.getByRole("radio", { name: "ICE", exact: true }).getAttribute("aria-checked"), "true");
+    assert.equal(await page.getByRole("radio", { name: "ICE", exact: true }).evaluate((button) => document.activeElement === button), true);
+    await page.getByRole("radio", { name: "4W", exact: true }).press("Home");
+    assert.equal(await page.getByRole("radio", { name: "2W", exact: true }).getAttribute("aria-checked"), "true");
+    await page.locator(".rto-annual-oem").screenshot({ path: path.join(OUTPUT_DIR, "rto-oem-annual-desktop.png") });
     assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
@@ -190,6 +206,7 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator("#rtoReportStatusFilter").selectOption("");
     await page.waitForFunction(() => document.querySelectorAll(".rto-report-list-item").length === 100);
+    await page.waitForLoadState("networkidle");
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
     const metricColumns = await page.locator('.rto-report-metrics[aria-label="Headline metrics"]').evaluate((element) =>
@@ -197,13 +214,14 @@ async function main() {
     assert.equal(metricColumns, 1, "headline metrics must stack on narrow mobile screens");
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-mobile.png"), fullPage: true });
 
+
     await page.locator("#rtoReportBatchDate").fill("2026-07-23");
     await page.locator("#rtoReportBatchDate").dispatchEvent("change");
     await page.getByText("Source evidence", { exact: true }).waitFor();
     assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "SOURCE EVIDENCE");
     assert.equal(await page.locator(".rto-report-list-item").count(), 1);
     assert.match(await page.locator(".rto-report-detail").innerText(), /6\/6 verified monthly-registration scopes/i);
-    assert.match(await page.locator("#rtoTopMakers").innerText(), /Example Motors\s+25/);
+    await page.locator('.rto-annual-oem-result[aria-busy="false"]').waitFor();
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-source-evidence.png"), fullPage: true });
     assert.match(await page.locator(".rto-report-detail").innerText(), /Daily total\s+\+489/i);
     assert.match(await page.locator(".rto-report-metrics").innerText(), /EV registrations\s+[\d,]+↑ \+91/i);
@@ -237,6 +255,15 @@ async function main() {
     await monitoredPage.getByText("No RTOs selected yet", { exact: false }).waitFor();
     await monitoredPage.close();
 
+    await page.getByRole("radio", { name: "ICE", exact: true }).click();
+    await page.getByRole("radio", { name: "4W", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector(".rto-annual-oem-result")?.textContent.includes("Fixture missing ICE/4W"));
+    await page.getByRole("radio", { name: "EV", exact: true }).click();
+    await page.getByRole("radio", { name: "2W", exact: true }).click();
+    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /Confirmed zero/);
+    await page.getByRole("radio", { name: "3W", exact: true }).click();
+    assert.equal(await page.locator(".rto-oem-ranking li").count(), 4);
+    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /ranking is incomplete/);
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
     console.log("RTO report browser checks passed.");
   } finally {
@@ -248,6 +275,22 @@ async function main() {
 
 async function fulfillReportApi(route) {
   const url = new URL(route.request().url());
+  if (url.pathname === "/api/rto-reports/oem-rankings") {
+    annualRequests++;
+    const date = url.searchParams.get("date");
+    const rto = url.searchParams.get("rto");
+    const partial = date === "2026-07-23";
+    const segments = ["EV","ICE"].flatMap((fuelGroup, fuelIndex) => ["2W","3W","4W"].map((vehicleCategory, categoryIndex) => {
+      const unavailable = partial && fuelGroup === "ICE" && vehicleCategory === "4W";
+      const explicitZero = partial && fuelGroup === "EV" && vehicleCategory === "2W";
+      const count = partial && vehicleCategory === "3W" ? 4 : 5;
+      return { fuelGroup,vehicleCategory,year:2026,status:unavailable ? "unavailable" : "verified",reason:unavailable ? "Fixture missing ICE/4W" : null,
+        explicitZero,observationDate:date,rankingComplete:count === 5 || explicitZero,total:explicitZero ? 0 : 1000,
+        makers:unavailable || explicitZero ? [] : Array.from({length:count},(_,index)=>({rank:index+1,name:`${fuelGroup} ${vehicleCategory} maker ${index+1} · ${rto}${vehicleCategory === "4W" ? " · Manufacturer with a very long complete official company name" : ""}`,count:200+fuelIndex*100+categoryIndex*10-index*3})) };
+    }));
+    await json(route,{state:url.searchParams.get("state"),rto,date,year:2026,segments});
+    return;
+  }
   if (url.pathname === "/api/rto-reports/top-makers") {
     await json(route, { observedAt: "2026-09-30T08:00:00.000Z", metricKind: "active_stock", rankingComplete: false, makers: [{ maker: "Example Motors", count: 25, rank: 1 }] });
     return;

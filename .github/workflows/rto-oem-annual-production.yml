@@ -1,0 +1,55 @@
+name: RTO Annual OEM Production Collection
+
+on:
+  workflow_run:
+    workflows: ["RTO Daily Neon Production Collection"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      resume_run_id:
+        description: Optional same-day annual run ID; retry unavailable scopes and keep verified evidence.
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vahan-rto-oem-annual-production
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PGSSL: "true"
+      RTO_DAILY_DELAY_MS: "1200"
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply annual OEM tables
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/apply-rto-oem-annual-schema.mjs --production
+      - name: Collect six annual OEM segments for the frozen cohort
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OEM_RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+        run: |
+          if [ -n "$OEM_RESUME_RUN_ID" ]; then
+            node scripts/collect-rto-oem-annual.mjs --production --resume-run-id "$OEM_RESUME_RUN_ID"
+          else
+            node scripts/collect-rto-oem-annual.mjs --production --latest-cohort
+          fi

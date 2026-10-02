@@ -38,6 +38,7 @@ import {
   renderMonthlySalesReportHtml,
 } from "./lib/monthly-sales-report.mjs";
 import { dailyRtoInsightFacts, monthlyInsightFacts, summarizeInsight } from "./lib/report-insight-summary.mjs";
+import { getAnnualOemRankings, validateAnnualRequest } from "./lib/rto-oem-annual.mjs";
 import { getRtoTopMakers } from "./lib/rto-top-makers.mjs";
 import {
   REGISTRATION_HEADERS,
@@ -7051,6 +7052,12 @@ const server = http.createServer(async (request, response) => {
       response.end(content);
       return;
     }
+    if (request.method === "GET" && url.pathname === "/api/rto-reports/oem-rankings") {
+      const params = { state: url.searchParams.get("state"), rto: url.searchParams.get("rto"), date: url.searchParams.get("date") };
+      try { validateAnnualRequest(params); } catch (error) { sendJson(response, 400, { error: error.message }); return; }
+      sendJson(response, 200, await getAnnualOemRankings(params));
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/api/rto-reports/top-makers") {
       await enforceRateLimit(request, "expensive");
       const canonical = await canonicalRtoInput({ state: url.searchParams.get("state"), rto: url.searchParams.get("rto") });
@@ -7092,24 +7099,9 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 404, { error: "RTO report batch not found." });
         return;
       }
-      const cached = await loadCachedRtoReportExport({
-        scopeType: "batch",
-        scopeId: batch.id,
-        format: "csv",
-        revision: rtoReportExportRevision(batch, "csv"),
-      });
-      let content = cached?.content;
-      if (!content) {
-        const rendered = await renderRtoReportBatchCsv(batch.id);
-        content = Buffer.from(rendered.content, "utf8");
-        await saveRtoReportExport({
-          scopeType: "batch",
-          scopeId: batch.id,
-          format: "csv",
-          revision: rtoReportExportRevision(batch, "csv"),
-          content,
-        });
-      }
+      // Annual evidence changes independently of the generated batch revision.
+      const rendered = await renderRtoReportBatchCsv(batch.id);
+      const content = Buffer.from(rendered.content, "utf8");
       response.writeHead(200, securityHeaders({
         "content-type": "text/csv; charset=utf-8",
         "content-disposition": `attachment; filename="rto-${batch.cadence}-${batch.periodEnd}-all-100.csv"`,
@@ -7160,7 +7152,7 @@ const server = http.createServer(async (request, response) => {
         report.insightSummary = await summarizeInsight(dailyRtoInsightFacts(report));
       }
       const exportRevision = rtoReportExportRevision(report, format);
-      const dynamicDailyPdf = format === "pdf" && report.payload?.cadence === "daily";
+      const dynamicDailyPdf = Boolean(report.annualOem) || (format === "pdf" && report.payload?.cadence === "daily");
       const cached = dynamicDailyPdf ? null : await loadCachedRtoReportExport({
         scopeType: "report",
         scopeId: report.id,
