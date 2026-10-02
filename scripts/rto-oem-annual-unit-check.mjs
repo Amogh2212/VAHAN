@@ -37,7 +37,7 @@ for (const cadence of ["daily", "weekly", "monthly"]) {
   assert.equal((html.match(/Maker A/g) ?? []).length, 6);
 }
 for (const scenario of [{ categoryTotal: 31 }, { invalidCategory: true }, { counts: [31, 0, 0] }, { labels: [], counts: [] }, { status: 404 }, { counts: [1, 20, 5] }]) {
-  await assert.rejects(fetchAnnualOemSegment({ ...params, year: 2026, ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV, fetchImpl: annualSourceFixture(scenario).fetchImpl }));
+  await assert.rejects(fetchAnnualOemSegment({ ...params, year: 2026, ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV, maxRequestAttempts: 1, fetchImpl: annualSourceFixture(scenario).fetchImpl }));
 }
 await assert.rejects(fetchAnnualOemSegment({ ...params, rto: "UNKNOWN OFFICE - UK7", year: 2026, ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV, fetchImpl: annualSourceFixture().fetchImpl }), /mapping/);
 for (const counts of [[null], [-1], [1.5], [Number.MAX_SAFE_INTEGER + 1]]) assert.throws(() => parseAnnualMakers({ labels: ["A"], datasets: [{ data: counts }] }));
@@ -52,4 +52,27 @@ assert.equal(partial.segments[1].total, null);
 let called = false;
 await getAnnualOemRankings(params, async (sql, values) => { called = true; assert.deepEqual(values, [params.state, params.rto, 2026, params.date]); assert.match(sql, /calendar_year=\$3/); assert.match(sql, /observation_date <= \$4/); assert.match(sql, /observed_at desc/); return { rows: observations }; });
 assert.ok(called);
+// Retry only the failing endpoint; already successful chart calls are not repeated.
+for (const endpoint of ["/vahan", "/json_rtos", "top5Makerchart", "categoriesdonutchart", "dashboardcount"]) {
+  const source = annualSourceFixture();
+  const calls = new Map();
+  let paced = 0;
+  const fetchImpl = async (url) => {
+    const path = new URL(url).pathname;
+    calls.set(path, (calls.get(path) ?? 0) + 1);
+    if (path.endsWith(endpoint) && calls.get(path) === 1) return new Response("Temporary source failure", { status: 404 });
+    return source.fetchImpl(url);
+  };
+  const evidence = await fetchAnnualOemSegment({ ...params, year: 2026, ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV,
+    fetchImpl, maxRequestAttempts: 2, beforeRequest: async () => { paced++; } });
+  assert.equal(evidence.total, 30);
+  assert.equal(paced, [...calls.values()].reduce((a,b) => a+b, 0), "each attempt observes request pacing");
+  for (const [path, count] of calls) assert.equal(count, path.endsWith(endpoint) ? 2 : 1);
+}
+let failedCalls = 0;
+const permanent = annualSourceFixture();
+await assert.rejects(fetchAnnualOemSegment({ ...params, year: 2026, ...RTO_DAILY_CATEGORY_FILTERS["2W"], fuels: RTO_DAILY_FUEL_FILTERS.EV,
+  maxRequestAttempts: 2, fetchImpl: async (url) => { if (new URL(url).pathname.endsWith("top5Makerchart")) { failedCalls++; return new Response("Missing", { status: 404 }); } return permanent.fetchImpl(url); } }),
+  /top5Makerchart.*404.*2 attempts/);
+assert.equal(failedCalls, 2, "persistent failures stay unavailable after bounded retries");
 console.log("Annual OEM source, six-segment isolation, validation, partial coverage and export checks passed.");
