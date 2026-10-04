@@ -1,10 +1,8 @@
 name: RTO Annual OEM Production Collection
 
 on:
-  workflow_run:
-    workflows: ["RTO Daily Neon Production Collection"]
-    types: [completed]
-    branches: [main]
+  # Legacy annual rankings remain available only when explicitly requested.
+  # Automatic daily tracking is owned by rto-oem-tracking-production.yml.
   workflow_dispatch:
     inputs:
       resume_run_id:
@@ -35,7 +33,7 @@ jobs:
           fi
   collect:
     needs: schedule_gate
-    if: needs.schedule_gate.outputs.run_collection == 'true' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_repository.full_name == github.repository)
+    if: needs.schedule_gate.outputs.run_collection == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     env:

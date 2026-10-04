@@ -14,7 +14,8 @@ const BATCHES = [
   batch(902, "weekly", "2026-07-20", "2026-07-26"),
   batch(903, "monthly", "2026-07-01", "2026-07-31"),
 ];
-let annualRequests = 0;
+let dailyOemRequests = 0;
+const dailyOemDates = [];
 const REPORTS = Array.from({ length: 100 }, (_, index) => reportSummary(index + 1));
 
 async function waitForHealth(child) {
@@ -32,7 +33,7 @@ async function waitForHealth(child) {
 
 async function main() {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
-  const server = spawn(process.execPath, ["--env-file=.env", "server.mjs"], {
+  const server = spawn(process.execPath, ["--env-file-if-exists=.env", "server.mjs"], {
     cwd: process.cwd(),
     env: {
       ...process.env,
@@ -62,6 +63,16 @@ async function main() {
     await waitForHealth(server);
     const disabledFactorResponse = await fetch(`${BASE_URL}/api/admin/rto-factor-sources`);
     assert.equal(disabledFactorResponse.status, 503, "factor admin APIs must fail closed when disabled");
+    const savedOemResponse = await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=Maharashtra&rto=Pune&date=2026-07-24`);
+    assert.equal(savedOemResponse.status, 200);
+    const missingOems = await savedOemResponse.json();
+    assert.equal(missingOems.metricKind, "registration_observed_daily_change");
+    assert.equal(missingOems.date, "2026-07-24");
+    assert.equal(missingOems.segments.length, 6);
+    assert.ok(missingOems.segments.every((segment) => segment.status === "unavailable" && !segment.makers.length), "unconfigured storage must not substitute annual figures for daily observations");
+    assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&rto=y&date=2026-02-30`)).status, 400);
+    assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&date=2026-07-24`)).status, 400);
+    assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-rankings?state=x&rto=y&date=2026-07-24`)).status, 200, "annual API compatibility is retained");
     browser = await chromium.launch({ headless: true });
     const emptyPage = await browser.newPage({ viewport: { width: 1920, height: 825 } });
     await emptyPage.route("https://fonts.googleapis.com/**", (route) =>
@@ -101,14 +112,22 @@ async function main() {
     assert.equal(await page.getByRole("heading", { name: "Top 5 makers", exact: true }).isVisible(), true);
     await page.locator(".rto-oem-ranking li").first().waitFor();
     assert.equal(await page.getByRole("radio", { name: "EV", exact: true }).getAttribute("aria-checked"), "true");
-    const initialAnnualRequests = annualRequests;
+    assert.match(await page.locator(".rto-daily-oem").innerText(), /Selected from 2025 rankings/);
+    assert.equal(await page.locator(".rto-oem-daily-value").first().innerText(), "+12");
+    assert.equal(await page.locator('[data-oem-status="correction"] .rto-oem-daily-value').innerText(), "-3");
+    assert.equal(await page.locator('[data-oem-status="unconfirmed_no_change"] .rto-oem-daily-value').innerText(), "Unavailable");
+    assert.match(await page.locator('[data-oem-status="unconfirmed_no_change"]').innerText(), /No observed change; freshness unconfirmed/);
+    await page.locator(".rto-oem-observations summary").first().click();
+    assert.match(await page.locator(".rto-oem-observations").first().innerText(), /2025 registrations · rank #1\s+200/);
+    assert.match(await page.locator(".rto-oem-observations").first().innerText(), /Previous-day cumulative registrations\s+1,000/);
+    const initialDailyOemRequests = dailyOemRequests;
     for (const fuel of ["EV", "ICE"]) for (const category of ["2W", "3W", "4W"]) {
       await page.getByRole("radio", { name: fuel, exact: true }).click();
       await page.getByRole("radio", { name: category, exact: true }).click();
       assert.match(await page.locator(".rto-oem-ranking li").first().innerText(), new RegExp(`${fuel} ${category} maker`));
       assert.equal(await page.locator(".rto-oem-ranking li").count(), 5);
     }
-    assert.equal(annualRequests, initialAnnualRequests, "selector changes use saved responses");
+    assert.equal(dailyOemRequests, initialDailyOemRequests, "selector changes use saved responses");
     await page.getByRole("radio", { name: "EV", exact: true }).click();
     assert.equal(await page.getByRole("radio", { name: "4W", exact: true }).getAttribute("aria-checked"), "true");
     await page.getByRole("radio", { name: "EV", exact: true }).press("ArrowRight");
@@ -116,8 +135,7 @@ async function main() {
     assert.equal(await page.getByRole("radio", { name: "ICE", exact: true }).evaluate((button) => document.activeElement === button), true);
     await page.getByRole("radio", { name: "4W", exact: true }).press("Home");
     assert.equal(await page.getByRole("radio", { name: "2W", exact: true }).getAttribute("aria-checked"), "true");
-    await page.locator(".rto-annual-oem").screenshot({ path: path.join(OUTPUT_DIR, "rto-oem-annual-desktop.png") });
-    assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).isVisible(), true);
+    await page.locator(".rto-daily-oem").screenshot({ path: path.join(OUTPUT_DIR, "rto-oem-daily-desktop.png") });
     assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
     assert.match(await page.locator(".rto-factor-card").innerText(), /associated with a higher daily EV run-rate/i);
@@ -133,7 +151,7 @@ async function main() {
     await expectMetricCard(metricCards.nth(2), "ICE registrations", "+422", "2026-07-24 (IST) · Verified comparison");
     assert.match(await page.locator(".rto-report-list-item").first().innerText(), /Daily EV \+91/);
     assert.match(await page.locator(".rto-report-detail").innerText(), /EV month to date\s+1,253/i);
-    assert.match(await page.locator(".rto-report-detail").innerText(), /Maker chart lacks an exact target-month contract/);
+    assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).count(), 0, "fixed daily OEM panel replaces conflicting monthly-maker section");
     await page.evaluate(() => {
       window.__rtoDatePickerOpened = 0;
       HTMLInputElement.prototype.__rtoOriginalShowPicker = HTMLInputElement.prototype.showPicker;
@@ -260,10 +278,28 @@ async function main() {
     await page.waitForFunction(() => document.querySelector(".rto-annual-oem-result")?.textContent.includes("Fixture missing ICE/4W"));
     await page.getByRole("radio", { name: "EV", exact: true }).click();
     await page.getByRole("radio", { name: "2W", exact: true }).click();
-    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /Confirmed zero/);
+    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /No OEMs selected in 2025/);
     await page.getByRole("radio", { name: "3W", exact: true }).click();
     assert.equal(await page.locator(".rto-oem-ranking li").count(), 4);
     assert.match(await page.locator(".rto-annual-oem-result").innerText(), /ranking is incomplete/);
+    assert.match(await page.locator(".rto-daily-oem").innerText(), /2026-07-23 \(IST\)/);
+    assert.ok(dailyOemDates.includes("2026-07-23"), "historical OEM observations use selected date");
+    const fallbackPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await fallbackPage.route("**/api/rto-reports/**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.pathname === "/api/rto-reports/oem-daily") {
+        await json(route, { state: url.searchParams.get("state"), rto: url.searchParams.get("rto"), date: url.searchParams.get("date"), selectionYear: 2025, baselineId: null, segments: [] });
+        return;
+      }
+      await fulfillReportApi(route);
+    });
+    await fallbackPage.goto(`${BASE_URL}/rto-reports.html`, { waitUntil: "networkidle" });
+    assert.match(await fallbackPage.locator(".rto-daily-oem").innerText(), /Daily OEM tracking awaiting a verified 2025 baseline/);
+    assert.match(await fallbackPage.locator(".rto-daily-oem").innerText(), /Calendar year 2026 · Supporting annual evidence/);
+    assert.equal(await fallbackPage.locator(".rto-oem-daily-value").count(), 0, "annual figures must never be rendered as daily changes");
+    assert.equal(await fallbackPage.locator(".rto-oem-ranking-label strong").first().innerText(), "9,999");
+    await assertNoPageOverflow(fallbackPage);
+    await fallbackPage.close();
     assert.deepEqual(consoleErrors, [], `browser console errors: ${consoleErrors.join(" | ")}`);
     console.log("RTO report browser checks passed.");
   } finally {
@@ -276,19 +312,35 @@ async function main() {
 async function fulfillReportApi(route) {
   const url = new URL(route.request().url());
   if (url.pathname === "/api/rto-reports/oem-rankings") {
-    annualRequests++;
+    const segments = ["EV", "ICE"].flatMap((fuelGroup) => ["2W", "3W", "4W"].map((vehicleCategory) => ({
+      fuelGroup, vehicleCategory, status: "verified", rankingComplete: true, observationDate: url.searchParams.get("date"),
+      makers: Array.from({ length: 5 }, (_, index) => ({ rank: index + 1, name: `Annual supporting maker ${index + 1}`, count: 9999 - index })),
+    })));
+    await json(route, { state: url.searchParams.get("state"), rto: url.searchParams.get("rto"), date: url.searchParams.get("date"), year: 2026, segments });
+    return;
+  }
+  if (url.pathname === "/api/rto-reports/oem-daily") {
+    dailyOemRequests++;
     const date = url.searchParams.get("date");
+    dailyOemDates.push(date);
     const rto = url.searchParams.get("rto");
     const partial = date === "2026-07-23";
     const segments = ["EV","ICE"].flatMap((fuelGroup, fuelIndex) => ["2W","3W","4W"].map((vehicleCategory, categoryIndex) => {
       const unavailable = partial && fuelGroup === "ICE" && vehicleCategory === "4W";
       const explicitZero = partial && fuelGroup === "EV" && vehicleCategory === "2W";
       const count = partial && vehicleCategory === "3W" ? 4 : 5;
-      return { fuelGroup,vehicleCategory,year:2026,status:unavailable ? "unavailable" : "verified",reason:unavailable ? "Fixture missing ICE/4W" : null,
-        explicitZero,observationDate:date,rankingComplete:count === 5 || explicitZero,total:explicitZero ? 0 : 1000,
-        makers:unavailable || explicitZero ? [] : Array.from({length:count},(_,index)=>({rank:index+1,name:`${fuelGroup} ${vehicleCategory} maker ${index+1} · ${rto}${vehicleCategory === "4W" ? " · Manufacturer with a very long complete official company name" : ""}`,count:200+fuelIndex*100+categoryIndex*10-index*3})) };
+      return { fuelGroup,vehicleCategory,status:unavailable ? "unavailable" : "partial",reason:unavailable ? "Fixture missing ICE/4W" : null,
+        explicitZero,rankingComplete:count === 5 || explicitZero,
+        makers:unavailable || explicitZero ? [] : Array.from({length:count},(_,index)=>({
+          id:String(index+1),rank:index+1,name:`${fuelGroup} ${vehicleCategory} maker ${index+1} · ${rto}${vehicleCategory === "4W" ? " · Manufacturer with a very long complete official company name" : ""}`,
+          baselineCount:200+fuelIndex*100+categoryIndex*10-index*3,currentCount:index === 1 ? 997 : index === 4 ? 1000 : 1012,
+          previousCount:1000,dailyChange:index === 1 ? -3 : index === 4 ? 0 : 12,
+          status:index === 1 ? "correction" : index === 4 ? "unconfirmed_no_change" : "available",
+          reason:index === 1 ? "Source correction preserved" : index === 4 ? "No observed change; freshness unconfirmed" : null,
+          observedAt:`${date}T10:00:00Z`,previousObservedAt:`${new Date(Date.parse(`${date}T00:00:00Z`)-86400000).toISOString().slice(0,10)}T09:50:00Z`,
+        })) };
     }));
-    await json(route,{state:url.searchParams.get("state"),rto,date,year:2026,segments});
+    await json(route,{state:url.searchParams.get("state"),rto,date,selectionYear:2025,baselineId:1,metricKind:"registration_observed_daily_change",timezone:"Asia/Kolkata",segments});
     return;
   }
   if (url.pathname === "/api/rto-reports/top-makers") {

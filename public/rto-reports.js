@@ -9,7 +9,7 @@ const state = {
   draftExplanations: [],
   oemCategory: "2W",
   oemFuel: "EV",
-  annualOemCache: new Map(),
+  dailyOemCache: new Map(),
   searchTimer: null,
   readiness: null,
   requestId: 0,
@@ -554,7 +554,7 @@ function renderReportDetail(report) {
         <div><h3>Vehicle categories</h3><span>Daily registration contribution from compatible month-to-date observations</span></div>
       </div>
       <div class="rto-report-category-bars">${categoryBars(categories, true)}</div>
-    </section>${renderDailyOemEvidence(payload.oemEvidence)}` : isMonitored ? "" : `<section class="rto-report-evidence">
+    </section>` : isMonitored ? "" : `<section class="rto-report-evidence">
       <div class="rto-report-section-head">
         <div><h3>Vehicle categories</h3><span>${isDaily ? "Daily registration contribution" : "2W, 3W, and 4W stock contribution"}</span></div>
       </div>
@@ -592,7 +592,7 @@ function renderReportDetail(report) {
       <span>${isMonitored ? "Personal selection · outside the fixed 100-RTO ranking" : `Cohort ${escapeHtml(report.cohortHash?.slice(0, 10) ?? "unknown")}`} | revision ${fmt(report.revision)}</span>
     </footer>
   `;
-  mountAnnualOemPanel(report, report.sourceSnapshotDate ?? report.payload?.period?.end);
+  mountDailyOemPanel(report, report.payload?.period?.end ?? report.periodEnd, report.dailyOem);
   for (const button of reportDetail.querySelectorAll("[data-oem-category]")) {
     button.addEventListener("click", () => {
       state.oemCategory = button.dataset.oemCategory;
@@ -800,7 +800,7 @@ function renderCurrentEvidenceDetail(entry) {
       <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry, state.trendMode), true)}</div>
     </section>
   `;
-  mountAnnualOemPanel(entry, activeEvidenceReadiness()?.run?.snapshotDate);
+  mountDailyOemPanel(entry, activeEvidenceReadiness()?.run?.snapshotDate);
   for (const button of reportDetail.querySelectorAll("[data-trend-focus]")) {
     button.addEventListener("click", () => {
       const focus = button.dataset.trendFocus || null;
@@ -825,51 +825,87 @@ function renderCurrentEvidenceDetail(entry) {
   }
 }
 
-function mountAnnualOemPanel(entry, date) {
+function mountDailyOemPanel(entry, date, savedData) {
   if (!entry || !date) return;
   const params = { state: entry.state, rto: entry.rto, date };
   const key = JSON.stringify(params);
-  const host = reportDetail.querySelector("#rtoTopMakers");
-  if (!host) return;
-  host.className = "rto-report-evidence rto-annual-oem";
-  host.dataset.annualKey = key;
-  const cached = state.annualOemCache.get(key);
-  renderAnnualOemPanel(host, cached?.data, params);
-  if (cached?.data) return;
-  const promise = cached?.promise ?? apiJson(`/api/rto-reports/oem-rankings?${new URLSearchParams(params)}`)
-    .catch((error) => ({ ...params, year: Number(date.slice(0, 4)), error: error.message, segments: [] }));
-  state.annualOemCache.set(key, { promise });
+  const host = reportDetail.querySelector("#rtoTopMakers") ?? document.createElement("section");
+  host.className = "rto-report-evidence rto-annual-oem rto-daily-oem";
+  host.dataset.dailyKey = key;
+  const footer = reportDetail.querySelector(".rto-report-source");
+  if (!host.isConnected) { if (footer) footer.before(host); else reportDetail.append(host); }
+  if (savedData?.date === date && savedData.state === entry.state && savedData.rto === entry.rto) {
+    state.dailyOemCache.set(key, { data: savedData.baselineId ? savedData : { ...savedData, annualOem: entry.annualOem } });
+  }
+  const cached = state.dailyOemCache.get(key);
+  renderDailyOemPanel(host, cached?.data, params);
+  if (cached?.data && (cached.data.baselineId || cached.data.annualOem || cached.data.error)) return;
+  const promise = cached?.promise ?? apiJson(`/api/rto-reports/oem-daily?${new URLSearchParams(params)}`)
+    .then((data) => data.date === date && data.state === entry.state && data.rto === entry.rto
+      ? data : { ...params, error: "The saved OEM response does not match this RTO and report date.", segments: [] })
+    .then(async (data) => {
+      if (data.baselineId || data.error) return data;
+      const annualOem = entry.annualOem ?? await apiJson(`/api/rto-reports/oem-rankings?${new URLSearchParams(params)}`)
+        .catch((error) => ({ ...params, error: error.message, segments: [] }));
+      return { ...data, annualOem };
+    })
+    .catch((error) => ({ ...params, error: error.message, segments: [] }));
+  state.dailyOemCache.set(key, { promise });
   promise.then((data) => {
-    state.annualOemCache.set(key, { data });
-    if (host.isConnected && host.dataset.annualKey === key) renderAnnualOemPanel(host, data, params);
+    state.dailyOemCache.set(key, { data });
+    if (host.isConnected && host.dataset.dailyKey === key) renderDailyOemPanel(host, data, params);
   });
 }
 
-function renderAnnualOemPanel(host, data, params) {
+function renderDailyOemPanel(host, data, params) {
   host.dataset.fuel = state.oemFuel;
   const segment = data?.segments?.find((item) => item.fuelGroup === state.oemFuel && item.vehicleCategory === state.oemCategory);
-  const makers = segment?.status === "verified" ? segment.makers ?? [] : [];
-  const max = Math.max(1, ...makers.map((maker) => maker.count));
+  const makers = [...(segment?.makers ?? [])].sort((a, b) => a.rank - b.rank);
+  const selectionYear = data?.selectionYear ?? 2025;
+  if (data && !data.baselineId && data.annualOem) {
+    renderAnnualOemSupportingPanel(host, data.annualOem, params);
+    return;
+  }
+  const usable = (maker) => ["available", "correction"].includes(maker.status) && Number.isFinite(maker.dailyChange);
+  const max = Math.max(1, ...makers.filter(usable).map((maker) => Math.abs(maker.dailyChange)));
   const controls = (values, selected, name, label) => `<div class="rto-oem-selector" role="radiogroup" aria-label="${label}">${values.map((value) => `<button type="button" role="radio" aria-checked="${value === selected}" tabindex="${value === selected ? 0 : -1}" data-annual-${name}="${value}">${value}</button>`).join("")}</div>`;
-  host.innerHTML = `<div class="rto-report-section-head"><div><h3>Top 5 makers</h3><span>${escapeHtml(params.rto)} · Calendar year ${Number(params.date.slice(0, 4))}</span></div></div>
+  host.innerHTML = `<div class="rto-report-section-head"><div><h3>Top 5 makers</h3><span>Selected from ${escapeHtml(selectionYear)} rankings · Daily observed change for ${escapeHtml(params.date)} (IST)</span></div></div>
     <div class="rto-oem-controls">${controls(["EV", "ICE"], state.oemFuel, "fuel", "OEM fuel group")}
     ${controls(OEM_CATEGORIES, state.oemCategory, "category", "OEM vehicle category")}</div>
     <div class="rto-annual-oem-result" aria-live="polite" aria-busy="${!data}">
       <h4>${state.oemFuel} · ${state.oemCategory}</h4>
-      ${!data ? `<p>Loading saved annual OEM evidence…</p>` : segment?.status !== "verified"
-        ? `<p class="result-empty"><strong>Unavailable</strong> · ${escapeHtml(segment?.reason ?? data.error ?? "No saved annual OEM evidence for this selection.")}</p>`
-        : segment.explicitZero ? `<p>Confirmed zero registrations in this selection.</p>`
-        : `${!segment.rankingComplete ? `<p class="rto-annual-oem-note">${makers.length} named makers reported. The source ranking is incomplete.</p>` : ""}
-          ${makers.length ? `<ol class="rto-oem-ranking">${makers.map((maker) => `<li><div class="rto-oem-ranking-label"><span><b>#${fmt(maker.rank)}</b> ${escapeHtml(maker.name)}</span><strong>${fmt(maker.count)}</strong></div><div class="rto-oem-bar" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, 100 * maker.count / max))}%"></i></div></li>`).join("")}</ol>` : `<p>No named manufacturers were supplied by the source.</p>`}`}
-      <p class="rto-annual-oem-provenance">${segment?.observationDate ? `Observed ${escapeHtml(segment.observationDate)} (IST) · ` : ""}<a href="https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en" target="_blank" rel="noopener">VAHAN Public Dashboard</a> · Calendar-year registrations.</p>
+      ${!data ? `<p>Loading saved daily OEM evidence…</p>` : !makers.length
+        ? `<p class="result-empty"><strong>${segment?.explicitZero ? `No OEMs selected in ${escapeHtml(selectionYear)}` : "Daily comparison unavailable"}</strong> · ${escapeHtml(segment?.reason ?? data.error ?? (segment?.explicitZero ? `The source confirmed zero registrations for this scope in ${selectionYear}.` : "No saved OEM baseline for this selection."))}</p>`
+        : `${!segment.rankingComplete ? `<p class="rto-annual-oem-note">${makers.length} named makers saved. The ${escapeHtml(selectionYear)} ranking is incomplete.</p>` : ""}
+          ${segment.reason ? `<p class="rto-annual-oem-note">${escapeHtml(segment.reason)}</p>` : ""}
+          <ol class="rto-oem-ranking">${makers.map((maker) => {
+            const available = usable(maker);
+            const reason = maker.reason ?? (maker.status === "unconfirmed_no_change" ? "No observed change; freshness unconfirmed" : available ? (maker.status === "correction" ? "Source correction preserved" : "Comparable consecutive observations") : "Daily comparison unavailable");
+            return `<li data-oem-status="${escapeHtml(maker.status ?? "unavailable")}"><div class="rto-oem-ranking-label"><span><b>#${fmt(maker.rank)}</b> ${escapeHtml(maker.name)}</span><strong class="rto-oem-daily-value">${available ? signed(maker.dailyChange) : "Unavailable"}</strong></div>
+              ${available ? `<div class="rto-oem-bar" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, 100 * Math.abs(maker.dailyChange) / max))}%"></i></div>` : ""}
+              <p class="rto-oem-row-reason">${escapeHtml(reason)}</p>
+              <details class="rto-oem-observations"><summary>${escapeHtml(selectionYear)} rank and source observations</summary><dl>
+                <div><dt>${escapeHtml(selectionYear)} registrations · rank #${fmt(maker.rank)}</dt><dd>${Number.isFinite(maker.baselineCount) ? fmt(maker.baselineCount) : "Unavailable"}</dd></div>
+                <div><dt>${Number(params.date.slice(0, 4))} cumulative registrations</dt><dd>${Number.isFinite(maker.currentCount) ? fmt(maker.currentCount) : "Unavailable"}</dd></div>
+                <div><dt>Previous-day cumulative registrations</dt><dd>${Number.isFinite(maker.previousCount) ? fmt(maker.previousCount) : "Unavailable"}</dd></div>
+                <div><dt>Current observation (IST)</dt><dd>${escapeHtml(oemObservationTime(maker.observedAt))}</dd></div>
+                <div><dt>Previous observation (IST)</dt><dd>${escapeHtml(oemObservationTime(maker.previousObservedAt))}</dd></div>
+              </dl></details></li>`;
+          }).join("")}</ol>`}
+      ${data?.error ? `<button type="button" class="secondary-action" data-oem-retry>Retry OEM evidence</button>` : ""}
+      <p class="rto-annual-oem-provenance"><a href="https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en" target="_blank" rel="noopener">VAHAN Public Dashboard</a> · Net change between consecutive calendar-year observations. Collection times may differ; source corrections are preserved.</p>
     </div>`;
+  host.querySelector("[data-oem-retry]")?.addEventListener("click", () => {
+    state.dailyOemCache.delete(host.dataset.dailyKey);
+    mountDailyOemPanel({ state: params.state, rto: params.rto }, params.date);
+  });
   for (const name of ["fuel", "category"]) {
     const values = name === "fuel" ? ["EV", "ICE"] : OEM_CATEGORIES;
     const property = name === "fuel" ? "oemFuel" : "oemCategory";
     for (const button of host.querySelectorAll(`[data-annual-${name}]`)) {
       const select = (value) => {
         state[property] = value;
-        renderAnnualOemPanel(host, data, params);
+        renderDailyOemPanel(host, data, params);
         host.querySelector(`[data-annual-${name}="${value}"]`)?.focus();
       };
       button.addEventListener("click", () => select(button.getAttribute(`data-annual-${name}`)));
@@ -882,6 +918,49 @@ function renderAnnualOemPanel(host, data, params) {
       });
     }
   }
+}
+
+function renderAnnualOemSupportingPanel(host, data, params) {
+  const segment = data?.segments?.find((item) => item.fuelGroup === state.oemFuel && item.vehicleCategory === state.oemCategory);
+  const makers = segment?.status === "verified" ? segment.makers ?? [] : [];
+  const max = Math.max(1, ...makers.map((maker) => maker.count));
+  const year = data?.year ?? Number(params.date.slice(0, 4));
+  const controls = (values, selected, name, label) => `<div class="rto-oem-selector" role="radiogroup" aria-label="${label}">${values.map((value) => `<button type="button" role="radio" aria-checked="${value === selected}" tabindex="${value === selected ? 0 : -1}" data-annual-${name}="${value}">${value}</button>`).join("")}</div>`;
+  host.innerHTML = `<div class="rto-report-section-head"><div><h3>Top 5 makers</h3><span>Calendar year ${escapeHtml(year)} · Supporting annual evidence</span></div></div>
+    <p class="rto-annual-oem-note"><strong>Daily OEM tracking awaiting a verified 2025 baseline.</strong> These counts are calendar-year registrations.</p>
+    <div class="rto-oem-controls">${controls(["EV", "ICE"], state.oemFuel, "fuel", "OEM fuel group")}${controls(OEM_CATEGORIES, state.oemCategory, "category", "OEM vehicle category")}</div>
+    <div class="rto-annual-oem-result" aria-live="polite"><h4>${state.oemFuel} · ${state.oemCategory}</h4>
+    ${segment?.status !== "verified" ? `<p class="result-empty"><strong>Daily comparison unavailable</strong> · ${escapeHtml(segment?.reason ?? data.error ?? "No saved annual evidence for this selection.")}</p>`
+      : segment.explicitZero ? `<p>Confirmed zero calendar-year registrations in this selection.</p>`
+      : `${!segment.rankingComplete ? `<p class="rto-annual-oem-note">${makers.length} named makers reported. The source ranking is incomplete.</p>` : ""}<ol class="rto-oem-ranking">${makers.map((maker) => `<li><div class="rto-oem-ranking-label"><span><b>#${fmt(maker.rank)}</b> ${escapeHtml(maker.name)}</span><strong>${fmt(maker.count)}</strong></div><div class="rto-oem-bar" aria-hidden="true"><i style="width:${Math.max(0, Math.min(100, 100 * maker.count / max))}%"></i></div></li>`).join("")}</ol>`}
+    <p class="rto-annual-oem-provenance">${segment?.observationDate ? `Observed ${escapeHtml(segment.observationDate)} (IST) · ` : ""}<a href="https://analytics.parivahan.gov.in/analytics/publicdashboard/vahan?lang=en" target="_blank" rel="noopener">VAHAN Public Dashboard</a> · Calendar-year registrations.</p></div>`;
+  for (const name of ["fuel", "category"]) {
+    const values = name === "fuel" ? ["EV", "ICE"] : OEM_CATEGORIES;
+    const property = name === "fuel" ? "oemFuel" : "oemCategory";
+    for (const button of host.querySelectorAll(`[data-annual-${name}]`)) {
+      const select = (value) => {
+        state[property] = value;
+        host.dataset.fuel = state.oemFuel;
+        renderAnnualOemSupportingPanel(host, data, params);
+        host.querySelector(`[data-annual-${name}="${value}"]`)?.focus();
+      };
+      button.addEventListener("click", () => select(button.getAttribute(`data-annual-${name}`)));
+      button.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const index = values.indexOf(state[property]);
+        const next = event.key === "Home" ? 0 : event.key === "End" ? values.length - 1 : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) + values.length) % values.length;
+        select(values[next]);
+      });
+    }
+  }
+}
+
+function oemObservationTime(value) {
+  const date = new Date(value ?? "");
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }).format(date)
+    : "Unavailable";
 }
 
 function currentEvidenceTrend(entry, mode = "date") {

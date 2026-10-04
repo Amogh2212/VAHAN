@@ -1,0 +1,103 @@
+name: RTO Saved OEM Daily Production Collection
+
+on:
+  workflow_run:
+    workflows: ["RTO Daily Neon Production Collection"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      cohort_run_id:
+        description: "New 2025 baseline: frozen 100-RTO Daily cohort run ID (blank selects latest complete cohort)."
+        required: false
+        type: string
+      resume_baseline_id:
+        description: "Resume an existing 2025 baseline across days; leave cohort_run_id blank."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vahan-rto-oem-tracking-production
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    # A partial or failed parent still triggers OEM collection. Only trust this repository's main.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PGSSL: "true"
+      RTO_DAILY_DELAY_MS: "1200"
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply additive OEM tracking tables
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/apply-rto-oem-tracking-schema.mjs --production
+      - name: Collect or resume OEM evidence
+        id: collect
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          EVENT_NAME: ${{ github.event_name }}
+          COHORT_RUN_ID: ${{ inputs.cohort_run_id }}
+          RESUME_BASELINE_ID: ${{ inputs.resume_baseline_id }}
+        shell: bash
+        run: |
+          args=(--production --time-budget-minutes 315 --output artifacts/rto-oem-tracking-summary.json)
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            args+=(--mode baseline --selection-year 2025)
+            if [ -n "$RESUME_BASELINE_ID" ]; then
+              test -z "$COHORT_RUN_ID"
+              args+=(--resume-baseline-id "$RESUME_BASELINE_ID")
+            elif [ -n "$COHORT_RUN_ID" ]; then
+              args+=(--cohort-run-id "$COHORT_RUN_ID")
+            else
+              args+=(--latest-cohort)
+            fi
+          else
+            args+=(--mode daily --automatic)
+          fi
+          node scripts/collect-rto-oem-tracking.mjs "${args[@]}"
+      - name: Ensure sanitized failure artifact exists
+        if: always()
+        env:
+          COLLECTION_OUTCOME: ${{ steps.collect.outcome }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs/promises";
+          const file = "artifacts/rto-oem-tracking-summary.json";
+          try { await fs.access(file); }
+          catch {
+            await fs.mkdir("artifacts", { recursive: true });
+            await fs.writeFile(file, JSON.stringify({contract:"oem-tracking-collection-audit-v1",status:"failed",collectionOutcome:process.env.COLLECTION_OUTCOME,reason:"Collection did not produce an audit; inspect setup/schema/collector logs. No coverage is asserted.",observedAt:new Date().toISOString()}, null, 2) + "\n");
+          }
+          NODE
+      - name: Upload production OEM coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rto-oem-tracking-production-${{ github.run_id }}
+          path: artifacts/rto-oem-tracking-summary.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce collection and coverage completion
+        if: always()
+        env:
+          COLLECTION_OUTCOME: ${{ steps.collect.outcome }}
+        run: test "$COLLECTION_OUTCOME" = "success"

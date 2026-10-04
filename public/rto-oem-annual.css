@@ -22,4 +22,16 @@
 .rto-annual-oem-note, .rto-annual-oem-provenance { color: #586174; font-size: 14px; line-height: 1.5; }
 .rto-annual-oem-provenance { margin-top: 20px; overflow-wrap: anywhere; }
 .rto-annual-oem-provenance a { color: #176b73; text-underline-offset: 3px; }
+.rto-oem-row-reason { margin: 8px 0; color: #586174; font-size: 13px; line-height: 1.5; }
+.rto-oem-ranking li[data-oem-status="correction"] .rto-oem-daily-value { color: #a33b2b; }
+.rto-oem-ranking li[data-oem-status="correction"] .rto-oem-bar i { background: #a33b2b; }
+.rto-oem-ranking li[data-oem-status="unavailable"] .rto-oem-daily-value,
+.rto-oem-ranking li[data-oem-status="unconfirmed_no_change"] .rto-oem-daily-value { color: #586174; font-size: 13px; }
+.rto-oem-observations { color: #586174; font-size: 13px; line-height: 1.5; }
+.rto-oem-observations summary { width: fit-content; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.rto-oem-observations summary:focus-visible { outline: 3px solid #182139; outline-offset: 3px; }
+.rto-oem-observations dl { margin: 12px 0 0; }
+.rto-oem-observations dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 5px 0; }
+.rto-oem-observations dt { min-width: 0; }
+.rto-oem-observations dd { margin: 0; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) { .rto-oem-ranking-label { gap: 8px; } .rto-oem-selector { gap: 6px; } }
