@@ -32,7 +32,7 @@ let latestData = null;
 let latestResult = null;
 let selectedDistributionMonth = null;
 let warningToastTimers = [];
-const DASHBOARD_STATE_KEY = "vahan-dashboard:last-answer:v1";
+const DASHBOARD_STATE_KEY = "vahan-dashboard:last-answer:v2";
 
 async function configureQuerySuggestions() {
   if (!querySuggestions) return;
@@ -328,8 +328,9 @@ function renderTrend(trend) {
 
 function renderFuelBreakdown(items) {
   const el = document.querySelector("#fuelBreakdown");
+  items = (items ?? []).filter((item) => String(item.fuelType ?? "").trim().toUpperCase() !== "ALL");
   if (!items.length) {
-    el.innerHTML = `<p style="color:var(--text-muted)">No fuel breakdown for these filters.</p>`;
+    el.innerHTML = `<p style="color:var(--text-muted)">Fuel breakdown unavailable for this period.</p>`;
     return;
   }
   const total = items.reduce((sum, item) => sum + item.count, 0);
@@ -347,6 +348,7 @@ function renderFuelBreakdown(items) {
 }
 
 function fuelBreakdownForMonth(rows = [], month) {
+  if (rows.some((row) => rowMonth(row) === month && String(row.fuel_type ?? "").trim().toUpperCase() === "ALL")) return [];
   const byFuel = new Map();
   for (const row of rows) {
     if (rowMonth(row) !== month) continue;
@@ -1181,15 +1183,7 @@ async function pollLiveRefresh(jobId, requestId, query) {
         }, query, requestId);
         return;
       }
-      // A refresh response may update monthly rows without carrying the
-      // optional chart payload. Preserve the chart already shown for this
-      // query instead of replacing it with the aggregate ALL fallback.
-      render({
-        ...data,
-        fuelBreakdown: data.fuelBreakdown?.length && !(data.fuelBreakdown.length === 1 && data.fuelBreakdown[0]?.fuelType === "ALL")
-          ? data.fuelBreakdown
-          : latestData?.fuelBreakdown ?? [],
-      }, query, requestId);
+      render(data, query, requestId);
     }
     return;
   }
