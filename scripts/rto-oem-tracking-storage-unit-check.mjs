@@ -81,9 +81,13 @@ value = dailyOemPayload(params, { baseline: { ...baseline, id: "2" }, scopes: [s
 assert.equal(value.segments[0].makers.length, 0);
 value = dailyOemPayload({ ...params, date: "2027-01-01" }, { baseline, scopes: [scope], observations: await makeObservation("2027-01-01") });
 assert.match(value.segments[0].makers[0].reason, /year reset/);
-const escaped = structuredClone(payload);
-escaped.segments[0].makers[0].name = '<script>alert("x")</script>';
-assert.doesNotMatch(dailyOemHtml(escaped), /<script>/);
+for (const tagName of ["script", "SCRIPT", "ScRiPt"]) {
+  const escaped = structuredClone(payload);
+  escaped.segments[0].makers[0].name = `<${tagName}>alert("x")</${tagName}>`;
+  const html = dailyOemHtml(escaped);
+  assert.doesNotMatch(html, /<\/?script\b/i);
+  assert.ok(html.includes(`&lt;${tagName}&gt;alert(&quot;x&quot;)&lt;/${tagName}&gt;`));
+}
 
 let calls = 0;
 const results = await getDailyOemTrackingBatch({ members: [params, { state: "Test", rto: "Missing" }], date: params.date }, async (sql) => {
