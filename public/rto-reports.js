@@ -927,7 +927,7 @@ function renderAnnualOemSupportingPanel(host, data, params) {
   const year = data?.year ?? Number(params.date.slice(0, 4));
   const controls = (values, selected, name, label) => `<div class="rto-oem-selector" role="radiogroup" aria-label="${label}">${values.map((value) => `<button type="button" role="radio" aria-checked="${value === selected}" tabindex="${value === selected ? 0 : -1}" data-annual-${name}="${value}">${value}</button>`).join("")}</div>`;
   host.innerHTML = `<div class="rto-report-section-head"><div><h3>Top 5 makers</h3><span>Calendar year ${escapeHtml(year)} · Supporting annual evidence</span></div></div>
-    <p class="rto-annual-oem-note"><strong>Daily OEM tracking awaiting a verified 2025 baseline.</strong> These counts are calendar-year registrations.</p>
+    <p class="rto-annual-oem-note"><strong>Daily OEM comparison unavailable for this report date.</strong> These counts are calendar-year registrations.</p>
     <div class="rto-oem-controls">${controls(["EV", "ICE"], state.oemFuel, "fuel", "OEM fuel group")}${controls(OEM_CATEGORIES, state.oemCategory, "category", "OEM vehicle category")}</div>
     <div class="rto-annual-oem-result" aria-live="polite"><h4>${state.oemFuel} · ${state.oemCategory}</h4>
     ${segment?.status !== "verified" ? `<p class="result-empty"><strong>Daily comparison unavailable</strong> · ${escapeHtml(segment?.reason ?? data.error ?? "No saved annual evidence for this selection.")}</p>`
