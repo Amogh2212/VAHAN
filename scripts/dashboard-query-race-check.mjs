@@ -13,6 +13,8 @@ const DELHI_QUERY = "EV registrations in Delhi in Jan 2026";
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, BASE_URL);
+  if (url.pathname === "/api/me") { sendJson(response, { authenticated: false }); return; }
+  if (url.pathname === "/favicon.ico") { response.writeHead(204).end(); return; }
   if (request.method === "POST" && url.pathname === "/api/query") {
     const body = await readJson(request);
     const isMaharashtra = body.query === MAHARASHTRA_QUERY;

@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { auditMapStateEvidence, MAP_EV_FUELS, MAP_EV_FUEL_CONTEXT } from "./lib/map-evidence.mjs";
 import { hasDatabaseUrl } from "./lib/db.mjs";
+import { registrationFuelBreakdown, selectRegistrationAnswerRows } from "./lib/registration-answer-evidence.mjs";
 import {
   configuredQueryAgentMode,
   enqueueQueryAgentShadow,
@@ -4755,7 +4756,7 @@ function filterRows(rows, filters) {
     if (filters.fuelType && !row.fuel_type.toLowerCase().includes(filters.fuelType.toLowerCase())) return false;
     return true;
   });
-  const baseRows = preferAnswerFuelContextRows(dimensionRows, filters);
+  const baseRows = selectRegistrationAnswerRows(preferAnswerFuelContextRows(dimensionRows, filters));
   const [exclusion] = sideFilterExclusionDefinitions(filters);
   if (!exclusion) return baseRows;
 
@@ -4924,6 +4925,7 @@ function dataReliabilityWarning(status, summary) {
 }
 
 function summarize(rows) {
+  rows = selectRegistrationAnswerRows(rows);
   const total = rows.reduce((sum, row) => sum + row.vehicle_count, 0);
   const byMonth = new Map();
   const byFuel = new Map();
@@ -4933,7 +4935,7 @@ function summarize(rows) {
     byFuel.set(row.fuel_type, (byFuel.get(row.fuel_type) ?? 0) + row.vehicle_count);
   }
   const trend = [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([month, count]) => ({ month, count }));
-  const fuelBreakdown = [...byFuel.entries()].sort((a, b) => b[1] - a[1]).map(([fuelType, count]) => ({ fuelType, count }));
+  const fuelBreakdown = registrationFuelBreakdown(rows);
   const peak = trend.reduce((best, item) => (item.count > (best?.count ?? -1) ? item : best), null);
   return {
     total,
@@ -5113,6 +5115,7 @@ function canUsePublicFuelDistribution(filters) {
 
 async function publicFuelDistributionForQuery(filters, rows) {
   if (!canUsePublicFuelDistribution(filters)) return null;
+  rows = selectRegistrationAnswerRows(rows);
   try {
     const distribution = await fetchPublicFuelDistribution({
       state: filters.state ?? "",
@@ -5410,7 +5413,9 @@ export function dashboardPayload({
   fuelDistribution = null,
 }) {
   const scraper = summarizeScraperRuns(scraperRuns);
-  const resultRows = filters.ambiguousRtos ? [] : preFiltered ? rows : filterRows(rows, filters);
+  const resultRows = selectRegistrationAnswerRows(
+    filters.ambiguousRtos ? [] : preFiltered ? rows : filterRows(rows, filters),
+  );
   const status = liveRefresh?.status === "pending"
     ? resolveImmediateDataStatus({ rows: resultRows, missingMonths, liveRefresh })
     : resolveDataStatus({ rows: resultRows, missingMonths, scraper });
@@ -5427,7 +5432,7 @@ export function dashboardPayload({
       peakMonthCount: summary.peakMonthCount,
     },
     trend: summary.trend,
-    fuelBreakdown: fuelDistribution ?? summary.fuelBreakdown,
+    fuelBreakdown: registrationFuelBreakdown(resultRows, fuelDistribution),
     rows: resultRows,
     freshness: freshnessInfo ?? freshness(rows),
     scraper,
@@ -7507,9 +7512,9 @@ const server = http.createServer(async (request, response) => {
       const rows = useDatabase ? [] : await loadRows();
       const catalog = await loadCatalog(rows);
       const filters = resolveRto(queryFiltersFromSearchParams(url.searchParams), rows, catalog);
-      const resultRows = useDatabase && !filters.ambiguousRtos
+      const resultRows = selectRegistrationAnswerRows(useDatabase && !filters.ambiguousRtos
         ? await queryRegistrationRows({ ...filters, state: filters.state ?? INDIA_TOTAL })
-        : filterRows(rows, filters);
+        : filterRows(rows, filters));
       const summary = summarize(resultRows);
       sendJson(response, 200, {
         filters,
