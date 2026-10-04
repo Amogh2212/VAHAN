@@ -217,6 +217,9 @@ export async function runOemTrackingCollection(options, deps) {
         }
         // Baseline historical selection is distinct from its true collection timestamp.
         await store.saveOemBaselineScope({ ...context, evidence, failureEvidence, errorReason });
+        // Named mappings between failures demonstrate usable catalog evidence.
+        // Explicit-zero scopes do not consult the maker catalog and cannot reset it.
+        if (evidence?.makers?.length) unavailableCatalogRtos.clear();
         if (!evidence) recordCatalogFailure(context, errorReason);
         checkBudget();
         log(`${member.rto} ${fuelGroup}/${vehicleCategory}: ${evidence ? `${evidence.makers.length} saved OEMs` : `Unavailable: ${errorReason}`}`);

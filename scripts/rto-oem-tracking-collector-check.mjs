@@ -136,6 +136,31 @@ result = await runOemTrackingCollection(baselineOptions, baselineOutage.deps);
 assert.equal(baselineRouteCalls, 18);
 assert.equal(baselineOutage.scopes.size, 6);
 assert.equal(result.audit.stopReason, null);
+const separatedCatalogFailures = harness({ active: false });
+const successfulBaseline = separatedCatalogFailures.deps.fetchBaseline;
+let separatedFailures = 0;
+separatedCatalogFailures.deps.fetchBaseline = async (input) => {
+  if (input.fuels.includes("PURE EV") && input.vehicleCategories[0] === "TWO WHEELER(NT)") {
+    await input.beforeRequest(); separatedFailures += 1;
+    throw new Error("OEM tracking source returned HTTP 404: /analytics/publicdashboard/lazy/vehicle-makers.");
+  }
+  return successfulBaseline(input);
+};
+result = await runOemTrackingCollection({ ...baselineOptions, limit: 3 }, separatedCatalogFailures.deps);
+assert.equal(separatedFailures, 9);
+assert.equal(separatedCatalogFailures.scopes.size, 18);
+assert.equal(result.audit.verifiedScopes, 15);
+assert.equal(result.audit.stopReason, null);
+// Zero-only scopes cannot claim that the maker catalog recovered.
+const zeroBetweenCatalogFailures = harness({ active: false });
+zeroBetweenCatalogFailures.deps.fetchBaseline = async (input) => {
+  await input.beforeRequest();
+  if (input.fuels.includes("PURE EV") && input.vehicleCategories[0] === "TWO WHEELER(NT)") throw new Error("OEM tracking source returned HTTP 404: /analytics/publicdashboard/lazy/vehicle-makers.");
+  return { observedAt: new Date(zeroBetweenCatalogFailures.deps.now()).toISOString(), selectionYear: 2025, rankingComplete: true, explicitZero: true, makers: [] };
+};
+result = await runOemTrackingCollection({ ...baselineOptions, limit: 3 }, zeroBetweenCatalogFailures.deps);
+assert.match(result.audit.stopReason, /three distinct RTOs/);
+assert.equal(zeroBetweenCatalogFailures.scopes.size, 13);
 
 // Midnight responses never become a backdated observation.
 const midnight = harness({ scopes: baselineScopes, date: "2026-10-04T18:29:58Z" });
