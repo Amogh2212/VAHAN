@@ -37,25 +37,19 @@ try {
   await fs.mkdir("reports", { recursive: true });
   const exportCss = "@page{size:A4;margin:14mm}body{font-family:Segoe UI,sans-serif;color:#182139;margin:24px}h1{font-size:22px}h2{font-size:18px}p{font-size:13px}table{border-collapse:collapse;width:100%;font-size:12px}thead{display:table-header-group}th,td{padding:8px;border-bottom:1px solid #dde1e8;text-align:left}td:nth-child(2){white-space:nowrap}tr{break-inside:avoid}@media print{body{margin:0}}";
   await fs.writeFile(`reports/rto-oem-annual-local-${saved.date}.html`, `<!doctype html><html lang="en"><meta charset="utf-8"><title>Saved local annual OEM evidence</title><style>${exportCss}</style><h1>${ranking.rto.replace(/[&<>]/g, " ")}</h1><p>Verified local saved-data API output. Observed ${saved.date} (IST).</p>${annualOemHtml(ranking)}</html>`);
-  const ui = await fs.readFile(new URL("../public/rto-reports.js", import.meta.url), "utf8");
-  const panelFunction = ui.slice(ui.indexOf("function renderAnnualOemPanel("), ui.indexOf("function renderCurrentFuelDistribution("));
-  const css = await fs.readFile(new URL("../public/rto-oem-annual.css", import.meta.url), "utf8");
-  const safeJson = (value) => JSON.stringify(value).replaceAll("<", "\\u003c");
-  const preview = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Local saved annual OEM preview</title><style>body{font-family:Segoe UI,sans-serif;color:#182139;background:#f7f8fa;margin:0;padding:24px}main{max-width:900px;margin:auto;background:white;padding:24px;border:1px solid #dde1e8;border-radius:12px}h3{margin:0 0 8px}a{color:#4f46b8}${css}</style><main><p>Local preview · Real saved VAHAN evidence · ${saved.date}</p><section id="annualPanel"></section></main><script>const state={oemFuel:"EV",oemCategory:"2W"};const OEM_CATEGORIES=["2W","3W","4W"];const fmt=(value)=>Number.isFinite(value)?value.toLocaleString("en-IN"):"Unavailable";const escapeHtml=(value)=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);${panelFunction}\nrenderAnnualOemPanel(document.querySelector("#annualPanel"),${safeJson(ranking)},${safeJson(saved)});</script></html>`;
+  // The annual API remains compatible; the interactive report panel now uses saved daily tracking.
+  const preview = await fs.readFile(`reports/rto-oem-annual-local-${saved.date}.html`, "utf8");
   await fs.writeFile(`reports/rto-oem-annual-preview-${saved.date}.html`, preview);
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1050, height: 850 } });
     await page.setContent(preview);
-    assert.equal(await page.locator(".rto-oem-ranking li").count(), 5);
-    assert.match(await page.locator(".rto-oem-ranking li").first().innerText(), new RegExp(ranking.segments[0].makers[0].name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
+    const expectedRows = ranking.segments.reduce((sum, segment) => sum + Math.max(1, segment.makers.length), 0);
+    assert.equal(await page.locator("tbody tr").count(), expectedRows);
+    assert.match(await page.locator("tbody tr").first().innerText(), new RegExp(ranking.segments[0].makers[0].name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
     await page.screenshot({ path: `reports/rto-oem-annual-preview-${saved.date}.png`, fullPage: true });
-    await page.getByRole("radio", { name: "ICE", exact: true }).click();
-    await page.getByRole("radio", { name: "3W", exact: true }).click();
-    assert.match(await page.locator("#annualPanel").innerText(), /Confirmed zero/);
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("radio", { name: "4W", exact: true }).click();
-    assert.equal(await page.locator(".rto-oem-ranking li").count(), 5);
+    assert.equal(await page.locator("tbody tr").count(), expectedRows);
     await page.screenshot({ path: `reports/rto-oem-annual-preview-mobile-${saved.date}.png`, fullPage: true });
     await page.setContent(await fs.readFile(`reports/rto-oem-annual-local-${saved.date}.html`, "utf8"));
     await page.pdf({ path: `reports/rto-oem-annual-local-${saved.date}.pdf`, format: "A4", printBackground: true });

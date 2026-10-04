@@ -39,6 +39,7 @@ import {
 } from "./lib/monthly-sales-report.mjs";
 import { dailyRtoInsightFacts, monthlyInsightFacts, summarizeInsight } from "./lib/report-insight-summary.mjs";
 import { getAnnualOemRankings, validateAnnualRequest } from "./lib/rto-oem-annual.mjs";
+import { getDailyOemTracking, validateOemDailyRequest } from "./lib/rto-oem-tracking.mjs";
 import { getRtoTopMakers } from "./lib/rto-top-makers.mjs";
 import {
   REGISTRATION_HEADERS,
@@ -7052,6 +7053,12 @@ const server = http.createServer(async (request, response) => {
       response.end(content);
       return;
     }
+    if (request.method === "GET" && url.pathname === "/api/rto-reports/oem-daily") {
+      const params = { state: url.searchParams.get("state"), rto: url.searchParams.get("rto"), date: url.searchParams.get("date") };
+      try { validateOemDailyRequest(params); } catch (error) { sendJson(response, 400, { error: error.message }); return; }
+      sendJson(response, 200, await getDailyOemTracking(params));
+      return;
+    }
     if (request.method === "GET" && url.pathname === "/api/rto-reports/oem-rankings") {
       const params = { state: url.searchParams.get("state"), rto: url.searchParams.get("rto"), date: url.searchParams.get("date") };
       try { validateAnnualRequest(params); } catch (error) { sendJson(response, 400, { error: error.message }); return; }
@@ -7152,7 +7159,7 @@ const server = http.createServer(async (request, response) => {
         report.insightSummary = await summarizeInsight(dailyRtoInsightFacts(report));
       }
       const exportRevision = rtoReportExportRevision(report, format);
-      const dynamicDailyPdf = Boolean(report.annualOem) || (format === "pdf" && report.payload?.cadence === "daily");
+      const dynamicDailyPdf = Boolean(report.dailyOem || report.annualOem) || (format === "pdf" && report.payload?.cadence === "daily");
       const cached = dynamicDailyPdf ? null : await loadCachedRtoReportExport({
         scopeType: "report",
         scopeId: report.id,

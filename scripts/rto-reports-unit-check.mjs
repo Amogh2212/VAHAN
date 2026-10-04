@@ -248,6 +248,37 @@ assert.match(dailyCsv, /previousDayRegistrations/);
 assert.match(dailyCsv, /evRegistrations,30,available/);
 assert.match(dailyCsv, /sourceMonthToDate.ev,170,source_observation/);
 assert.doesNotMatch(dailyCsv, /Example Motors/);
+const trackedOemReport = {
+  ...daily,
+  annualOem: { year: 2026, segments: [{ fuelGroup: "EV", vehicleCategory: "2W", makers: [{ name: "Annual-only maker", rank: 1, count: 999999 }], rankingComplete: true }] },
+  dailyOem: {
+    state: daily.state, rto: daily.rto, date: "2026-07-24", selectionYear: 2025, baselineId: 7,
+    metricKind: "registration_observed_daily_change", timezone: "Asia/Kolkata",
+    segments: [{ fuelGroup: "EV", vehicleCategory: "2W", rankingComplete: true, status: "verified", reason: null, makers: [
+      { id: "1", name: "Tracked & Motors", rank: 1, baselineCount: 400, currentCount: 112, previousCount: 100,
+        dailyChange: 12, status: "available", reason: null, observedAt: "2026-07-24T10:00:00Z", previousObservedAt: "2026-07-23T10:00:00Z" },
+      { id: "2", name: "Correction Motors", rank: 2, baselineCount: 300, currentCount: 95, previousCount: 100,
+        dailyChange: -5, status: "correction", reason: "Source correction preserved", observedAt: "2026-07-24T10:00:00Z", previousObservedAt: "2026-07-23T10:00:00Z" },
+      { id: "3", name: "Unchanged Motors", rank: 3, baselineCount: 250, currentCount: 100, previousCount: 100,
+        dailyChange: null, status: "unconfirmed_no_change", reason: "No observed change; freshness unconfirmed", observedAt: "2026-07-24T10:00:00Z", previousObservedAt: "2026-07-23T10:00:00Z" },
+    ] }],
+  },
+};
+const trackedCsv = renderRtoReportCsv(trackedOemReport);
+assert.match(trackedCsv, /Tracked & Motors/);
+assert.match(trackedCsv, /current_ytd,previous_ytd,daily_change,status/);
+assert.match(trackedCsv, /Correction Motors[^\n]*-5/);
+assert.match(trackedCsv, /unconfirmed_no_change/);
+assert.doesNotMatch(trackedCsv, /Annual-only maker/);
+const trackedHtml = renderRtoReportHtml(trackedOemReport);
+assert.match(trackedHtml, /Tracked &amp; Motors/);
+assert.match(trackedHtml, /2025/);
+assert.match(trackedHtml, /No observed change; freshness unconfirmed/);
+assert.doesNotMatch(trackedHtml, /Annual-only maker/);
+const independentlyTrackedHtml = renderRtoReportHtml({ ...trackedOemReport,
+  payload: { ...daily.payload, dailyRegistration: { ...daily.payload.dailyRegistration, baselineEligible: false,
+    reason: "Headline scopes incomplete" } } });
+assert.match(independentlyTrackedHtml, /Tracked &amp; Motors/, "OEM export is independent of headline eligibility");
 assert.equal(daily.payload.source.requestHashes.length, 6);
 assert.equal(daily.payload.source.responseHashes.length, 6);
 assert.equal(daily.payload.oemEvidence.status, "unavailable");
@@ -536,6 +567,7 @@ const contextDisabled = await loadRtoReportWithOptionalFactorContext({
 assert.equal(contextDisabled.factorContext.status, "disabled");
 
 const reportPageSource = fs.readFileSync(new URL("../public/rto-reports.js", import.meta.url), "utf8");
+assert.match(reportPageSource, /mountDailyOemPanel\(report, report\.payload\?\.period\?\.end \?\? report\.periodEnd, report\.dailyOem\)/, "OEM panel uses the selected report date rather than a newer source snapshot");
 assert.match(reportPageSource, /Possible-driver context unavailable/);
 assert.match(reportPageSource, /Active-stock facts remain available/);
 assert.match(reportPageSource, /Active EV stock/);

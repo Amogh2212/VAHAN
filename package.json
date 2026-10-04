@@ -49,7 +49,7 @@
     "check:vahan-final-comparison:browser": "node scripts/final-vahan-comparison-browser-check.mjs",
     "check:oem": "node scripts/monthly-oem-unit-check.mjs && node scripts/report-insight-summary-unit-check.mjs",
     "check:rto-daily": "node scripts/rto-daily-unit-check.mjs && node scripts/rto-source-unit-check.mjs && node scripts/db-retry-unit-check.mjs",
-    "check:rto-reports": "node scripts/rto-reports-unit-check.mjs && node scripts/daily-rto-contract-check.mjs && node scripts/check-daily-registration-availability-unit-check.mjs && node scripts/text-pdf-unit-check.mjs && npm run check:oem-annual",
+    "check:rto-reports": "node scripts/rto-reports-unit-check.mjs && node scripts/daily-rto-contract-check.mjs && node scripts/check-daily-registration-availability-unit-check.mjs && node scripts/text-pdf-unit-check.mjs && npm run check:oem-annual && npm run check:oem-tracking",
     "check:rto-daily-contract:integration": "node --env-file=.env.local-postgres scripts/daily-rto-contract-integration-check.mjs",
     "check:rto-reports:integration": "node --env-file=.env scripts/rto-reports-integration-check.mjs",
     "check:rto-reports:browser": "node --env-file=.env scripts/rto-reports-browser-check.mjs",
@@ -121,7 +121,12 @@
     "check:oem-annual": "node scripts/rto-oem-annual-unit-check.mjs",
     "check:oem-annual:integration": "node --env-file=.env.local-postgres scripts/rto-oem-annual-integration-check.mjs",
     "rto-oem-annual:collect": "node scripts/collect-rto-oem-annual.mjs",
-    "rto-oem-annual:schema": "node scripts/apply-rto-oem-annual-schema.mjs"
+    "rto-oem-annual:schema": "node scripts/apply-rto-oem-annual-schema.mjs",
+    "check:oem-tracking": "node scripts/rto-oem-tracking-source-unit-check.mjs && node scripts/rto-oem-tracking-storage-unit-check.mjs && node scripts/rto-oem-tracking-collector-check.mjs",
+    "check:oem-tracking:integration": "node --env-file=.env.local-postgres scripts/rto-oem-tracking-integration-check.mjs",
+    "rto-oem:tracking": "node scripts/collect-rto-oem-tracking.mjs",
+    "rto-oem:tracking:schema": "node scripts/apply-rto-oem-tracking-schema.mjs",
+    "rto-oem:tracking:verify-source": "node scripts/verify-rto-oem-tracking-source.mjs"
   },
   "dependencies": {
     "embedded-postgres": "17.10.0-beta.17",
