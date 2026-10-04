@@ -13,7 +13,8 @@ import {
   targetMonthForDate,
   validateRtoDailyReport,
 } from "../lib/rto-daily-snapshots.mjs";
-import { resolveRtoWithCatalog, searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
+import { canonicalizeRtoCatalog, rtoStorageLabels, resolveRtoWithCatalog, searchRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
+import { canonicalRegistrationRows } from "../lib/registrations.mjs";
 import { createTerminalProgress, formatRtoDailyProgress } from "../lib/terminal-progress.mjs";
 import { validateRtoDailyLoadTestCohort } from "../lib/rto-daily-cohort.mjs";
 import { createAdaptiveController, requireCompleteFailureReasons, parseArgs, finishRtoDailyReports } from "./run-rto-daily-snapshots.mjs";
@@ -286,6 +287,88 @@ const resolvedMh12WithDuplicateCatalogLabel = resolveRtoWithCatalog({ state: "Ma
 });
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.rtoResolution.status, "resolved", "an exact code should resolve even if the catalog contains duplicate labels");
 assert.equal(resolvedMh12WithDuplicateCatalogLabel.ambiguousRtos, null, "duplicate labels for one exact code must not produce an ambiguity prompt");
+const resolvedNoidaWithDatedLegacyLabel = resolveRtoWithCatalog({ state: "Uttar Pradesh", rtoSearch: "Noida", locationText: "Noida" }, {
+  states: [{ state: "Uttar Pradesh", rtos: [
+    toCatalogRto("Noida - UP16"),
+    toCatalogRto("Noida - UP16( 13-NOV-2017 )"),
+  ] }],
+});
+assert.equal(resolvedNoidaWithDatedLegacyLabel.rto, "Noida - UP16", "a dated legacy label must not make the current RTO label ambiguous");
+assert.equal(resolvedNoidaWithDatedLegacyLabel.ambiguousRtos, null, "dated legacy variants should collapse to the current RTO");
+for (const labels of [
+  ["Noida - UP16", "Noida - UP16( 13-NOV-2017 )"],
+  ["Noida - UP16( 13-NOV-2017 )", "Noida - UP16"],
+]) {
+  const catalog = canonicalizeRtoCatalog({ states: [{ state: "Uttar Pradesh", rtos: labels.map(toCatalogRto) }] });
+  assert.deepEqual(catalog.states[0].rtos.map((rto) => rto.label), ["Noida - UP16"], "the catalog exposed to filters must contain only one Noida office");
+  assert.equal(resolveRtoWithCatalog({ locationText: "Noida" }, catalog).rto, "Noida - UP16");
+  assert.deepEqual(canonicalizeRtoCatalog(catalog), catalog, "catalog canonicalization must be idempotent");
+}
+assert.ok(rtoStorageLabels("Uttar Pradesh", "Noida - UP16").includes("Noida - UP16( 13-NOV-2017 )"), "removing a selectable duplicate must preserve access to historical rows");
+const legacyRegistration = {
+  year: 2026, month: 1, state: "Uttar Pradesh", rto: "Noida - UP16( 13-NOV-2017 )",
+  fuel_segment: "EV", fuel_type: "ELECTRIC(BOV)", fuel_filter: "ALL",
+  vehicle_category_filter: "ALL", norms_filter: "ALL", vehicle_class_filter: "ALL",
+  vehicle_count: 10, scraped_at: "2026-01-01T00:00:00Z", source_url: "fixture",
+};
+const newerRegistration = { ...legacyRegistration, rto: "Noida - UP16", vehicle_count: 12, scraped_at: "2026-01-02T00:00:00Z" };
+for (const rows of [[legacyRegistration, newerRegistration], [newerRegistration, legacyRegistration]]) {
+  assert.deepEqual(canonicalRegistrationRows(rows), [newerRegistration], "legacy and canonical observations of one context must not double-count registrations");
+}
+const historicalOnly = canonicalRegistrationRows([legacyRegistration]);
+assert.equal(historicalOnly[0].rto, "Noida - UP16");
+assert.equal(historicalOnly[0].vehicle_count, 10, "historical-only evidence must remain readable");
+assert.equal(canonicalRegistrationRows([legacyRegistration, { ...newerRegistration, vehicle_category_filter: "MOTOR CAR" }]).length, 2, "distinct source filter contexts must remain separate");
+const fitnessCatalog = { states: [{ state: "Maharashtra", rtos: [
+  toCatalogRto("RTO MH04-Mira Bhayander FitnessTrack - MH203"),
+  toCatalogRto("THANE - MH4"),
+] }] };
+assert.equal(resolveRtoWithCatalog({ locationText: "MH-04" }, fitnessCatalog).rto, "THANE - MH4", "an embedded reference code must not override the office's final code");
+assert.equal(resolveRtoWithCatalog({ locationText: "MH-203" }, fitnessCatalog).rto, "RTO MH04-Mira Bhayander FitnessTrack - MH203");
+assert.equal(resolveRtoWithCatalog({ rto: "RTO MH04-Mira Bhayander FitnessTrack - MH203" }, fitnessCatalog).rto, "RTO MH04-Mira Bhayander FitnessTrack - MH203");
+const genuineMultiOfficeCatalog = { states: [{ state: "Tamil Nadu", rtos: [
+  toCatalogRto("ERODE RTO - TN33"), toCatalogRto("ERODE (WEST) RTO - TN86"),
+] }] };
+assert.equal(resolveRtoWithCatalog({ locationText: "Erode" }, genuineMultiOfficeCatalog).rtoResolution.status, "ambiguous", "distinct office codes in the same city must remain selectable");
+const legacyCityCatalog = canonicalizeRtoCatalog({ states: [{ state: "Karnataka", rtos: [
+  toCatalogRto("bengaluru"), toCatalogRto("BENGALURU CENTRAL RTO - KA1"), toCatalogRto("BENGALURU EAST RTO - KA3"),
+] }] }, { requireOfficeCode: true });
+assert.equal(legacyCityCatalog.states[0].rtos.length, 2, "unidentified city rows must not appear as an additional office");
+assert.equal(resolveRtoWithCatalog({ locationText: "bengaluru" }, legacyCityCatalog).rtoResolution.status, "ambiguous", "a legacy city-only record must not override multiple official offices");
+for (const [state, canonical, legacy] of [
+  ["Maharashtra", "PUNE - MH12", "PUNE - MH12( 25-JAN-2017 )"],
+  ["Punjab", "RTO LUDHIANA - PB10", "RTO LUDHIANA - PB10( 25-JAN-2018 )"],
+  ["Uttarakhand", "HARIDWAR ARTO - UK8", "haridwar"],
+  ["Uttarakhand", "DEHRADUN RTO - UK7", "dehradun"],
+]) {
+  for (const labels of [[legacy, canonical], [canonical, legacy]]) {
+    const catalog = canonicalizeRtoCatalog({ states: [{ state, rtos: labels.map(toCatalogRto) }] });
+    assert.deepEqual(catalog.states[0].rtos.map((rto) => rto.label), [canonical]);
+    assert.ok(rtoStorageLabels(state, canonical).includes(legacy));
+  }
+}
+const resolvedExactSavedLabel = resolveRtoWithCatalog({ state: "Uttarakhand", rtoSearch: "haridwar", locationText: "haridwar" }, {
+  states: [{ state: "Uttarakhand", rtos: [
+    toCatalogRto("haridwar"),
+    toCatalogRto("HARIDWAR ARTO - UK8"),
+  ] }],
+});
+assert.equal(resolvedExactSavedLabel.rto, "HARIDWAR ARTO - UK8", "a legacy city-only label must resolve to the canonical office");
+
+for (const [state, canonical, legacy, query] of [
+  ["Uttar Pradesh", "Noida - UP16", "Noida - UP16( 13-NOV-2017 )", "noida"],
+  ["Maharashtra", "PUNE - MH12", "PUNE - MH12( 25-JAN-2017 )", "pune"],
+  ["Punjab", "RTO LUDHIANA - PB10", "RTO LUDHIANA - PB10( 25-JAN-2018 )", "PB10"],
+  ["Uttarakhand", "HARIDWAR ARTO - UK8", "haridwar", "haridwar"],
+  ["Uttarakhand", "DEHRADUN RTO - UK7", "dehradun", "dehradun"],
+]) {
+  for (const labels of [[legacy, canonical], [canonical, legacy]]) {
+    const catalog = { states: [{ state, rtos: labels.map(toCatalogRto) }] };
+    assert.equal(resolveRtoWithCatalog({ state, locationText: query }, catalog).rto, canonical);
+    assert.equal(resolveRtoWithCatalog({ state, rto: legacy }, catalog).rto, canonical);
+    assert.deepEqual(searchRtoCatalog(catalog, query, { state }).map((entry) => entry.rto), [canonical]);
+  }
+}
 
 assert.equal(validateRtoDailyReport(withRegistrationEvidence({
   status: "success",

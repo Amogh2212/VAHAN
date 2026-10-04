@@ -68,6 +68,7 @@ import {
 } from "./lib/public-dashboard-client.mjs";
 import {
   buildRtoCatalogFromRows,
+  canonicalizeRtoCatalog,
   loadRtoCatalog,
   resolveRtoWithCatalog,
 } from "./lib/rto-resolver.mjs";
@@ -1462,7 +1463,7 @@ async function loadCatalog(rows = []) {
         console.warn(`[data] Neon RTO catalog read failed, using CSV catalog: ${safeErrorMessage(error)}`);
       }
     }
-    rtoCatalogCache = mergeRtoCatalogs(fileCatalog, rowCatalog);
+    rtoCatalogCache = canonicalizeRtoCatalog(mergeRtoCatalogs(fileCatalog, rowCatalog), { requireOfficeCode: true });
   }
   return rtoCatalogCache;
 }
@@ -7611,16 +7612,12 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.method === "GET" && url.pathname === "/api/metadata/rtos") {
       const rows = await loadRows();
-      const useDatabase = useDatabaseStorage();
       const catalog = await loadCatalog(rows);
       const state = url.searchParams.get("state");
       const catalogRtos = (catalog.states ?? [])
         .filter((stateGroup) => !state || stateGroup.state === state)
         .flatMap((stateGroup) => stateGroup.rtos.map((rto) => rto.label));
-      const rowRtos = useDatabase
-        ? (await queryRtos(state)).map((row) => row.rto)
-        : rows.filter((row) => !state || row.state === state).map((row) => row.rto);
-      const rtos = [...new Set([...catalogRtos, ...rowRtos])].sort();
+      const rtos = [...new Set(catalogRtos)].sort();
       sendJson(response, 200, { rtos, catalogUpdatedAt: catalog.updated_at });
       return;
     }

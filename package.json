@@ -48,7 +48,7 @@
     "check:vahan-final-comparison": "node scripts/final-vahan-comparison-unit-check.mjs && node scripts/final-vahan-comparison-browser-check.mjs",
     "check:vahan-final-comparison:browser": "node scripts/final-vahan-comparison-browser-check.mjs",
     "check:oem": "node scripts/monthly-oem-unit-check.mjs && node scripts/report-insight-summary-unit-check.mjs",
-    "check:rto-daily": "node scripts/rto-daily-unit-check.mjs && node scripts/rto-source-unit-check.mjs && node scripts/db-retry-unit-check.mjs && node scripts/vahan-scrape-lock-unit-check.mjs",
+    "check:rto-daily": "node scripts/rto-daily-unit-check.mjs && node scripts/rto-source-unit-check.mjs && node scripts/db-retry-unit-check.mjs && node scripts/vahan-scrape-lock-unit-check.mjs && npm run check:rto-labels",
     "check:rto-reports": "node scripts/rto-reports-unit-check.mjs && node scripts/daily-rto-contract-check.mjs && node scripts/check-daily-registration-availability-unit-check.mjs && node scripts/text-pdf-unit-check.mjs && npm run check:oem-annual && npm run check:oem-tracking",
     "check:rto-daily-contract:integration": "node --env-file=.env.local-postgres scripts/daily-rto-contract-integration-check.mjs",
     "check:rto-reports:integration": "node --env-file=.env scripts/rto-reports-integration-check.mjs",
@@ -126,7 +126,9 @@
     "check:oem-tracking:integration": "node --env-file=.env.local-postgres scripts/rto-oem-tracking-integration-check.mjs",
     "rto-oem:tracking": "node scripts/collect-rto-oem-tracking.mjs",
     "rto-oem:tracking:schema": "node scripts/apply-rto-oem-tracking-schema.mjs",
-    "rto-oem:tracking:verify-source": "node scripts/verify-rto-oem-tracking-source.mjs"
+    "rto-oem:tracking:verify-source": "node scripts/verify-rto-oem-tracking-source.mjs",
+    "check:rto-labels": "node scripts/rto-label-http-check.mjs",
+    "audit:rto-labels": "node scripts/audit-rto-labels.mjs"
   },
   "dependencies": {
     "embedded-postgres": "17.10.0-beta.17",
