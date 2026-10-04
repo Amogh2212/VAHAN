@@ -294,7 +294,7 @@ async function main() {
       await fulfillReportApi(route);
     });
     await fallbackPage.goto(`${BASE_URL}/rto-reports.html`, { waitUntil: "networkidle" });
-    assert.match(await fallbackPage.locator(".rto-daily-oem").innerText(), /Daily OEM tracking awaiting a verified 2025 baseline/);
+    assert.match(await fallbackPage.locator(".rto-daily-oem").innerText(), /Daily OEM comparison unavailable for this report date/);
     assert.match(await fallbackPage.locator(".rto-daily-oem").innerText(), /Calendar year 2026 · Supporting annual evidence/);
     assert.equal(await fallbackPage.locator(".rto-oem-daily-value").count(), 0, "annual figures must never be rendered as daily changes");
     assert.equal(await fallbackPage.locator(".rto-oem-ranking-label strong").first().innerText(), "9,999");
