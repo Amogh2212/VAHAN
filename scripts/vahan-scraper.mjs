@@ -7,7 +7,7 @@ import { closePool, hasDatabaseUrl } from "../lib/db.mjs";
 import { replaceMakerRegistrationRows } from "../lib/maker-registrations.mjs";
 import { replaceRegistrationRows } from "../lib/registrations.mjs";
 import { upsertRtoDailyConfigs } from "../lib/rto-daily-snapshots.mjs";
-import { toCatalogRto } from "../lib/rto-resolver.mjs";
+import { canonicalizeRtoCatalog, toCatalogRto } from "../lib/rto-resolver.mjs";
 import { acquireVahanScrapeLock } from "../lib/vahan-scrape-lock.mjs";
 
 // The legacy Vahan4Dashboard was retired.  The public dashboard exposes the
@@ -813,12 +813,12 @@ async function buildRtoCatalog(args) {
   if (catalogStates.length < 20 || totalRtos < 1000) {
     throw new Error(`Refusing to replace the RTO catalog with incomplete coverage: states=${catalogStates.length}, rtos=${totalRtos}.`);
   }
-  const catalog = {
+  const catalog = canonicalizeRtoCatalog({
     source_url: SOURCE_URL,
     updated_at: new Date().toISOString(),
     states: catalogStates,
-  };
-  const configs = catalogStates.flatMap((group) => group.rtos.map((rto, index) => ({
+  });
+  const configs = catalog.states.flatMap((group) => group.rtos.map((rto, index) => ({
     state: group.state,
     rto: rto.label ?? rto,
     enabled: true,
