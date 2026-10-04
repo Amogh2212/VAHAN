@@ -43,7 +43,7 @@ function harness({ scopes: initialScopes = [], active = true, date = "2026-10-04
   };
   const deps = {
     store, now: () => clock, sleep: async (ms) => { clock += ms; }, advance: (ms) => { clock += ms; }, log: () => {},
-    acquireLock: async () => async () => { releaseCalls += 1; },
+    acquireLock: async (_owner, lockOptions) => { assert.equal(lockOptions.guardLoss, true); return async () => { releaseCalls += 1; }; },
     latestCohortRunId: async () => 42, loadCohort: async (id) => { assert.equal(id, 42); return cohort; },
     fetchBaseline: async (input) => {
       assert.equal(input.year, 2025);
@@ -230,6 +230,43 @@ assert.equal(automaticEmpty.counts().releaseCalls, 0);
 assert.equal(automaticEmpty.counts().createCalls, 0);
 assert.equal(automaticEmpty.counts().pruneCalls, 0);
 assert.match(result.audit.skipReason, /waiting for explicit manual/);
+
+// Losing the session lock during pacing stops before the next source request.
+// Earlier checkpoints remain resumable and an interrupted baseline cannot activate.
+const lostLock = harness({ active: false });
+let held = true;
+const releaseLostLock = async () => { held = false; };
+releaseLostLock.assertHeld = () => {
+  if (!held) { const error = new Error("lock session lost"); error.code = "VAHAN_SCRAPE_LOCK_LOST"; throw error; }
+};
+lostLock.deps.acquireLock = async () => releaseLostLock;
+lostLock.deps.fetchBaseline = async (input) => {
+  await input.beforeRequest();
+  lostLock.requests.push(lostLock.deps.now());
+  return { observedAt: new Date(lostLock.deps.now()).toISOString(), selectionYear: 2025, rankingComplete: true, makers };
+};
+lostLock.deps.sleep = async (ms) => { lostLock.deps.advance(ms); held = false; };
+result = await runOemTrackingCollection(parseTrackingArguments(["--mode", "baseline", "--latest-cohort"]), lostLock.deps);
+assert.equal(lostLock.requests.length, 1);
+assert.equal(result.audit.requestCount, 1);
+assert.equal(result.audit.verifiedScopes, 1);
+assert.match(result.audit.stopReason, /scrape lock was lost/);
+assert.equal(lostLock.finishes[0].activate, false);
+assert.equal(result.exitCode, 1);
+
+// A loss before the first Daily request retains a failed audit and performs cleanup.
+const lostDailyLock = harness({ scopes: baselineScopes });
+let dailyReleased = 0;
+const releaseLostDaily = async () => { dailyReleased += 1; };
+let checks = 0;
+releaseLostDaily.assertHeld = () => { if (++checks > 1) throw new Error("lock session lost"); };
+lostDailyLock.deps.acquireLock = async () => releaseLostDaily;
+result = await runOemTrackingCollection(dailyOptions, lostDailyLock.deps);
+assert.equal(result.audit.requestCount, 0);
+assert.equal(lostDailyLock.requests.length, 0);
+assert.match(result.audit.stopReason, /scrape lock was lost/);
+assert.equal(lostDailyLock.counts().pruneCalls, 1);
+assert.equal(dailyReleased, 1);
 
 // A complete manual pass is the only automatic promotion of a new selection version.
 const full = harness({ active: false });

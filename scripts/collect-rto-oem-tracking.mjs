@@ -150,6 +150,8 @@ export async function runOemTrackingCollection(options, deps) {
     if (unavailableCatalogRtos.size >= 3) throw new CollectionStopped("Shared source catalog returned HTTP 404/410 across three distinct RTOs. Remaining scopes were deferred; individual chart/count failures do not trigger this stop.");
   };
   const checkBudget = () => {
+    try { release?.assertHeld?.(); }
+    catch { throw new CollectionStopped("Shared VAHAN scrape lock was lost; verified entries were checkpointed. Restart collection to acquire a new lock."); }
     if (now() >= deadline) throw new CollectionStopped("Collection time budget exhausted; verified entries were checkpointed.");
     if (options.mode === "daily" && date && dateKey(now) !== date) throw new CollectionStopped("IST date changed; later responses were not backdated. Next daily run uses the new date.");
   };
@@ -168,7 +170,7 @@ export async function runOemTrackingCollection(options, deps) {
       log(`OEM daily skipped: ${audit.skipReason}`);
       return { audit, exitCode: 0 };
     }
-    release = await deps.acquireLock(`oem-tracking-${options.mode}`, { waitMs: Math.min(15 * 60_000, Math.max(0, deadline - now())) });
+    release = await deps.acquireLock(`oem-tracking-${options.mode}`, { guardLoss: true, waitMs: Math.min(15 * 60_000, Math.max(0, deadline - now())) });
     checkBudget();
     date = dateKey(now);
     if (options.mode === "baseline") {
