@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { trackingSourceFixture } from "./fixtures/rto-oem-tracking.mjs";
 import { fetchOemTrackingBaselineSegment, fetchTrackedOemSegment } from "../lib/rto-oem-tracking-source.mjs";
-import { dailyOemPayload, dailyOemCsvRows, dailyOemHtml, validateOemDailyRequest, getDailyOemTrackingBatch, createOemBaseline, saveOemBaselineScope, saveOemDailyObservation } from "../lib/rto-oem-tracking.mjs";
+import { dailyOemPayload, dailyOemCsvRows, dailyOemHtml, validateOemDailyRequest, getDailyOemTrackingBatch, createOemBaseline, saveOemBaselineScope, saveOemDailyObservation, finishOemBaseline } from "../lib/rto-oem-tracking.mjs";
 import { RTO_DAILY_CATEGORY_FILTERS, RTO_DAILY_FUEL_FILTERS } from "../lib/rto-daily-snapshots.mjs";
 import { oemTrackingSchemaDatabaseUrl } from "./apply-rto-oem-tracking-schema.mjs";
 
@@ -112,4 +112,21 @@ await assert.rejects(createOemBaseline({ sourceCohortRunId: 1, cohort: cohort.sl
 const frozenResult = await saveOemBaselineScope({ ...context, baselineId: 1, evidence: baselineEvidence }, async (callback) => callback(async (sql) => ({ rows: sql.includes("baselines") ? [baseline] : [{ status: "verified" }] })));
 assert.equal(frozenResult.saved, false);
 await assert.rejects(saveOemDailyObservation({ ...context, runId: 1, baselineId: 1, makerId: "Maker A", evidence: { ...current[0].evidence, observedAt: "2026-10-03T10:00:00Z" } }), /actual IST date/);
-console.log("OEM tracking storage unit checks passed: fixed historical selection, adjacent daily evidence, corrections, freshness, partial isolation, version identity, bounded history reads and frozen rankings.");
+// Finalization uses the same source-accounted coverage as the collector, and rejects residuals or missing scopes.
+const finishScopes=Array.from({length:600},()=>({status:'verified',ranking_complete:false,makers:baselineEvidence.makers,
+  total:String(baselineEvidence.makers.reduce((sum,m)=>sum+m.count,0))}));
+const finishTransaction=async callback=>callback(async(sql,values)=>{
+  if(sql.startsWith('select * from rto_oem_tracking_baselines'))return {rows:[baseline]};
+  if(sql.includes("evidence->'makers'"))return {rows:finishScopes};
+  if(sql.startsWith('update rto_oem_tracking_baselines'))return {rows:[{...baseline,status:values[1]}]};
+  throw new Error(`Unexpected finalization query: ${sql}`);
+});
+assert.equal((await finishOemBaseline({baselineId:1,status:'success'},null,finishTransaction)).status,'success');
+finishScopes[0]={...finishScopes[0],total:String(Number(finishScopes[0].total)+1)};
+await assert.rejects(finishOemBaseline({baselineId:1,status:'success'},null,finishTransaction),/600 verified scopes/);
+assert.equal((await finishOemBaseline({baselineId:1},null,finishTransaction)).status,'partial');
+finishScopes[0]={...finishScopes[1],status:'unavailable'};
+await assert.rejects(finishOemBaseline({baselineId:1,status:'success'},null,finishTransaction),/600 verified scopes/);
+finishScopes.pop();
+await assert.rejects(finishOemBaseline({baselineId:1,status:'success'},null,finishTransaction),/600 verified scopes/);
+console.log("OEM tracking storage unit checks passed: fixed historical selection, adjacent daily evidence, corrections, freshness, partial isolation, version identity, bounded history reads, frozen rankings and source-accounted baseline finalization.");
