@@ -183,6 +183,10 @@ async function main() {
     await page.locator("#rtoReportBatchDate").fill("2026-07-23");
     await page.locator("#rtoReportBatchDate").dispatchEvent("change");
     await page.getByRole("heading", { name: "Registration trend" }).waitFor({ state: "visible" });
+    assert.match(await page.locator("#rtoReportDetail").innerText(), /Fetched:.*23 Jul 2026.*3:42.*IST/);
+    assert.match(await page.locator("#rtoReportDetail").innerText(), /source refresh time unconfirmed/);
+    assert.match(await page.locator("#rtoReportDetail .status-pill").innerText(), /Six scopes collected/i);
+    assert.match(await page.locator("#rtoReportDetail").innerText(), /Refresh failed; showing saved evidence/);
     const trendGrouping = page.getByRole("radiogroup", { name: "Trend grouping" });
     const switchStyle = await trendGrouping.evaluate((group) => ({
       radius: getComputedStyle(group).borderRadius,
@@ -381,6 +385,8 @@ async function fulfillReportApi(route) {
         state: "Maharashtra",
         rto: "Pune Central RTO",
         verifiedScopes: 6,
+        observedAt: "2026-07-22T22:12:12Z",
+        refreshStatus: "failed",
         evMonthToDate: 1253,
         iceMonthToDate: 984,
         totalMonthToDate: 2237,

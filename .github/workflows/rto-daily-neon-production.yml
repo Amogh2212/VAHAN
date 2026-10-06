@@ -16,6 +16,11 @@ on:
         required: false
         default: true
         type: boolean
+      refresh_all:
+        description: Refetch all RTOs today and publish the latest complete six-scope snapshot, preserving history.
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: vahan-rto-daily-neon-production
@@ -102,6 +107,7 @@ jobs:
           node --env-file=.env scripts/run-rto-daily-snapshots.mjs
           --neon --work-queue --allow-partial --time-budget-minutes 315 --workers 2 --preserve-history --require-complete
           ${{ github.event_name == 'workflow_dispatch' && inputs.retry_failed == true && '--retry-failed' || '' }}
+          ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_all == true && '--refresh-all' || '' }}
 
       - name: Create sanitized production summary
         if: always()
