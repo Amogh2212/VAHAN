@@ -53,7 +53,7 @@ jobs:
           node scripts/audit-map-evidence.mjs --database "$MAP_YEAR-01" "$MAP_YEAR-$(printf '%02d' "$MAP_MONTH")" > outputs/map-refresh-audit/report.json
       - name: Upload source and audit evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: map-ev-evidence-${{ github.run_id }}
           path: |
