@@ -881,9 +881,11 @@ function renderDailyOemPanel(host, data, params) {
     ${controls(OEM_CATEGORIES, state.oemCategory, "category", "OEM vehicle category")}</div>
     <div class="rto-annual-oem-result" aria-live="polite" aria-busy="${!data}">
       <h4>${state.oemFuel} · ${state.oemCategory}</h4>
+      ${makers.length ? `<p class="rto-annual-oem-note">OEM counts fetched (IST): ${escapeHtml(oemObservationTime(makers.map(m=>m.observedAt).filter(Boolean).sort().at(-1)))}. See the registration total's fetch time above when comparing changes.</p>` : ""}
+      ${segment?.refresh?.status === 'failed' ? `<p class="rto-annual-oem-note">Refresh failed at ${escapeHtml(oemObservationTime(segment.refresh.attemptedAt))}; showing saved counts. ${escapeHtml(segment.refresh.reason ?? '')}</p>` : ""}
       ${!data ? `<p>Loading saved daily OEM evidence…</p>` : !makers.length
         ? `<p class="result-empty"><strong>${segment?.explicitZero ? `No OEMs selected in ${escapeHtml(selectionYear)}` : "Daily comparison unavailable"}</strong> · ${escapeHtml(segment?.reason ?? data.error ?? (segment?.explicitZero ? `The source confirmed zero registrations for this scope in ${selectionYear}.` : "No saved OEM baseline for this selection."))}</p>`
-        : `${!segment.rankingComplete ? `<p class="rto-annual-oem-note">${makers.length} named makers saved. The ${escapeHtml(selectionYear)} ranking is incomplete.</p>` : ""}
+        : `${!segment.rankingComplete ? `<p class="rto-annual-oem-note">${makers.length} named makers saved. ${segment.sourceAccountedRanking ? `They account for the full ${escapeHtml(selectionYear)} source total.` : `The ${escapeHtml(selectionYear)} ranking is incomplete.`}</p>` : ""}
           ${segment.reason ? `<p class="rto-annual-oem-note">${escapeHtml(segment.reason)}</p>` : ""}
           <ol class="rto-oem-ranking">${makers.map((maker) => {
             const available = usable(maker);

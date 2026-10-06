@@ -23,6 +23,7 @@ The `RTO Saved OEM Daily Production Collection` GitHub workflow supports these b
 
 ```powershell
 node --env-file=.env.neon scripts/collect-rto-oem-tracking.mjs --production --mode daily
+node --env-file=.env.neon scripts/collect-rto-oem-tracking.mjs --production --mode daily --refresh
 ```
 
 A full attempted pass activates the verified selection even when some scopes are unavailable. Its coverage audit still reports partial and exits unsuccessfully. A stopped run or a limited pilot cannot activate a baseline. Resuming skips verified selections and daily observations, retries unavailable evidence, and never silently changes verified 2025 rankings. To refresh an incomplete ranking, explicitly create a new baseline version. Historical report dates keep the version that was activated by that date.
@@ -30,6 +31,8 @@ A full attempted pass activates the verified selection even when some scopes are
 Collection uses the shared VAHAN advisory lock, paced requests, bounded retries, and checkpoints. A request crossing IST midnight is never backdated. Direct Neon connections are used for the session lock. Raw source responses expire after 30 days; compact evidence and hashes remain, daily observations have 365-day retention, and frozen selections are retained permanently.
 
 ## Source verification
+
+Manual workflow input `refresh_daily=true` refreshes today's observations without changing frozen 2025 selections. Each scope is replaced atomically only when every saved maker returns newer compatible verified evidence. Replaced compact observations are retained in the immutable history table; partial/failed refreshes retain the last verified counts and record a failed refresh attempt. Ordinary scheduled collection continues to skip verified observations. A date boundary stops refresh without backdating responses. Collection success requires 600 verified scopes with either five makers, explicit zero, or a short named ranking whose counts account for its entire source total; five-slot completeness remains separately reported.
 
 The 4 October 2026 read-only pilot verified the year and maker filters for AP31, Jaipur RJ14, and Pimpri-Chinchwad MH14. AP31 EV 2W Ather had 1,290 registrations in the 2025 selection and 1,449 in the 2026 source observation. MH14 EV 3W Zenmo was absent from the current chart; the individual saved-maker query explicitly returned zero. These prove the filtered source contract, not full cohort coverage. Other pilot scopes returned HTTP 404 and remained unavailable.
 

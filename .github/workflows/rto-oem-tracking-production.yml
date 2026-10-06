@@ -7,6 +7,11 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      refresh_daily:
+        description: "Refresh today's saved OEM counts for all 100 RTOs; preserve earlier observations. Leave baseline inputs blank."
+        required: false
+        default: false
+        type: boolean
       cohort_run_id:
         description: "New 2025 baseline: frozen 100-RTO Daily cohort run ID (blank selects latest complete cohort)."
         required: false
@@ -57,10 +62,15 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           COHORT_RUN_ID: ${{ inputs.cohort_run_id }}
           RESUME_BASELINE_ID: ${{ inputs.resume_baseline_id }}
+          REFRESH_DAILY: ${{ inputs.refresh_daily }}
         shell: bash
         run: |
           args=(--production --time-budget-minutes 315 --output artifacts/rto-oem-tracking-summary.json)
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$REFRESH_DAILY" = "true" ]; then
+            test -z "$COHORT_RUN_ID"
+            test -z "$RESUME_BASELINE_ID"
+            args+=(--mode daily --refresh)
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             args+=(--mode baseline --selection-year 2025)
             if [ -n "$RESUME_BASELINE_ID" ]; then
               test -z "$COHORT_RUN_ID"

@@ -101,6 +101,28 @@ create index if not exists rto_oem_tracking_observation_date_idx on rto_oem_trac
 
 -- Reject changing verified evidence or selected identities, including direct SQL writes.
 -- Raw bodies can still be pruned independently of the compact proof.
+create table if not exists rto_oem_tracking_observation_history (
+  id bigserial primary key,
+  replaced_at timestamptz not null default now(),
+  previous_observation jsonb not null
+);
+create table if not exists rto_oem_tracking_refresh_attempts (
+  id bigserial primary key,
+  baseline_id bigint not null references rto_oem_tracking_baselines(id),
+  run_id bigint not null references rto_oem_tracking_daily_runs(id),
+  observation_date date not null,
+  state text not null, rto text not null, fuel_group text not null, vehicle_category text not null,
+  attempted_at timestamptz not null default now(),
+  status text not null check (status in ('verified','failed')),
+  error_reason text
+);
+create index if not exists rto_oem_tracking_refresh_scope_idx on rto_oem_tracking_refresh_attempts
+  (baseline_id,state,rto,fuel_group,vehicle_category,observation_date,attempted_at desc,id desc);
+create or replace function protect_oem_refresh_history() returns trigger language plpgsql as $$
+begin raise exception 'OEM refresh history is immutable'; end $$;
+drop trigger if exists protect_oem_refresh_history on rto_oem_tracking_observation_history;
+create trigger protect_oem_refresh_history before update or delete on rto_oem_tracking_observation_history
+  for each row execute function protect_oem_refresh_history();
 create or replace function protect_verified_oem_tracking() returns trigger language plpgsql as $$
 begin
   if old.status='verified' and (to_jsonb(new)-'raw_responses') is distinct from (to_jsonb(old)-'raw_responses') then
@@ -110,8 +132,30 @@ begin
 end $$;
 drop trigger if exists protect_verified_oem_tracking_scope on rto_oem_tracking_scopes;
 create trigger protect_verified_oem_tracking_scope before update on rto_oem_tracking_scopes for each row execute function protect_verified_oem_tracking();
+create or replace function protect_oem_daily_refresh() returns trigger language plpgsql as $$
+begin
+  if tg_op='DELETE' then
+    if old.status='verified' then
+      if current_setting('vahan.oem_retention',true) is distinct from 'on'
+        then raise exception 'Verified OEM tracking evidence is immutable'; end if;
+      insert into rto_oem_tracking_observation_history(previous_observation) values (to_jsonb(old)-'raw_responses');
+    end if;
+    return old;
+  end if;
+  if old.status='verified' and (to_jsonb(new)-'raw_responses') is distinct from (to_jsonb(old)-'raw_responses') then
+    if current_setting('vahan.oem_refresh',true) is distinct from 'on'
+      or new.status<>'verified' or new.observed_at<=old.observed_at
+      or (new.baseline_id,new.state,new.rto,new.fuel_group,new.vehicle_category,new.maker_id,new.observation_date,new.calendar_year,new.filter_identity)
+        is distinct from
+         (old.baseline_id,old.state,old.rto,old.fuel_group,old.vehicle_category,old.maker_id,old.observation_date,old.calendar_year,old.filter_identity)
+    then raise exception 'Verified OEM tracking evidence is immutable; refresh requires newer compatible verified evidence'; end if;
+    insert into rto_oem_tracking_observation_history(previous_observation) values (to_jsonb(old)-'raw_responses');
+  end if;
+  return new;
+end $$;
 drop trigger if exists protect_verified_oem_tracking_observation on rto_oem_tracking_observations;
-create trigger protect_verified_oem_tracking_observation before update on rto_oem_tracking_observations for each row execute function protect_verified_oem_tracking();
+create trigger protect_verified_oem_tracking_observation before update or delete on rto_oem_tracking_observations
+  for each row execute function protect_oem_daily_refresh();
 create or replace function protect_selected_oem_tracking() returns trigger language plpgsql as $$
 begin
   raise exception 'Selected OEM identity and rank are immutable; create a new baseline version';
