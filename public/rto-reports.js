@@ -784,8 +784,15 @@ function renderCurrentEvidenceDetail(entry) {
   const daily = entry.daily ?? { status: "unavailable" };
   const dailyAvailable = daily.status === "available" || daily.status === "correction";
   const date = evidenceReadiness?.run?.snapshotDate ?? "Selected date";
+  const fetchedAt = entry.observedAt && Number.isFinite(Date.parse(entry.observedAt))
+    ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.observedAt)) + " IST"
+    : "Fetch time unavailable";
+  const refreshNote = entry.refreshStatus === "failed"
+    ? "Refresh failed; showing saved evidence."
+    : ["queued", "retrying", "running"].includes(entry.refreshStatus) ? "Refresh in progress; showing saved evidence." : "";
   reportDetail.innerHTML = `
-    <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(evidenceReadiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals, not Daily registrations.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Verified evidence" : "Partial evidence"}</span></header>
+    <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(evidenceReadiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals for the selected categories.</p><p>Fetched: ${escapeHtml(fetchedAt)} · Saved observation; source refresh time unconfirmed.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Six scopes collected" : "Partial evidence"}</span></header>
+    ${refreshNote ? `<p class="result-empty" role="status">${escapeHtml(refreshNote)}</p>` : ""}
     <section class="rto-report-metrics" aria-label="Month-to-date source totals">
       ${sourceEvidenceMetricBlock("EV registrations", entry.evMonthToDate, { value: daily.ev, status: daily.status })}
       ${sourceEvidenceMetricBlock("ICE registrations", entry.iceMonthToDate, { value: daily.ice, status: daily.status })}

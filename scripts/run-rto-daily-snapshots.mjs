@@ -20,6 +20,7 @@ import {
   previewRtoDailyCycle,
   requeueFailedRtoDailyJobs,
   requeueIncompleteRtoDailyJobs,
+  requeueRtoDailyRefresh,
   rollupAndPruneRtoDailySnapshots,
   rtoDailyCycleSummary,
   persistRtoDailyJobReports,
@@ -63,6 +64,7 @@ export function parseArgs(argv) {
     rto: null,
     retryFailed: false,
     retryIncomplete: false,
+    refreshAll: false,
     workQueue: false,
     neon: false,
     timeBudgetMinutes: null,
@@ -77,6 +79,7 @@ export function parseArgs(argv) {
     else if (arg === "--bootstrap-configs") args.bootstrapConfigs = true;
     else if (arg === "--retry-failed") args.retryFailed = true;
     else if (arg === "--retry-incomplete") args.retryIncomplete = true;
+    else if (arg === "--refresh-all") args.refreshAll = true;
     else if (arg === "--work-queue") args.workQueue = true;
     else if (arg === "--require-complete") args.requireComplete = true;
     else if (arg === "--allow-partial") args.allowPartial = true;
@@ -118,6 +121,10 @@ export function parseArgs(argv) {
     : Math.max(1, Number(args.timeBudgetMinutes) || DEFAULT_WORK_BUDGET_MINUTES);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(args.date)) throw new Error("--date must use YYYY-MM-DD format.");
   if (!/^\d{4}-\d{2}$/.test(args.targetMonth)) throw new Error("--target-month must use YYYY-MM format.");
+  if (args.refreshAll) {
+    if (args.state || args.rto || args.maxJobs) throw new Error("--refresh-all requires the entire cycle; scoped limits are unsupported.");
+    args.preserveHistory = true;
+  }
   if (args.preserveHistory && args.date !== snapshotDateKey()) throw new Error("--preserve-history requires today's IST snapshot date; historical reruns are forbidden.");
   return args;
 }
@@ -133,6 +140,7 @@ function usage() {
     "  --retry-incomplete     Requeue only RTO jobs with fewer than six valid scopes.",
     "  --work-queue           Bounded mode intended for a deployment-host cron every 15 minutes.",
     "  --require-complete     Exit non-zero unless the run finishes with complete 100-RTO report readiness.",
+    "  --refresh-all          Refetch today's entire cohort; promote only complete six-scope snapshots.",
     "  --allow-partial        Treat expected failed/incomplete RTO jobs as a warning instead of a process failure.",
     "  --preserve-history    Today's run only; skip prior-cycle edits, history rematerialization and retention cleanup.",
     "  --neon                 Require the configured DATABASE_URL to point to Neon.",
@@ -418,6 +426,7 @@ async function main() {
       maxJobs: args.maxJobs,
     });
     console.log(JSON.stringify({ cycle: run, storage: args.neon ? "neon" : "configured database" }, null, 2));
+    if (args.refreshAll) console.log(JSON.stringify({ refreshAll: await requeueRtoDailyRefresh({ runId: run.id }) }, null, 2));
     if (args.retryFailed) {
       console.log(JSON.stringify({
         requeued: await requeueFailedRtoDailyJobs({ runId: run.id, state: args.state, rto: args.rto }),

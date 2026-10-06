@@ -21,6 +21,10 @@ import { createAdaptiveController, requireCompleteFailureReasons, parseArgs, fin
 
 assert.equal(parseArgs(["--preserve-history"]).preserveHistory, true);
 assert.equal(parseArgs([]).preserveHistory, false);
+assert.equal(parseArgs(["--refresh-all"]).refreshAll, true);
+assert.equal(parseArgs([]).refreshAll, false);
+assert.equal(parseArgs(["--refresh-all"]).preserveHistory, true);
+assert.throws(() => parseArgs(["--refresh-all", "--rto=AP31"]), /entire cycle/);
 const productionWorkflow = fs.readFileSync(new URL("../.github/workflows/rto-daily-neon-production.yml", import.meta.url), "utf8");
 assert.match(productionWorkflow, /cron: "30 14 \* \* \*"/,
   "production scheduling must target 20:00 IST (14:30 UTC)");
@@ -86,6 +90,15 @@ assert.deepEqual(selectAuthoritativeObservation(null, { valid: true }), {
 assert.equal(selectAuthoritativeObservation({ id: 41 }, { valid: true }).authoritativeObservationId, 41,
   "same-date reruns retain the first valid observation as the comparison boundary");
 assert.equal(selectAuthoritativeObservation(null, { valid: false }).disposition, "rejected");
+const oldObservation = { id: 41, observed_at: "2026-10-06T03:00:00Z" };
+assert.equal(selectAuthoritativeObservation(oldObservation, { valid: true, refreshComplete: true, observedAt: "2026-10-06T05:00:00Z" }).accepted, true,
+  "an explicit complete refresh must promote newer source evidence");
+for (const candidate of [
+  { valid: true, refreshComplete: false, observedAt: "2026-10-06T05:00:00Z" },
+  { valid: true, refreshComplete: true, observedAt: "2026-10-06T02:00:00Z" },
+  { valid: false, refreshComplete: true, observedAt: "2026-10-06T05:00:00Z" },
+]) assert.equal(selectAuthoritativeObservation(oldObservation, candidate).accepted, false,
+  "partial, older, or invalid refresh evidence cannot replace the saved authority");
 assert.match(
   requireCompleteFailureReasons({
     finalized: { complete: true, summary: { total: 100, succeeded: 100, failed: 0, queued: 0, running: 0, retrying: 0, deferred: 0 } },

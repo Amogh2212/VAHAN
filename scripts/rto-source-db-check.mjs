@@ -10,6 +10,8 @@ import {
   listRtoDailyFreshness,
   listRtoDailyTrend,
   rollupAndPruneRtoDailySnapshots,
+  requeueRtoDailyRefresh,
+  persistRtoDailyJobReports,
   snapshotDateKey,
   upsertRtoDailyConfigs,
 } from "../lib/rto-daily-snapshots.mjs";
@@ -44,7 +46,7 @@ function reportsFor(job, revision) {
       targetMonth,
       scrapedAt,
       attempts: job.attempts,
-      attemptId: `${job.id}:${job.attempts}:${index}`,
+      attemptId: `${job.id}:${revision}:${job.attempts}:${index}`,
     });
     report.evidence.validation.responseHash = createHash("sha256")
       .update(`${revision}:${fuelGroup}:${vehicleCategory}`)
@@ -122,6 +124,27 @@ try {
     "a same-date rerun must not overwrite the first valid observation",
   );
 
+  assert.equal((await requeueRtoDailyRefresh({ runId })).count, 1);
+  const refreshJob = await claimRtoDailyJob({ runId, workerId: "registration-source-refresh" });
+  assert.equal(refreshJob.metadata.refreshAll, true);
+  await assert.rejects(requeueRtoDailyRefresh({ runId }), /active workers/);
+  const refreshReports = reportsFor(refreshJob, 2);
+  const refreshed = await completeRtoDailyJob({ job: refreshJob, workerId: "registration-source-refresh", reports: refreshReports, rows: [] });
+  assert.equal(refreshed.acceptedScopes, 6);
+  const refreshedHistory = await query("select accepted, disposition, authoritative_observation_id from rto_registration_observations where run_id = $1 order by id", [runId]);
+  assert.equal(refreshedHistory.rowCount, 18);
+  assert.equal(refreshedHistory.rows.filter(row => row.accepted).length, 6);
+  assert.ok(refreshedHistory.rows.slice(0, 6).every(row => !row.accepted && row.authoritative_observation_id), "original observations remain linked in history");
+  const refreshedPublished = await query("select report_total from rto_daily_scrape_reports where run_id = $1 order by report_total", [runId]);
+  assert.deepEqual(refreshedPublished.rows.map(row => Number(row.report_total)), [120, 121, 122, 123, 124, 125]);
+
+  await requeueRtoDailyRefresh({ runId });
+  const partialJob = await claimRtoDailyJob({ runId, workerId: "registration-source-partial" });
+  const partial = await persistRtoDailyJobReports({ job: partialJob, workerId: "registration-source-partial", reports: reportsFor(partialJob, 3).slice(0, 5), rows: [] });
+  assert.equal(partial.acceptedScopes, 0, "a failed refresh cannot publish a mixed-time snapshot");
+  const retainedPublished = await query("select report_total from rto_daily_scrape_reports where run_id = $1 order by report_total", [runId]);
+  assert.deepEqual(retainedPublished.rows, refreshedPublished.rows, "a partial refresh retains all six previous published counts");
+
   const serializedTrend = await listRtoDailyTrend({
     state,
     rto,
@@ -143,7 +166,7 @@ try {
       snapshotDate: observationDate,
       targetMonth,
       metricKind: "registration_month_to_date",
-      monthToDateTotal: 100,
+      monthToDateTotal: 120,
       dailyRegistration: null,
       status: "unavailable",
     },
@@ -191,7 +214,7 @@ try {
     "ordinary retention must not target the raw observation ledger",
   );
   const retained = await query("select count(*)::int as count from rto_registration_observations where run_id = $1", [runId]);
-  assert.equal(retained.rows[0].count, 12, "ordinary snapshot/report retention must preserve raw accepted and superseded observations");
+  assert.equal(retained.rows[0].count, 23, "ordinary snapshot/report retention must preserve all refresh observations");
 
   console.log(JSON.stringify({
     passed: true,
@@ -199,8 +222,8 @@ try {
     databasePort: databaseUrl.port,
     observationDate,
     accepted: 6,
-    superseded: 6,
-    retainedAfterPrune: 12,
+    superseded: 17,
+    retainedAfterPrune: 23,
   }));
 } finally {
   await query("delete from rto_monthly_snapshot_aggregates where state = $1", [state]).catch(() => {});
