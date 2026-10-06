@@ -73,7 +73,7 @@ async function main() {
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&rto=y&date=2026-02-30`)).status, 400);
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&date=2026-07-24`)).status, 400);
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-rankings?state=x&rto=y&date=2026-07-24`)).status, 200, "annual API compatibility is retained");
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, ...(process.env.RTO_REPORT_BROWSER_CHANNEL ? {channel:process.env.RTO_REPORT_BROWSER_CHANNEL} : {}) });
     const emptyPage = await browser.newPage({ viewport: { width: 1920, height: 825 } });
     await emptyPage.route("https://fonts.googleapis.com/**", (route) =>
       route.fulfill({ status: 200, contentType: "text/css", body: "" }));
@@ -113,6 +113,8 @@ async function main() {
     await page.locator(".rto-oem-ranking li").first().waitFor();
     assert.equal(await page.getByRole("radio", { name: "EV", exact: true }).getAttribute("aria-checked"), "true");
     assert.match(await page.locator(".rto-daily-oem").innerText(), /Selected from 2025 rankings/);
+    assert.match(await page.locator(".rto-daily-oem").innerText(), /OEM counts fetched \(IST\)/);
+    assert.match(await page.locator(".rto-daily-oem").innerText(), /Refresh failed at.*showing saved counts/);
     assert.equal(await page.locator(".rto-oem-daily-value").first().innerText(), "+12");
     assert.equal(await page.locator('[data-oem-status="correction"] .rto-oem-daily-value').innerText(), "-3");
     assert.equal(await page.locator('[data-oem-status="unconfirmed_no_change"] .rto-oem-daily-value').innerText(), "Unavailable");
@@ -285,7 +287,7 @@ async function main() {
     assert.match(await page.locator(".rto-annual-oem-result").innerText(), /No OEMs selected in 2025/);
     await page.getByRole("radio", { name: "3W", exact: true }).click();
     assert.equal(await page.locator(".rto-oem-ranking li").count(), 4);
-    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /ranking is incomplete/);
+    assert.match(await page.locator(".rto-annual-oem-result").innerText(), /account for the full 2025 source total/);
     assert.match(await page.locator(".rto-daily-oem").innerText(), /2026-07-23 \(IST\)/);
     assert.ok(dailyOemDates.includes("2026-07-23"), "historical OEM observations use selected date");
     const fallbackPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -334,7 +336,8 @@ async function fulfillReportApi(route) {
       const explicitZero = partial && fuelGroup === "EV" && vehicleCategory === "2W";
       const count = partial && vehicleCategory === "3W" ? 4 : 5;
       return { fuelGroup,vehicleCategory,status:unavailable ? "unavailable" : "partial",reason:unavailable ? "Fixture missing ICE/4W" : null,
-        explicitZero,rankingComplete:count === 5 || explicitZero,
+        explicitZero,rankingComplete:count === 5 || explicitZero,sourceAccountedRanking:count<5,
+        refresh: {status:'failed',attemptedAt:`${date}T10:10:00Z`,reason:'Fixture source timeout; saved counts retained.'},
         makers:unavailable || explicitZero ? [] : Array.from({length:count},(_,index)=>({
           id:String(index+1),rank:index+1,name:`${fuelGroup} ${vehicleCategory} maker ${index+1} · ${rto}${vehicleCategory === "4W" ? " · Manufacturer with a very long complete official company name" : ""}`,
           baselineCount:200+fuelIndex*100+categoryIndex*10-index*3,currentCount:index === 1 ? 997 : index === 4 ? 1000 : 1012,

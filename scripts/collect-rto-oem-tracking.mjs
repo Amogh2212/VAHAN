@@ -4,18 +4,19 @@ import { pathToFileURL } from "node:url";
 import { setTimeout as sleep } from "node:timers/promises";
 import { validateRtoDailyLoadTestCohort } from "../lib/rto-daily-cohort.mjs";
 import { RTO_DAILY_CATEGORY_FILTERS, RTO_DAILY_FUEL_FILTERS, snapshotDateKey } from "../lib/rto-daily-snapshots.mjs";
+import { sourceAccountsForShortRanking } from "../lib/rto-oem-tracking.mjs";
 
 const HELP = `collect-rto-oem-tracking.mjs --mode baseline|daily [--production]
 Baseline: (--cohort-run-id ID | --latest-cohort | --resume-baseline-id ID) [--selection-year 2025]
 Daily: [--baseline-id ID] [--automatic] (defaults to the established active baseline; never creates one)
-Optional: --rto NAME --limit 1..100 --time-budget-minutes 315 --output PATH
+Optional: --refresh (daily only) --rto NAME --limit 1..100 --time-budget-minutes 315 --output PATH
 Baseline resume preserves successful maker membership across days. Daily observations use today's IST date.
 Remote writes require --production. DATABASE_URL is read directly; local dotenv files are never loaded.`;
 
 export function parseTrackingArguments(args) {
   if (args.includes("--help")) return { help: true };
   const flags = new Set(["--mode", "--cohort-run-id", "--resume-baseline-id", "--baseline-id", "--selection-year", "--rto", "--limit", "--time-budget-minutes", "--output"]);
-  const booleans = new Set(["--production", "--latest-cohort", "--automatic"]);
+  const booleans = new Set(["--production", "--latest-cohort", "--automatic", "--refresh"]);
   const values = new Map();
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
@@ -35,12 +36,13 @@ export function parseTrackingArguments(args) {
     return value;
   };
   const options = {
-    mode: values.get("--mode"), production: values.has("--production"), latestCohort: values.has("--latest-cohort"), automatic: values.has("--automatic"),
+    mode: values.get("--mode"), production: values.has("--production"), latestCohort: values.has("--latest-cohort"), automatic: values.has("--automatic"), refresh: values.has("--refresh"),
     cohortRunId: integer("--cohort-run-id", null), resumeBaselineId: integer("--resume-baseline-id", null), baselineId: integer("--baseline-id", null),
     selectionYear: integer("--selection-year", 2025, 9999), rto: values.get("--rto") ?? null, limit: integer("--limit", null, 100),
     timeBudgetMinutes: integer("--time-budget-minutes", 315, 330), output: values.get("--output") ?? "artifacts/rto-oem-tracking-summary.json",
   };
   if (!["baseline", "daily"].includes(options.mode)) throw new Error("--mode must be baseline or daily.");
+  if (options.refresh && options.mode !== "daily") throw new Error("--refresh is daily-only.");
   if (options.selectionYear !== 2025) throw new Error("This tracking version selects OEMs using the complete 2025 calendar year.");
   if (options.mode === "baseline") {
     if (Number(Boolean(options.cohortRunId)) + Number(options.latestCohort) + Number(Boolean(options.resumeBaselineId)) !== 1) throw new Error("Baseline needs exactly one of --cohort-run-id, --latest-cohort or --resume-baseline-id.");
@@ -90,6 +92,7 @@ export function trackingCoverageAudit({ baseline, scopes = [], observations = []
   const details = [];
   let verifiedScopes = 0;
   let completeRankings = 0;
+  let sourceAccountedRankings = 0;
   let selectedMakers = 0;
   let verifiedMakers = 0;
   for (const member of baseline?.cohort ?? []) for (const fuelGroup of ["EV", "ICE"]) for (const vehicleCategory of ["2W", "3W", "4W"]) {
@@ -99,6 +102,8 @@ export function trackingCoverageAudit({ baseline, scopes = [], observations = []
     const complete = verified && Boolean((row.rankingComplete ?? row.ranking_complete ?? row.evidence?.rankingComplete) || (row.explicitZero ?? row.explicit_zero ?? row.evidence?.explicitZero));
     if (verified) verifiedScopes += 1;
     if (complete) completeRankings += 1;
+    const sourceAccounted = verified && !complete && sourceAccountsForShortRanking(row.evidence);
+    if (sourceAccounted) sourceAccountedRankings += 1;
     const makers = verified ? (row.makers ?? row.evidence?.makers ?? []) : [];
     const makerDetails = makers.map((maker) => {
       selectedMakers += 1;
@@ -109,7 +114,7 @@ export function trackingCoverageAudit({ baseline, scopes = [], observations = []
         observedAt: observed?.observedAt ?? observed?.observed_at ?? observed?.evidence?.observedAt ?? null,
         reason: observed && observed.status !== "verified" ? safeReason(observed.errorReason ?? observed.error_reason) : null };
     });
-    details.push({ ...context, baselineStatus: verified ? "verified" : row?.status ?? "pending", rankingComplete: complete,
+    details.push({ ...context, baselineStatus: verified ? "verified" : row?.status ?? "pending", rankingComplete: complete, sourceAccountedRanking: sourceAccounted,
       observedAt: row?.observedAt ?? row?.observed_at ?? row?.evidence?.observedAt ?? null,
       reason: !verified && row ? safeReason(row.errorReason ?? row.error_reason) : !verified ? "Baseline scope has not been collected" : null,
       makers: makerDetails });
@@ -117,13 +122,13 @@ export function trackingCoverageAudit({ baseline, scopes = [], observations = []
   const missingExamples = details.flatMap((scope) => {
     if (scope.baselineStatus !== "verified") return [{ state: scope.state, rto: scope.rto, fuelGroup: scope.fuelGroup, vehicleCategory: scope.vehicleCategory, reason: scope.reason }];
     if (mode === "daily") return scope.makers.filter((maker) => maker.status !== "verified").map((maker) => ({ state: scope.state, rto: scope.rto, fuelGroup: scope.fuelGroup, vehicleCategory: scope.vehicleCategory, makerId: maker.id, maker: maker.name, reason: maker.reason ?? "No verified observation on this IST date" }));
-    return scope.rankingComplete ? [] : [{ state: scope.state, rto: scope.rto, fuelGroup: scope.fuelGroup, vehicleCategory: scope.vehicleCategory, reason: "Fewer than five verified named OEMs" }];
+    return scope.rankingComplete || scope.sourceAccountedRanking ? [] : [{ state: scope.state, rto: scope.rto, fuelGroup: scope.fuelGroup, vehicleCategory: scope.vehicleCategory, reason: "Fewer than five verified named OEMs with an unaccounted source total" }];
   }).slice(0, 12);
-  const complete = verifiedScopes === 600 && completeRankings === 600 && (mode === "baseline" || selectedMakers === verifiedMakers);
+  const complete = verifiedScopes === 600 && completeRankings + sourceAccountedRankings === 600 && (mode === "baseline" || selectedMakers === verifiedMakers);
   return { contract: "oem-tracking-collection-audit-v1", mode, baselineId: baseline?.id ?? null, selectionYear: baseline?.selectionYear ?? baseline?.selection_year ?? 2025,
     observationDate: mode === "daily" ? date : null, startedAt, finishedAt, runtimeSeconds: Math.round((Date.parse(finishedAt) - Date.parse(startedAt)) / 1000), requestCount,
     status: stopReason ? "partial" : complete ? "success" : (verifiedScopes ? "partial" : "failed"), stopReason,
-    expectedRtos: 100, expectedScopes: 600, maximumMakerSlots: 3000, verifiedScopes, completeRankings, selectedMakers, verifiedMakers,
+    expectedRtos: 100, expectedScopes: 600, maximumMakerSlots: 3000, verifiedScopes, completeRankings, sourceAccountedRankings, selectedMakers, verifiedMakers,
     missingMakerObservations: mode === "daily" ? selectedMakers - verifiedMakers : null, missingExamples, scopes: details };
 }
 
@@ -140,6 +145,8 @@ export async function runOemTrackingCollection(options, deps) {
   let date;
   let lastRequest = null;
   let requestCount = 0;
+  let refreshedScopes = 0;
+  const refreshFailures = [];
   let stopReason = null;
   const unavailableCatalogRtos = new Set();
   const recordCatalogFailure = (context, reason) => {
@@ -230,13 +237,39 @@ export async function runOemTrackingCollection(options, deps) {
       run = await store.createOemDailyRun({ baselineId: baseline.id, date });
       const selectedKeys = new Set(selected.map((row) => JSON.stringify([row.state, row.rto])));
       const groups = new Map();
-      for (const row of await store.getOemDailyPending({ baselineId: baseline.id, date })) {
+      for (const row of await store.getOemDailyPending({ baselineId: baseline.id, date, refresh:options.refresh })) {
         if (!selectedKeys.has(JSON.stringify([row.state, row.rto]))) continue;
         const key = scopeKey(row);
         if (!groups.has(key)) groups.set(key, { state: row.state, rto: row.rto, fuelGroup: row.fuelGroup ?? row.fuel_group, vehicleCategory: row.vehicleCategory ?? row.vehicle_category, makers: [] });
         groups.get(key).makers.push({ id: String(row.makerId ?? row.maker_id ?? row.id), name: row.makerName ?? row.maker_name ?? row.name });
       }
       for (const group of groups.values()) {
+        if (options.refresh) {
+          let saved = false;
+          let refreshReason;
+          for (let attempt=1;attempt<=3 && !saved;attempt++) {
+            checkBudget();
+            try {
+              const results = (await deps.fetchTracked({state:group.state,rto:group.rto,year:Number(date.slice(0,4)),makers:group.makers,
+                ...RTO_DAILY_CATEGORY_FILTERS[group.vehicleCategory],fuels:RTO_DAILY_FUEL_FILTERS[group.fuelGroup],beforeRequest,maxRequestAttempts:1})).makers;
+              checkBudget();
+              const result = await store.saveOemDailyScopeRefresh({runId:run.id,baselineId:baseline.id,...group,date,results});
+              saved = result.saved;
+              refreshReason = result.reason;
+            } catch (error) {
+              if (error instanceof CollectionStopped || error?.code === 'OEM_COLLECTION_STOPPED' || error?.code === 'VAHAN_SCRAPE_LOCK_LOST') throw error;
+              refreshReason = safeReason(error.message);
+              await store.saveOemDailyScopeRefresh({runId:run.id,baselineId:baseline.id,...group,date,results:[],errorReason:refreshReason});
+            }
+            if (!saved && attempt<3) {await wait(attempt*2000);checkBudget();}
+          }
+          if (saved) refreshedScopes++;
+          else refreshFailures.push({...group,makers:undefined,reason:refreshReason});
+          if (!saved && missingCatalogRoute(refreshReason)) recordCatalogFailure(group,refreshReason);
+          if (saved) unavailableCatalogRtos.clear();
+          log(`${group.rto} ${group.fuelGroup}/${group.vehicleCategory}: ${saved?'refreshed; prior observations preserved':`refresh failed; saved counts retained: ${refreshReason}`}`);
+          continue;
+        }
         let pending = group.makers;
         let catalogUnavailable = false;
         for (let attempt = 1; attempt <= 3 && pending.length; attempt += 1) {
@@ -292,6 +325,7 @@ export async function runOemTrackingCollection(options, deps) {
   }
   let audit;
   try {
+    if (refreshFailures.length) stopReason ??= `${refreshFailures.length} OEM scope refreshes failed; previous verified counts retained.`;
     // Outages and budget/date stops must not suspend evidence retention.
     if (run) {
       try { await store.pruneOemTrackingEvidence({ date }); }
@@ -300,6 +334,9 @@ export async function runOemTrackingCollection(options, deps) {
     const scopes = baseline ? await store.getOemBaselineScopes({ baselineId: baseline.id }) : [];
     const observations = baseline && options.mode === "daily" ? await store.listOemDailyObservations({ baselineId: baseline.id, date }) : [];
     audit = trackingCoverageAudit({ baseline, scopes, observations, mode: options.mode, date, startedAt, finishedAt: dateIso(now), requestCount, stopReason });
+    audit.refresh = Boolean(options.refresh);
+    audit.refreshedScopes = refreshedScopes;
+    audit.refreshFailures = refreshFailures;
     if (!baseline) audit.status = "failed";
     if (run) await store.finishOemDailyRun({ runId: run.id, status: audit.status, errorReason: stopReason });
     if (baseline && options.mode === "baseline") await store.finishOemBaseline({ baselineId: baseline.id, status: audit.status,

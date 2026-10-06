@@ -290,3 +290,34 @@ assert.doesNotMatch(legacy, /workflow_run:/);
 assert.match(legacy, /resume_run_id:/);
 assert.match(legacy, /--resume-run-id "\$OEM_RESUME_RUN_ID"/);
 console.log("OEM tracking collector: frozen historical selection, resumable checkpoints, bounded retries, pace, rollover, time budget, guards and workflow checks passed.");
+
+// Source-accounted short rankings pass coverage, whereas a residual blocks completion.
+const shortScopes = baselineScopes.map(s=>({...s,rankingComplete:false,makers:makers.slice(0,2),evidence:{total:199,makers:makers.slice(0,2)}}));
+let shortAudit = trackingCoverageAudit({baseline:full.baseline,scopes:shortScopes,mode:'baseline',startedAt:'2026-10-06T00:00:00Z',finishedAt:'2026-10-06T00:00:01Z'});
+assert.equal(shortAudit.status,'success');
+assert.equal(shortAudit.sourceAccountedRankings,600);
+assert.equal(shortAudit.completeRankings,0);
+shortScopes[0].evidence.total=200;
+assert.equal(trackingCoverageAudit({baseline:full.baseline,scopes:shortScopes,mode:'baseline'}).status,'partial');
+assert.throws(()=>parseTrackingArguments(['--mode','baseline','--latest-cohort','--refresh']),/daily-only/);
+
+// Refresh fetches verified scopes again; incomplete scopes do not replace saved counts.
+const refreshHarness=harness({scopes:baselineScopes});
+await runOemTrackingCollection(dailyOptions,refreshHarness.deps);
+refreshHarness.deps.store.getOemDailyPending=async()=>baselineScopes.slice(0,6).flatMap(s=>s.makers.map(m=>({...s,makerId:m.id,makerName:m.name})));
+let promotedScopes=0;
+refreshHarness.deps.store.saveOemDailyScopeRefresh=async({results,errorReason})=>{
+  if(errorReason || results.length!==5 || results.some(r=>r.status!=='verified'))return {saved:false,reason:errorReason ?? 'partial'};
+  promotedScopes++;
+  return {saved:true};
+};
+let refreshedResult=await runOemTrackingCollection(parseTrackingArguments(['--mode','daily','--refresh','--limit','1']),refreshHarness.deps);
+assert.equal(promotedScopes,6);
+assert.equal(refreshedResult.audit.refreshedScopes,6);
+assert.ok(refreshedResult.audit.requestCount>0);
+refreshHarness.deps.fetchTracked=async()=>({makers:[]});
+refreshedResult=await runOemTrackingCollection(parseTrackingArguments(['--mode','daily','--refresh','--limit','1']),refreshHarness.deps);
+assert.equal(promotedScopes,6);
+assert.equal(refreshedResult.audit.refreshFailures.length,6);
+assert.equal(refreshedResult.exitCode,1);
+assert.equal(refreshedResult.audit.verifiedMakers,30);

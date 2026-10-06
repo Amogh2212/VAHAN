@@ -4,7 +4,7 @@ import pg from "pg";
 import { trackingSourceFixture } from "./fixtures/rto-oem-tracking.mjs";
 import { fetchOemTrackingBaselineSegment, fetchTrackedOemSegment } from "../lib/rto-oem-tracking-source.mjs";
 import { createOemBaseline, getActiveOemBaseline, finishOemBaseline, getOemBaselineScopes, saveOemBaselineScope,
-  createOemDailyRun, saveOemDailyObservation, getOemDailyPending, getDailyOemTracking, finishOemDailyRun, pruneOemTrackingEvidence } from "../lib/rto-oem-tracking.mjs";
+  createOemDailyRun, saveOemDailyObservation, saveOemDailyScopeRefresh, getOemDailyPending, getDailyOemTracking, finishOemDailyRun, pruneOemTrackingEvidence } from "../lib/rto-oem-tracking.mjs";
 import { RTO_DAILY_CATEGORY_FILTERS, RTO_DAILY_FUEL_FILTERS, snapshotDateKey } from "../lib/rto-daily-snapshots.mjs";
 
 const url = new URL(process.env.DATABASE_URL ?? "postgres://invalid");
@@ -79,10 +79,26 @@ try {
   await finishOemDailyRun({ runId: runCurrent.id, status: "partial" }, execute);
   // Retention removes raw chart/headline/catalog bodies while compact validation still supports historical comparisons.
   const future = new Date(`${date}T00:00:00Z`); future.setUTCDate(future.getUTCDate() + 31);
-  const pruned = await pruneOemTrackingEvidence({ date: future.toISOString().slice(0, 10) }, execute);
+  const pruned = await pruneOemTrackingEvidence({ date: future.toISOString().slice(0, 10) }, execute, transact);
   assert.ok(pruned.rawDaily >= 4);
   assert.ok(pruned.rawBaseline >= 2);
   assert.equal((await getDailyOemTracking({ state: context.state, rto: context.rto, date }, execute)).segments[0].makers[0].dailyChange, 5);
+  // Scope promotion is atomic, archived, and cannot accept partial or stale responses.
+  assert.equal((await getOemDailyPending({baselineId:baseline.id,date,refresh:true},execute)).length,4);
+  const refreshed = newValues.map(e=>({...e,observedAt:`${date}T11:00:00Z`}));
+  const refreshInput = {...scopeContext,runId:runCurrent.id,date,results:refreshed.map(e=>({id:e.makerId,status:'verified',evidence:e}))};
+  assert.equal((await saveOemDailyScopeRefresh({...refreshInput,results:refreshInput.results.slice(0,1)},transact)).saved,false);
+  assert.equal((await getDailyOemTracking({state:context.state,rto:context.rto,date},execute)).segments[0].makers[0].currentCount,20);
+  await assert.rejects(saveOemDailyScopeRefresh({...refreshInput,results:refreshInput.results.map((r,i)=>i?{...r,evidence:{...r.evidence,count:999}}:r)},transact));
+  assert.equal((await execute('select count(*)::int as n from rto_oem_tracking_observation_history')).rows[0].n,0);
+  assert.equal((await saveOemDailyScopeRefresh(refreshInput,transact)).saved,true);
+  assert.equal((await execute('select count(*)::int as n from rto_oem_tracking_observation_history')).rows[0].n,2);
+  const promoted = await getDailyOemTracking({state:context.state,rto:context.rto,date},execute);
+  assert.equal(promoted.segments[0].makers[0].currentCount,300);
+  assert.equal(promoted.segments[0].refresh.status,'verified');
+  await assert.rejects(saveOemDailyScopeRefresh(refreshInput,transact),/older/);
+  await assert.rejects(execute("delete from rto_oem_tracking_observations where status='verified'"),/immutable/);
+  await assert.rejects(execute('delete from rto_oem_tracking_observation_history'),/immutable/);
   const refresh = await createOemBaseline({ sourceCohortRunId: 2, cohort }, transact);
   assert.equal((await getActiveOemBaseline(execute)).id, baseline.id);
   assert.equal(refresh.is_active, false);
