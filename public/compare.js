@@ -6,11 +6,13 @@ const modeHelp = document.querySelector("#modeHelp");
 const compareHint = document.querySelector("#compareHint");
 const compareForm = document.querySelector("#compareForm");
 const compareBtn = document.querySelector("#compareBtn");
+const swapQueriesBtn = document.querySelector("#swapQueries");
 const leftQuery = document.querySelector("#leftQuery");
 const rightQuery = document.querySelector("#rightQuery");
 const monthModeBtn = document.querySelector("#monthMode");
 const locationModeBtn = document.querySelector("#locationMode");
 const deltaSummary = document.querySelector("#deltaSummary");
+const compareInsight = document.querySelector("#compareInsight");
 const leftResultMeta = document.querySelector("#leftResultMeta");
 const rightResultMeta = document.querySelector("#rightResultMeta");
 const verticalBarChart = document.querySelector("#verticalBarChart");
@@ -66,7 +68,10 @@ function resetSide(prefix, query, status = "Waiting") {
 }
 
 function resetCompareState(message = "Run two queries to see the difference in totals, average, and peak month.") {
+  ComparisonChart.clear();
+  comparisonResults.left = comparisonResults.right = null;
   deltaSummary.textContent = message;
+  if (compareInsight) compareInsight.textContent = "Your comparison insight will appear here after both queries load.";
   verticalBarChart.innerHTML = '<p class="compare-empty">Run two queries to compare monthly totals as vertical bars.</p>';
   doubleBarChart.innerHTML = '<p class="compare-empty">Run two queries to compare monthly totals side by side.</p>';
   resetSide("left", leftQuery.value.trim());
@@ -101,6 +106,8 @@ function queryLabel(baseLabel, query) {
 function setMode(nextMode) {
   comparisonScopes.left = comparisonScopes.right = null;
   activeCompareRun += 1;
+  compareBtn.disabled = false;
+  compareBtn.textContent = "Compare";
   currentMode = nextMode;
   monthModeBtn.classList.toggle("active", nextMode === "month");
   locationModeBtn.classList.toggle("active", nextMode === "location");
@@ -225,75 +232,12 @@ function renderFuel(target, items, emptyText) {
 }
 
 function renderDoubleBars(leftData, rightData, leftQueryText = "", rightQueryText = "") {
-  const leftTrend = new Map(leftData.trend.map((item) => [item.month, item.count]));
-  const rightTrend = new Map(rightData.trend.map((item) => [item.month, item.count]));
-  const months = [...new Set([...leftTrend.keys(), ...rightTrend.keys()])].sort((a, b) => a.localeCompare(b));
-  const leftLabel = queryLabel("Left query", leftQueryText);
-  const rightLabel = queryLabel("Right query", rightQueryText);
-
-  if (!months.length) {
-    verticalBarChart.innerHTML = '<p class="compare-empty">No monthly comparison data is available for these queries.</p>';
-    doubleBarChart.innerHTML = '<p class="compare-empty">No monthly comparison data is available for these queries.</p>';
-    return;
-  }
-
-  const max = Math.max(
-    1,
-    ...months.flatMap((month) => [leftTrend.get(month), rightTrend.get(month)].filter((value) => value !== undefined)),
-  );
-
-  const leftTotal = leftData.summary.total ?? 0;
-  const rightTotal = rightData.summary.total ?? 0;
-  const largestTotal = Math.max(1, leftTotal, rightTotal);
-  const horizontalObservedBar = (trend, month, side) => {
-    if (!trend.has(month)) {
-      return `
-        <div class="double-bar-pair missing">
-          <div class="double-bar-track" aria-label="${side} query not fetched for ${escapeHtml(month)}"></div>
-          <strong>n/a</strong>
-        </div>
-      `;
-    }
-    const width = (trend.get(month) / max) * 100;
-    return `
-      <div class="double-bar-pair">
-        <div class="double-bar-track">
-          <span class="double-bar-fill ${side}" style="width:${width}%"></span>
-        </div>
-        <strong>${fmt.format(trend.get(month))}</strong>
-      </div>
-    `;
-  };
-
-  verticalBarChart.innerHTML = `
-    <div class="scope-total-comparison" aria-label="Total registrations by scope">
-      ${[[leftLabel,leftTotal,'left',leftData],[rightLabel,rightTotal,'right',rightData]].map(([label,total,side,data]) => {
-        const available = !['missing','fetch_failed'].includes(data.dataStatus) && !(data.dataStatus === 'refreshing' && !data.rows?.length);
-        return `<div><span>${escapeHtml(label)}</span><strong>${available ? fmt.format(total) : '—'}</strong><div class="double-bar-track"><span class="double-bar-fill ${side}" style="width:${available ? total / largestTotal * 100 : 0}%"></span></div></div>`;
-      }).join('')}
-    </div>
-  `;
-
-  doubleBarChart.innerHTML = `
-    <div class="normal-chart-label">Monthly comparison</div>
-    <div class="double-bar-legend">
-      <span><i class="legend-swatch left"></i>${escapeHtml(leftLabel)}</span>
-      <span><i class="legend-swatch right"></i>${escapeHtml(rightLabel)}</span>
-    </div>
-    <div class="double-bar-list">
-      ${months
-        .map((month) => {
-          return `
-            <div class="double-bar-row">
-              <div class="double-bar-label">${escapeHtml(month)}</div>
-              ${horizontalObservedBar(leftTrend, month, "left")}
-              ${horizontalObservedBar(rightTrend, month, "right")}
-            </div>
-          `;
-        })
-        .join("")}
-    </div>
-  `;
+  const labels = [queryLabel("Left query", leftQueryText), queryLabel("Right query", rightQueryText)];
+  verticalBarChart.innerHTML = `<div class="scope-total-comparison" aria-label="Total registrations by scope">${[leftData,rightData].map((data,index) => {
+    const available = !['missing','fetch_failed'].includes(data.dataStatus) && !(data.dataStatus === 'refreshing' && !data.rows?.length);
+    return `<div><span>${index ? 'B' : 'A'} · ${escapeHtml(labels[index])}</span><strong>${available ? fmt.format(data.summary.total) : '—'}</strong></div>`;
+  }).join('')}</div>`;
+  ComparisonChart.render(leftData, rightData, leftQueryText, rightQueryText);
 }
 
 function renderSide(prefix, query, data, status = statusLabel(data)) {
@@ -354,41 +298,45 @@ function computeDelta(left, right) {
 function renderDelta(leftData, rightData) {
   if ([leftData,rightData].some((data) => ['missing','fetch_failed'].includes(data.dataStatus) || (data.dataStatus === 'refreshing' && !data.rows?.length))) {
     deltaSummary.textContent = 'A comparison needs available data for both scopes. Review the source status above.';
+    if (compareInsight) compareInsight.textContent = "Resolve the unavailable scope before interpreting the difference.";
     return;
   }
   const { diff, pct } = computeDelta(leftData, rightData);
+  const direction = diff > 0 ? "higher" : diff < 0 ? "lower" : "the same as";
+  const magnitude = Math.abs(diff);
   deltaSummary.innerHTML = `
-    <div><strong>Difference:</strong> ${formatChange(diff)} registrations</div>
-    <div><strong>Change:</strong> ${formatPct(pct)}</div>
-    <div><strong>Left:</strong> ${fmt.format(leftData.summary.total)} total (${escapeHtml(leftData.dataStatus ?? "complete")})</div>
-    <div><strong>Right:</strong> ${fmt.format(rightData.summary.total)} total (${escapeHtml(rightData.dataStatus ?? "complete")})</div>
+    <div class="compare-verdict"><strong>B is ${direction}${diff === 0 ? "" : " than"} A</strong><span>${formatChange(diff)} registrations · ${formatPct(pct)}</span></div>
+    <div class="compare-delta-details"><span><strong>A:</strong> ${fmt.format(leftData.summary.total)}</span><span><strong>B:</strong> ${fmt.format(rightData.summary.total)}</span></div>
   `;
+  if (compareInsight) {
+    const peakA = leftData.summary.peakMonth ? `A peaks in ${leftData.summary.peakMonth}` : "A has no peak month";
+    const peakB = rightData.summary.peakMonth ? `B peaks in ${rightData.summary.peakMonth}` : "B has no peak month";
+    compareInsight.textContent = magnitude === 0
+      ? `Both scopes return the same total. ${peakA}; ${peakB}.`
+      : `${magnitude.toLocaleString("en-IN")} registrations separate the scopes. ${peakA}; ${peakB}. Explore the chart or monthly values below to see where it comes from.`;
+  }
 }
 
 async function refreshPendingCompare(runId, leftQueryText, rightQueryText, leftData, rightData) {
-  const leftFinalPromise = leftData.liveRefresh?.status === "pending" && leftData.liveRefresh.jobId
-    ? pollQueryRefresh(leftData.liveRefresh.jobId)
-    : Promise.resolve(leftData);
-  const rightFinalPromise = rightData.liveRefresh?.status === "pending" && rightData.liveRefresh.jobId
-    ? pollQueryRefresh(rightData.liveRefresh.jobId)
-    : Promise.resolve(rightData);
-
-  try {
-    const [leftFinal, rightFinal] = await Promise.all([leftFinalPromise, rightFinalPromise]);
-    if (activeCompareRun !== runId) return;
-    renderSide("left", leftQueryText, leftFinal);
-    renderSide("right", rightQueryText, rightFinal);
-    renderDoubleBars(leftFinal, rightFinal, leftQueryText, rightQueryText);
-    renderDelta(leftFinal, rightFinal);
-  } catch (error) {
-    if (activeCompareRun !== runId) return;
-    deltaSummary.textContent = error.message;
-  }
+  const refresh = async (data) => {
+    if (data.liveRefresh?.status !== 'pending' || !data.liveRefresh.jobId) return data;
+    try { return await pollQueryRefresh(data.liveRefresh.jobId); }
+    catch (error) {
+      return {...data, dataStatus: data.rows?.length ? 'stale' : 'fetch_failed', liveRefresh: {...data.liveRefresh, status:'failed'}, warnings:[...(data.warnings ?? []), `Refresh failed; showing saved data. ${error.message}`]};
+    }
+  };
+  const [leftFinal,rightFinal] = await Promise.all([refresh(leftData),refresh(rightData)]);
+  if (activeCompareRun !== runId) return;
+  renderSide('left',leftQueryText,leftFinal);
+  renderSide('right',rightQueryText,rightFinal);
+  renderDoubleBars(leftFinal,rightFinal,leftQueryText,rightQueryText);
+  renderDelta(leftFinal,rightFinal);
 }
 
 async function runCompare(event, { throwOnError = false } = {}) {
   event.preventDefault();
   const runId = ++activeCompareRun;
+  ComparisonChart.clear();
   compareBtn.disabled = true;
   compareBtn.textContent = "Comparing...";
   deltaSummary.textContent = "Loading both queries...";
@@ -441,8 +389,21 @@ async function runCompare(event, { throwOnError = false } = {}) {
   }
 }
 
+document.querySelector('#barChartMode').addEventListener('click', () => ComparisonChart.setMode('bar'));
+document.querySelector('#lineChartMode').addEventListener('click', () => ComparisonChart.setMode('line'));
+
 monthModeBtn.addEventListener("click", () => setMode("month"));
 locationModeBtn.addEventListener("click", () => setMode("location"));
+swapQueriesBtn?.addEventListener("click", () => {
+  const leftValue = leftQuery.value;
+  leftQuery.value = rightQuery.value;
+  rightQuery.value = leftValue;
+  const leftScope = comparisonScopes.left;
+  comparisonScopes.left = comparisonScopes.right;
+  comparisonScopes.right = leftScope;
+  leftDirty = rightDirty = true;
+  runCompare(new Event("submit"));
+});
 leftQuery.addEventListener("input", () => {
   comparisonScopes.left = null;
   leftDirty = true;

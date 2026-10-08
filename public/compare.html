@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/styles.css" />
 
   <link rel="stylesheet" href="/atlas.css" />
+    <link rel="stylesheet" href="/compare-chart.css" />
   </head>
   <body class="atlas-page compare-page" data-atlas-route="compare">
     <a class="skip-link" href="#mainContent">Skip to comparison workspace</a>
@@ -40,7 +41,7 @@
         <form id="compareForm" class="compare-form" autocomplete="off">
           <div class="compare-grid">
             <label>
-              <span class="eyebrow">Left query</span>
+              <span class="eyebrow">Baseline <span class="compare-label-hint">(A)</span></span>
               <input
                 id="leftQuery"
                 name="leftQuery"
@@ -49,7 +50,7 @@
               />
             </label>
             <label>
-              <span class="eyebrow">Right query</span>
+              <span class="eyebrow">Compare against <span class="compare-label-hint">(B)</span></span>
               <input
                 id="rightQuery"
                 name="rightQuery"
@@ -60,6 +61,7 @@
           </div>
           <div class="compare-actions">
             <button type="submit" id="compareBtn">Compare</button>
+            <button type="button" class="button-secondary" id="swapQueries">Swap A and B</button>
             <p class="compare-empty" id="compareHint">Use two natural-language queries and compare the returned totals.</p>
           </div>
         </form>
@@ -72,11 +74,16 @@
         <div class="compare-delta" id="deltaSummary">
           Run two queries to see the difference in totals, average, and peak month.
         </div>
+        <p class="compare-insight" id="compareInsight">Your comparison insight will appear here after both queries load.</p>
       </section>
 
       <section class="panel compare-panel" id="chartPanel">
         <div class="panel-head">
-          <h2>Monthly Comparison</h2>
+          <h2>Monthly comparison</h2>
+          <div class="comparison-chart-toggle" role="group" aria-label="Comparison chart type">
+            <button type="button" id="barChartMode" class="active" aria-pressed="true">Bar</button>
+            <button type="button" id="lineChartMode" aria-pressed="false">Line</button>
+          </div>
         </div>
         <div class="vertical-bar-chart" id="verticalBarChart">
           <p class="compare-empty">Run two queries to compare monthly totals as vertical bars.</p>
@@ -140,6 +147,7 @@
     </main>
     </div>
     <script src="/system.js"></script>
+    <script src="/compare-chart.js"></script>
     <script src="/compare.js"></script>
   </body>
 </html>
