@@ -126,4 +126,3 @@ try{
 }
 console.log(JSON.stringify(checks,null,2));
 if(checks.some(check=>check.status==='FAIL'))process.exitCode=1;
-
