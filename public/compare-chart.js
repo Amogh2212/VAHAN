@@ -35,8 +35,8 @@ window.ComparisonChart = (() => {
     const labels = [leftQuery || 'Left query',rightQuery || 'Right query'];
     const max = Math.max(1,...maps.flatMap(map => [...map.values()]));
     const ceiling = Math.ceil(max / 4 / (10 ** Math.floor(Math.log10(max/4)))) * (10 ** Math.floor(Math.log10(max/4))) * 4;
-    const width = Math.max(760,keys.length * 54 + 90), height = 330;
-    const x0 = 70, y0 = 26, bottom = 270, step = (width-x0-20)/keys.length;
+    const width = Math.max(760,target.clientWidth,keys.length * 54 + 90), height = 260;
+    const x0 = 70, y0 = 26, bottom = 218, step = (width-x0-20)/keys.length;
     const x = i => x0+step*(i+.5), y = value => bottom-value/ceiling*(bottom-y0);
     const monthLabel = key => aligned ? months[Number(key)-1] : `${months[Number(key.slice(5))-1]} ${key.slice(0,4)}`;
     const valueText = value => value === undefined ? 'Unavailable' : number.format(value);
@@ -78,5 +78,13 @@ window.ComparisonChart = (() => {
     for(const kind of ['bar','line']) {const button=document.querySelector(`#${kind}ChartMode`);button.classList.toggle('active',mode===kind);button.setAttribute('aria-pressed',String(mode===kind));}
     if(saved) render(...saved);
   }
+  // Refit the axes to the panel width while keeping a compact, fixed plot height.
+  let lastWidth = 0;
+  new ResizeObserver(([entry]) => {
+    const width = Math.round(entry.contentRect.width);
+    if (width === lastWidth) return;
+    lastWidth = width;
+    if (saved) render(...saved);
+  }).observe(document.querySelector('#doubleBarChart'));
   return {render,clear,setMode,model};
 })();

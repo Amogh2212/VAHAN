@@ -13,6 +13,7 @@ const delay=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
 function payload(query='',filters=null){
   const right=/2026|right|Delhi/i.test(query),year=right?2026:2025;
   let trend=[0,100,200,300].map((count,i)=>({month:`${year}-${String(i+1).padStart(2,'0')}`,count:right?count*2:count}));
+  if(/full/i.test(query))trend=[1412,1419,1368,1107,1211,1225,1545,1250,1328,1561,1862,1428].slice(0,right?10:12).map((count,i)=>({month:`${year}-${String(i+1).padStart(2,'0')}`,count:right?Math.round(count*1.2):count}));
   if(/gap/i.test(query))trend=trend.filter((_,i)=>i!==1);
   if(/zero/i.test(query))trend=trend.map(item=>({...item,count:0}));
   if(/invalid/i.test(query))trend=[{month:`${year}-01`,count:null},{month:`${year}-02`,count:'bad'},{month:`${year}-03`,count:0}];
@@ -118,6 +119,24 @@ try{
     await compare('left 2025','right 2026');await page.locator('#barChartMode').click();
     assert.notEqual(await page.locator('#leftTrend .bar-fill').first().evaluate(el=>getComputedStyle(el).backgroundColor),await page.locator('#rightTrend .bar-fill').first().evaluate(el=>getComputedStyle(el).backgroundColor));
     for(const width of [1440,1024,390,320]){await page.setViewportSize({width,height:900});await delay(80);const size=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));assert.ok(size.scroll<=size.width+1,`Overflow at ${width}: ${size.scroll}`);await page.screenshot({path:path.join(out,`bars-${width}.png`),fullPage:true});}
+  });
+  await check('Compact plot keeps 260px height and stable axes across desktop/mobile resizes',async()=>{
+    for(const width of [1440,1024,390,320,1440]){
+      await page.setViewportSize({width,height:900});await delay(150);
+      const measure=()=>page.evaluate(()=>{
+        const plot=document.querySelector('.comparison-plot'),target=document.querySelector('#doubleBarChart');
+        return {height:Number.parseFloat(getComputedStyle(plot).height),viewBoxWidth:plot.viewBox.baseVal.width,viewBoxHeight:plot.viewBox.baseVal.height,targetWidth:target.clientWidth,buttonHeight:Number.parseFloat(getComputedStyle(document.querySelector('#barChartMode')).height),panelHeight:document.querySelector('#chartPanel').offsetHeight};
+      });
+      const size=await measure();assert.ok(Math.abs(size.height-260)<.1,`Plot height at ${width}: ${size.height}`);assert.equal(size.viewBoxHeight,260);assert.equal(size.viewBoxWidth,Math.max(760,size.targetWidth,12*54+90));assert.ok(size.buttonHeight >= (width<=600?43.9:35.9));
+      await delay(150);assert.deepEqual(await measure(),size,`Stable ResizeObserver layout at ${width}`);
+    }
+  });
+  await check('Full-year comparison has compact desktop/mobile bars and line screenshots',async()=>{
+    await page.setViewportSize({width:1440,height:900});await compare('full left 2025','full partial right 2026');assert.equal(await page.locator('.comparison-mark.left').count(),12);assert.equal(await page.locator('.comparison-mark.right').count(),10);
+    const dimensions=await page.evaluate(()=>({panelHeight:document.querySelector('#chartPanel').offsetHeight,plotHeight:getComputedStyle(document.querySelector('.comparison-plot')).height}));
+    checks.push({name:'Measured full-year desktop chart dimensions',status:'PASS',...dimensions});
+    await page.screenshot({path:path.join(out,'compact-full-year-bars-desktop.png'),fullPage:true});await page.locator('#lineChartMode').click();await page.screenshot({path:path.join(out,'compact-full-year-line-desktop.png'),fullPage:true});
+    await page.setViewportSize({width:390,height:900});await delay(150);await page.locator('#barChartMode').click();await page.screenshot({path:path.join(out,'compact-full-year-bars-mobile.png'),fullPage:true});
   });
   await check('No browser runtime errors',async()=>assert.deepEqual(errors,[]));
 }finally{
