@@ -362,7 +362,7 @@ for (const row of zeroEvRows.filter(item => item.snapshot_date === "2026-07-24" 
 }
 const [zeroEvDaily] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: zeroEvRows });
 assert.equal(zeroEvDaily.periodEv, 0);
-assert.equal(zeroEvDaily.periodIce, 45);
+assert.equal(zeroEvDaily.periodIce, 30);
 assert.equal(zeroEvDaily.payload.dailyRegistration.baselineEligible, true);
 
 const partlyUnchangedRows = structuredClone(totalRows);
