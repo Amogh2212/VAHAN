@@ -73,7 +73,7 @@ async function main() {
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&rto=y&date=2026-02-30`)).status, 400);
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&date=2026-07-24`)).status, 400);
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-rankings?state=x&rto=y&date=2026-07-24`)).status, 200, "annual API compatibility is retained");
-    browser = await chromium.launch({ headless: true, ...(process.env.RTO_REPORT_BROWSER_CHANNEL ? {channel:process.env.RTO_REPORT_BROWSER_CHANNEL} : {}) });
+    browser = await chromium.launch({ headless: true, ...(process.env.RTO_REPORT_BROWSER_EXECUTABLE ? {executablePath:process.env.RTO_REPORT_BROWSER_EXECUTABLE} : {}), ...(process.env.RTO_REPORT_BROWSER_CHANNEL ? {channel:process.env.RTO_REPORT_BROWSER_CHANNEL} : {}) });
     const emptyPage = await browser.newPage({ viewport: { width: 1920, height: 825 } });
     await emptyPage.route("https://fonts.googleapis.com/**", (route) =>
       route.fulfill({ status: 200, contentType: "text/css", body: "" }));
@@ -138,7 +138,7 @@ async function main() {
     await page.getByRole("radio", { name: "4W", exact: true }).press("Home");
     assert.equal(await page.getByRole("radio", { name: "2W", exact: true }).getAttribute("aria-checked"), "true");
     await page.locator(".rto-daily-oem").screenshot({ path: path.join(OUTPUT_DIR, "rto-oem-daily-desktop.png") });
-    assert.equal(await page.getByRole("heading", { name: "Vehicle categories" }).isVisible(), true);
+    assert.equal(await page.getByRole("heading", { name: "Fuel distribution by vehicle class" }).isVisible(), true);
     assert.equal(await page.getByRole("heading", { name: "Possible drivers behind the numbers" }).isVisible(), true);
     assert.match(await page.locator(".rto-factor-card").innerText(), /associated with a higher daily EV run-rate/i);
     assert.equal(
@@ -148,11 +148,11 @@ async function main() {
     assert.equal(await page.locator("#rtoReportBatchDate").inputValue(), "2026-07-24");
     assert.equal(await page.locator("#rtoReportPeriodStatus").innerText(), "READY WITH WARNINGS");
     const metricCards = page.locator(".rto-report-metrics article");
-    await expectMetricCard(metricCards.nth(0), "Previous-day registrations", "+489", "2026-07-23 (IST) · Verified comparison");
-    await expectMetricCard(metricCards.nth(1), "EV registrations", "+91", "2026-07-24 (IST) · Verified comparison");
-    await expectMetricCard(metricCards.nth(2), "ICE registrations", "+422", "2026-07-24 (IST) · Verified comparison");
+    assert.match(await metricCards.nth(0).innerText(), /EV registrations\s+1,253\s*↑ \+91/i);
+    assert.match(await metricCards.nth(1).innerText(), /ICE registrations\s+5,908\s*↑ \+422/i);
+    await expectMetricCard(metricCards.nth(3), "Daily total", "+513", "2026-07-24 · verified previous-day match");
     assert.match(await page.locator(".rto-report-list-item").first().innerText(), /Daily EV \+91/);
-    assert.match(await page.locator(".rto-report-detail").innerText(), /EV month to date\s+1,253/i);
+    assert.match(await page.locator(".rto-report-detail").innerText(), /EV registrations\s+1,253/i);
     assert.equal(await page.getByRole("heading", { name: "OEM distribution unavailable" }).count(), 0, "fixed daily OEM panel replaces conflicting monthly-maker section");
     await page.evaluate(() => {
       window.__rtoDatePickerOpened = 0;
@@ -169,7 +169,7 @@ async function main() {
       delete window.__rtoDatePickerOpened;
     });
     assert.equal(await page.getByRole("button", { name: "2W OEMs" }).count(), 0, "unverified monthly OEM evidence must not render a maker table");
-    assert.equal(await page.locator(".rto-report-category-row").count(), 3);
+    assert.equal(await page.locator(".rto-current-fuel-row").count(), 3);
     assert.equal(await page.locator("#rtoReportBatchCsv").getAttribute("href"), "/api/rto-reports/batches/901.csv");
     await assertTabsContained(page);
     await assertReadinessPillAligned(page);
@@ -233,7 +233,7 @@ async function main() {
     await page.waitForLoadState("networkidle");
     await assertReadinessContentsContained(page);
     await assertNoPageOverflow(page);
-    const metricColumns = await page.locator('.rto-report-metrics[aria-label="Headline metrics"]').evaluate((element) =>
+    const metricColumns = await page.locator('.rto-report-metrics[aria-label="Month-to-date source totals"]').evaluate((element) =>
       getComputedStyle(element).gridTemplateColumns.split(" ").length);
     assert.equal(metricColumns, 1, "headline metrics must stack on narrow mobile screens");
     await page.screenshot({ path: path.join(OUTPUT_DIR, "rto-reports-mobile.png"), fullPage: true });
@@ -274,6 +274,12 @@ async function main() {
     await monitoredPage.getByRole("button", { name: "My selected RTOs" }).click();
     await monitoredPage.locator("[data-monitored-report='77']").click();
     await monitoredPage.locator("#rtoReportDetail").getByText("Verified daily registrations.", { exact: true }).waitFor();
+    assert.equal(await monitoredPage.getByRole("heading", { name: "Fuel distribution by vehicle class" }).isVisible(), true);
+    assert.equal(await monitoredPage.getByRole("heading", { name: "Registration trend" }).isVisible(), true);
+    assert.equal(await monitoredPage.getByRole("link", { name: "CSV", exact: true }).getAttribute("href"), "/api/rto-reports/monitored/77/csv");
+    assert.equal(await monitoredPage.getByRole("link", { name: "PDF", exact: true }).getAttribute("href"), "/api/rto-reports/monitored/77/pdf");
+    await monitoredPage.getByRole("radio", { name: "Vehicle category", exact: true }).click();
+    assert.equal(await monitoredPage.getByRole("radio", { name: "Vehicle category", exact: true }).getAttribute("aria-checked"), "true");
     await monitoredPage.getByRole("button", { name: "Remove Pune Central RTO from My selected RTOs" }).click();
     assert.equal(removedPin, true);
     await monitoredPage.getByText("No RTOs selected yet", { exact: false }).waitFor();
@@ -656,6 +662,7 @@ function fullReport(summary) {
         date: "2026-07-24",
         timezone: "Asia/Kolkata",
         baselineEligible: true,
+        sourceScopes: categories.flatMap(category => ["EV", "ICE"].map(fuelGroup => ({fuelGroup, vehicleCategory: category.vehicleCategory, total: category.stock[fuelGroup.toLowerCase()]}))),
         previousDayEligible: true,
         previousDayRegistrations: dateField(prior.total, "2026-07-23"),
         evRegistrations: dateField(summary.periodEv, "2026-07-24"),
