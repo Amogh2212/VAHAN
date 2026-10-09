@@ -64,8 +64,9 @@ value = dailyOemPayload(params, { baseline, scopes: [scope], observations: [...p
 assert.equal(value.segments[0].makers[0].dailyChange, 3);
 const unchanged = await makeObservation(params.date, { "Maker A": 15, "Maker B": 12 });
 value = dailyOemPayload(params, { baseline, scopes: [scope], observations: [...previous, ...unchanged] });
-assert.equal(value.segments[0].makers[0].status, "unconfirmed_no_change");
-assert.equal(value.segments[0].makers[0].dailyChange, null);
+assert.equal(value.segments[0].makers[0].status, "available");
+assert.equal(value.segments[0].makers[0].dailyChange, 0);
+assert.match(value.segments[0].makers[0].reason, /source update time unconfirmed/);
 unchanged[0].evidence.sourceReportedAt = "2026-10-04T09:00:00Z";
 unchanged[0].evidence_hash = hash(unchanged[0].evidence);
 value = dailyOemPayload(params, { baseline, scopes: [scope], observations: [...previous, ...unchanged] });
