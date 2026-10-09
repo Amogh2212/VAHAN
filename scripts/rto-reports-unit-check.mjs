@@ -343,9 +343,27 @@ for (const row of unchangedTargetRows.filter((item) => item.snapshot_date === "2
 const [unchangedTargetDaily] = buildRtoReportPayloads({
   period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: unchangedTargetRows,
 });
-assert.equal(unchangedTargetDaily.periodEv, null,
-  "different whole-response hashes must not certify zero when the selected month is unchanged");
-assert.match(unchangedTargetDaily.payload.dailyRegistration.reason, /month-to-date total is unchanged/i);
+assert.equal(unchangedTargetDaily.periodEv, 0, "successful compatible observations expose zero observed change");
+assert.equal(unchangedTargetDaily.periodIce, 0);
+assert.equal(unchangedTargetDaily.payload.dailyRegistration.baselineEligible, true);
+
+const unchangedResponses = structuredClone(unchangedTargetRows);
+for (const row of unchangedResponses.filter(item => item.snapshot_date === "2026-07-24")) {
+  row.quality_flags.sourceEvidence.validation.responseHash = "b".repeat(64);
+}
+const [zeroDaily] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: unchangedResponses });
+assert.equal(zeroDaily.periodEv, 0);
+assert.equal(zeroDaily.periodIce, 0);
+assert.equal(zeroDaily.payload.metrics.period.total, 0);
+assert.equal(zeroDaily.payload.dailyRegistration.baselineEligible, true);
+const zeroEvRows = structuredClone(totalRows);
+for (const row of zeroEvRows.filter(item => item.snapshot_date === "2026-07-24" && item.fuel_group === "EV")) {
+  row.report_total = priorTargetByScope.get(`${row.fuel_group}|${row.vehicle_category}`);
+}
+const [zeroEvDaily] = buildRtoReportPayloads({ period: reportPeriod("daily", "2026-07-24"), cohort, totalRows: zeroEvRows });
+assert.equal(zeroEvDaily.periodEv, 0);
+assert.equal(zeroEvDaily.periodIce, 45);
+assert.equal(zeroEvDaily.payload.dailyRegistration.baselineEligible, true);
 
 const partlyUnchangedRows = structuredClone(totalRows);
 for (const row of partlyUnchangedRows.filter((item) => item.snapshot_date === "2026-07-24"
