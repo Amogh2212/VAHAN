@@ -465,7 +465,32 @@ async function selectReport(reportId) {
   }
 }
 
+function dailyReportEvidence(report) {
+  const payload = report.payload ?? {};
+  const daily = payload.dailyRegistration ?? report.dailyRegistration ?? {};
+  const totals = payload.metrics?.sourceMonthToDate ?? daily.sourceMonthToDate ?? {};
+  const status = daily.baselineEligible === true ? daily.status : "unavailable";
+  const ev = daily.evRegistrations?.value ?? daily.todayBreakdown?.ev;
+  const ice = daily.iceRegistrations?.value ?? daily.todayBreakdown?.ice;
+  return {
+    ...report,
+    reportApiBase: report.monitored ? `/api/rto-reports/monitored/${report.id}` : `/api/rto-reports/${report.id}`,
+    evidenceDate: payload.period?.end ?? report.periodEnd ?? daily.date,
+    verifiedScopes: payload.quality?.currentCoverage === true ? 6 : (daily.sourceScopes ?? []).length,
+    observedAt: payload.source?.collectedTo,
+    evMonthToDate: totals.ev ?? null, iceMonthToDate: totals.ice ?? null,
+    totalMonthToDate: totals.total ?? null,
+    scopes: daily.sourceScopes ?? [],
+    trend: payload.trend ?? [],
+    daily: { status, ev, ice, total: daily.todayBreakdown?.total ?? ([ev, ice].every(Number.isFinite) ? ev + ice : null), reason: daily.reason },
+  };
+}
+
 function renderReportDetail(report) {
+  if ((report.payload?.cadence ?? report.cadence) === "daily") {
+    renderCurrentEvidenceDetail(dailyReportEvidence(report));
+    return;
+  }
   const payload = report.payload ?? {};
   const metrics = payload.metrics ?? {};
   const isDaily = payload.cadence === "daily";
@@ -783,7 +808,7 @@ function renderCurrentEvidenceDetail(entry) {
   const complete = entry.verifiedScopes === 6;
   const daily = entry.daily ?? { status: "unavailable" };
   const dailyAvailable = daily.status === "available" || daily.status === "correction";
-  const date = evidenceReadiness?.run?.snapshotDate ?? "Selected date";
+  const date = entry.evidenceDate ?? evidenceReadiness?.run?.snapshotDate ?? "Selected date";
   const fetchedAt = entry.observedAt && Number.isFinite(Date.parse(entry.observedAt))
     ? new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.observedAt)) + " IST"
     : "Fetch time unavailable";
@@ -791,7 +816,9 @@ function renderCurrentEvidenceDetail(entry) {
     ? "Refresh failed; showing saved evidence."
     : ["queued", "retrying", "running"].includes(entry.refreshStatus) ? "Refresh in progress; showing saved evidence." : "";
   reportDetail.innerHTML = `
-    <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(evidenceReadiness?.run?.snapshotDate ?? "")}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals for the selected categories.</p><p>Fetched: ${escapeHtml(fetchedAt)} · Saved observation; source refresh time unconfirmed.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Six scopes collected" : "Partial evidence"}</span></header>
+    <header class="rto-report-detail-head"><div><span class="panel-kicker">Source evidence · ${escapeHtml(date)}</span><h2>${escapeHtml(entry.rto)}</h2><p>${escapeHtml(entry.state)} · ${fmt(entry.verifiedScopes)}/6 verified monthly-registration scopes. These are month-to-date source totals for the selected categories.</p><p>Fetched: ${escapeHtml(fetchedAt)} · Saved observation; source refresh time unconfirmed.</p></div><span class="status-pill ${complete ? "status-ready" : "status-needs-review"}">${complete ? "Six scopes collected" : "Partial evidence"}</span></header>
+    ${entry.summary ?? entry.payload?.summary ? `<p>${escapeHtml(entry.summary ?? entry.payload.summary)}</p>` : ""}
+    ${entry.id ? `<div class="rto-report-detail-actions"><a class="secondary-action" href="${entry.reportApiBase}/csv">CSV</a><a class="secondary-action" href="${entry.reportApiBase}/pdf">PDF</a></div>` : ""}
     ${refreshNote ? `<p class="result-empty" role="status">${escapeHtml(refreshNote)}</p>` : ""}
     <section class="rto-report-metrics" aria-label="Month-to-date source totals">
       ${sourceEvidenceMetricBlock("EV registrations", entry.evMonthToDate, { value: daily.ev, status: daily.status })}
@@ -807,7 +834,11 @@ function renderCurrentEvidenceDetail(entry) {
       <div class="rto-report-trend">${trendSvg(currentEvidenceTrend(entry, state.trendMode), true)}</div>
     </section>
   `;
-  mountDailyOemPanel(entry, activeEvidenceReadiness()?.run?.snapshotDate);
+  if (entry.payload) {
+    reportDetail.insertAdjacentHTML("beforeend", renderFactorContextAvailability(entry.factorContext) + renderApprovedExplanations(entry.explanations ?? []) + (state.currentUser?.role === "admin" ? renderDraftExplanations(state.draftExplanations) : ""));
+    for (const button of reportDetail.querySelectorAll("[data-factor-review]")) button.addEventListener("click", () => reviewExplanation({ explanationId: Number(button.dataset.explanationId), decision: button.dataset.factorReview }));
+  }
+  mountDailyOemPanel(entry, date, entry.dailyOem);
   for (const button of reportDetail.querySelectorAll("[data-trend-focus]")) {
     button.addEventListener("click", () => {
       const focus = button.dataset.trendFocus || null;
@@ -983,7 +1014,7 @@ function currentEvidenceTrend(entry, mode = "date") {
 }
 
 function renderCurrentFuelDistribution(entry) {
-  const totals = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, Number(scope.total)]));
+  const totals = new Map((entry.scopes ?? []).map((scope) => [`${scope.fuelGroup}/${scope.vehicleCategory}`, scope.total == null ? null : Number(scope.total)]));
   const rows = ["2W", "3W", "4W"].map((vehicleCategory) => {
     const ev = totals.get(`EV/${vehicleCategory}`);
     const ice = totals.get(`ICE/${vehicleCategory}`);
