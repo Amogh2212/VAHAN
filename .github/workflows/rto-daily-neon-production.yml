@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   schedule_gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       run_collection: ${{ steps.check.outputs.run_collection }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   collect:
     needs: schedule_gate
     if: needs.schedule_gate.outputs.run_collection == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
       PGSSL: "true"
