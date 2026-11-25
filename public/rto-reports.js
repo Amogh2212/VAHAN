@@ -19,6 +19,7 @@ const state = {
   trendFocus: null,
   trendMode: "date",
   scope: "fixed",
+  periodSource: "registrations",
   monitoredReports: [],
   monitoredReport: null,
   monitoredRequestId: 0,
@@ -30,6 +31,7 @@ const batchDateInput = document.querySelector("#rtoReportBatchDate");
 const periodStatus = document.querySelector("#rtoReportPeriodStatus");
 const periodLabel = document.querySelector("#rtoReportPeriodLabel");
 const periodHelp = document.querySelector("#rtoReportPeriodHelp");
+const periodSource = document.querySelector("#rtoReportPeriodSource");
 const searchInput = document.querySelector("#rtoReportSearch");
 const statusFilter = document.querySelector("#rtoReportStatusFilter");
 const reportList = document.querySelector("#rtoReportList");
@@ -196,6 +198,8 @@ function selectCadence(cadence) {
     loadSelectedRtoReports();
     return;
   }
+  updatePeriodSourceControl();
+  if (periodHelp) periodHelp.hidden = true;
   const matching = batchesForCadence(cadence);
   renderPeriodPicker(matching);
   const currentEvidence = cadence === "daily" ? (state.readiness?.currentCycleEvidence ?? []) : [];
@@ -297,6 +301,7 @@ function renderBatch() {
   }
   const ready = Math.max(0, state.batch.reportCount - state.batch.warningCount - state.batch.reviewCount);
   strip.hidden = false;
+  document.querySelector("#rtoReportCoverageLabel").textContent = state.batch.isRegistrationPeriod ? "All days verified" : "Available";
   document.querySelector("#rtoReportGeneratedCount").textContent = `${fmt(state.batch.coverageCount)} / ${fmt(state.batch.cohortSize)}`;
   document.querySelector("#rtoReportReadyCount").textContent = fmt(ready);
   document.querySelector("#rtoReportWarningCount").textContent = fmt(state.batch.warningCount);
@@ -307,10 +312,19 @@ function renderBatch() {
   download.hidden = false;
 }
 
-function batchesForCadence(cadence = state.cadence) {
+function batchesForCadence(cadence = state.cadence, allSources = false) {
   return state.batches
-    .filter((batch) => batch.cadence === cadence)
+    .filter((batch) => batch.cadence === cadence && (cadence === "daily" || allSources
+      || Boolean(batch.isRegistrationPeriod) === (periodSource.value === "registrations")))
     .sort((a, b) => String(b.periodEnd ?? "").localeCompare(String(a.periodEnd ?? "")));
+}
+
+function updatePeriodSourceControl() {
+  const batches = batchesForCadence(state.cadence, true);
+  const hasRegistrations = batches.some((batch) => batch.isRegistrationPeriod);
+  const hasArchive = batches.some((batch) => !batch.isRegistrationPeriod);
+  periodSource.closest("label").hidden = state.cadence === "daily" || !hasRegistrations || !hasArchive;
+  periodSource.value = hasRegistrations && (state.periodSource === "registrations" || !hasArchive) ? "registrations" : "archive";
 }
 
 function renderPeriodPicker(batches) {
@@ -350,6 +364,12 @@ function updatePeriodStatus(batch) {
   if (!periodStatus) return;
   periodStatus.className = `status-pill ${batch ? statusClass(batch.status) : ""}`;
   periodStatus.textContent = batch ? statusLabel(batch.status) : "No report";
+  if (batch && batch.cadence !== "daily" && periodHelp) {
+    periodHelp.hidden = false;
+    periodHelp.textContent = batch.isRegistrationPeriod
+      ? "Registrations from verified Daily evidence. Choose a report date to change periods."
+      : "Archived active-stock report. Choose a report date to change periods.";
+  }
 }
 
 function openDatePicker() {
@@ -488,6 +508,10 @@ function dailyReportEvidence(report) {
 function renderReportDetail(report) {
   if ((report.payload?.cadence ?? report.cadence) === "daily") {
     renderCurrentEvidenceDetail(dailyReportEvidence(report));
+    return;
+  }
+  if (report.payload?.coverage) {
+    renderPeriodRegistrationDetail(report);
     return;
   }
   const payload = report.payload ?? {};
@@ -629,6 +653,42 @@ function renderReportDetail(report) {
       decision: button.dataset.factorReview,
     }));
   }
+}
+
+function renderPeriodRegistrationDetail(report) {
+  const { period, coverage, metrics, trend, quality, cadence } = report.payload;
+  const complete = coverage.verifiedDays === coverage.expectedDays;
+  const values = complete ? metrics.period : metrics.subtotal;
+  const label = complete ? "Full period" : "Verified subtotal";
+  const apiBase = report.monitored ? "/api/rto-reports/monitored" : "/api/rto-reports";
+  reportDetail.innerHTML = `
+    <header class="rto-report-detail-head">
+      <div><span class="panel-kicker">${escapeHtml(report.state)} | ${escapeHtml(period.label)}</span>
+        <h2>${escapeHtml(report.rto)}</h2><p>${escapeHtml(report.payload.summary)}</p></div>
+      <div class="rto-report-detail-actions">
+        <span class="status-pill ${statusClass(report.status)}">${escapeHtml(statusLabel(report.status))}</span>
+        <a class="secondary-action" href="${apiBase}/${report.id}/csv">CSV</a>
+        <a class="secondary-action" href="${apiBase}/${report.id}/pdf">PDF</a>
+      </div>
+    </header>
+    <section class="rto-report-metrics" aria-label="Headline metrics">
+      ${metricBlock("EV registrations", values.ev, label)}
+      ${metricBlock("ICE registrations", values.ice, label)}
+      ${metricBlock("Total registrations", values.total, label)}
+      ${metricBlock("Coverage", `${coverage.verifiedDays} / ${coverage.expectedDays}`, "Verified days")}
+    </section>
+    ${quality.warnings.map((warning) => `<p class="rto-report-quality">${escapeHtml(warning)}</p>`).join("")}
+    <section class="rto-report-evidence">
+      <div class="rto-report-section-head"><div><h3>${escapeHtml(cadence === "weekly" ? "Weekly registrations" : "Monthly registrations")}</h3>
+      <span>Verified Daily VAHAN counts by calendar date (IST)</span></div></div>
+      <div class="rto-report-table-wrap"><table class="rto-report-table">
+        <thead><tr><th>Date</th><th>EV</th><th>ICE</th><th>Total</th><th>Evidence</th></tr></thead>
+        <tbody>${trend.map((point) => `<tr><th scope="row">${escapeHtml(longDate(point.date))}</th>
+          <td>${fmt(point.ev)}</td><td>${fmt(point.ice)}</td><td>${fmt(point.total)}</td>
+          <td>${escapeHtml(point.reason ?? (point.status === "correction" ? "Source correction" : "Verified"))}</td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </section>`;
 }
 
 function renderFactorContextAvailability(context = {}) {
@@ -1042,6 +1102,12 @@ function reportEvLabel(report) {
   if (state.cadence === "daily") {
     return Number.isFinite(report.periodEv) ? `Daily EV ${signed(report.periodEv)}` : "Daily registrations unavailable";
   }
+  if (report.source?.coverage) {
+    const { verifiedDays, expectedDays } = report.source.coverage;
+    return Number.isFinite(report.periodEv)
+      ? `EV registrations ${fmt(report.periodEv)} | ${verifiedDays}/${expectedDays} days`
+      : `${verifiedDays}/${expectedDays} verified days`;
+  }
   return `EV stock ${fmt(report.mtdEv)}`;
 }
 
@@ -1298,6 +1364,10 @@ function escapeHtml(value) {
 document.querySelectorAll(".rto-report-tab").forEach((tab) => {
   tab.addEventListener("click", () => selectCadence(tab.dataset.cadence));
 });
+periodSource.addEventListener("change", () => {
+  state.periodSource = periodSource.value;
+  selectCadence(state.cadence);
+});
 batchDateInput?.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return;
   event.preventDefault();
@@ -1377,6 +1447,8 @@ async function loadMonitoredRtos() {
 }
 
 async function loadSelectedRtoReports() {
+  periodSource.closest("label").hidden = true;
+  if (periodHelp) periodHelp.hidden = true;
   const requestId = ++state.monitoredRequestId;
   ++state.requestId;
   ++state.detailRequestId;

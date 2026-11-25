@@ -38,6 +38,7 @@ import {
   pruneRtoReportingData,
   reportHistoryStartDate,
   reconcileRtoReportsForRun,
+  reconcileRtoRegistrationPeriods,
   reconcileMonitoredRtoReportsForRun,
 } from "../lib/rto-reports.mjs";
 
@@ -498,10 +499,20 @@ async function main() {
 
 export async function finishRtoDailyReports({ run, args }, services = {
   reconcile: reconcileRtoReportsForRun,
+  reconcilePeriods: reconcileRtoRegistrationPeriods,
   reconcileMonitored: reconcileMonitoredRtoReportsForRun,
   pruneReports: pruneRtoReportingData,
   pruneSnapshots: rollupAndPruneRtoDailySnapshots,
 }) {
+  let registrationPeriods = null;
+  if (services.reconcilePeriods) {
+    try {
+      registrationPeriods = await services.reconcilePeriods({ through: run.snapshotDate });
+    } catch (error) {
+      registrationPeriods = { error: String(error.message ?? error) };
+      console.warn(`[rto-reports] registration period generation failed: ${registrationPeriods.error}`);
+    }
+  }
   const reportSystem = await services.reconcile({
     runId: run.id,
     includeAvailableHistory: !args.preserveHistory,
@@ -519,7 +530,7 @@ export async function finishRtoDailyReports({ run, args }, services = {
   const skipped = { skipped: "preserve_history" };
   const reportRetention = args.preserveHistory ? skipped : await services.pruneReports();
   const retention = args.preserveHistory ? skipped : await services.pruneSnapshots({ retentionDays: args.retentionDays });
-  return { reportSystem: { ...reportSystem, monitored }, reportRetention, retention };
+  return { reportSystem: { ...reportSystem, registrationPeriods, monitored }, reportRetention, retention };
 }
 
 function assertNeonDatabaseUrl() {

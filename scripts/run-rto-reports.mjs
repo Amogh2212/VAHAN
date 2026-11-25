@@ -4,6 +4,7 @@ import {
   pruneRtoReportingData,
   reconcileRecentRtoReports,
   reconcileRtoReportsForRun,
+  reconcileRtoRegistrationPeriods,
 } from "../lib/rto-reports.mjs";
 
 function parseArgs(argv = []) {
@@ -14,10 +15,14 @@ function parseArgs(argv = []) {
     historyFrom: null,
     prune: false,
     help: false,
+    registrationPeriods: false,
+    affectedDate: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--help" || token === "-h") args.help = true;
+    else if (token === "--registration-periods") args.registrationPeriods = true;
+    else if (token === "--affected-date") args.affectedDate = argv[++index];
     else if (token === "--backfill-history") args.includeAvailableHistory = true;
     else if (token === "--prune") args.prune = true;
     else if (token === "--run-id") args.runId = Number(argv[++index]);
@@ -35,6 +40,11 @@ function parseArgs(argv = []) {
   if (args.historyFrom && !/^\d{4}-\d{2}-\d{2}$/.test(args.historyFrom)) {
     throw new Error("--history-from must use YYYY-MM-DD.");
   }
+  if (args.affectedDate && (!args.registrationPeriods || args.historyFrom
+      || !/^\d{4}-\d{2}-\d{2}$/.test(args.affectedDate) || !Number.isFinite(Date.parse(args.affectedDate))
+      || new Date(args.affectedDate).toISOString().slice(0, 10) !== args.affectedDate)) {
+    throw new Error("--affected-date requires --registration-periods and a valid YYYY-MM-DD date.");
+  }
   if (args.includeAvailableHistory && !args.runId) {
     throw new Error("--backfill-history requires --run-id so cohort membership is explicit.");
   }
@@ -49,6 +59,8 @@ function usage() {
     "  --run-id N              Reconcile one frozen-cohort daily run.",
     "  --backfill-history      Materialize available raw history for that run's cohort.",
     "  --history-from DATE     Earliest history date to materialize.",
+    "  --registration-periods Backfill completed Weekly and Monthly registration reports from saved Daily evidence.",
+    "  --affected-date DATE   Refresh completed periods affected by a repaired Daily observation.",
     "  --limit N               Recent cohort runs to reconcile when --run-id is omitted.",
     "  --prune                 Apply report retention after reconciliation.",
   ].join("\n");
@@ -58,6 +70,13 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
     console.log(usage());
+    return;
+  }
+  if (args.registrationPeriods) {
+    if (args.runId || args.includeAvailableHistory || args.prune) throw new Error("--registration-periods runs independently of Daily reconciliation and pruning.");
+    console.log(JSON.stringify({ registrationPeriods: await reconcileRtoRegistrationPeriods({
+      backfill: true, from: args.historyFrom, affectedDate: args.affectedDate,
+    }) }, null, 2));
     return;
   }
   const reconciliation = args.runId

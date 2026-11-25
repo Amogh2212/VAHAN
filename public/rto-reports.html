@@ -63,13 +63,21 @@
             <button type="button" class="rto-report-tab" role="tab" aria-selected="false" data-cadence="weekly">Weekly</button>
             <button type="button" class="rto-report-tab" role="tab" aria-selected="false" data-cadence="monthly">Monthly</button>
           </div>
-          <label class="rto-report-control rto-report-period-control">
-            <span>Period</span>
+          <div class="rto-report-control rto-report-period-control">
+            <label class="rto-report-control" hidden>
+              <span>Report type</span>
+              <select id="rtoReportPeriodSource">
+                <option value="registrations">Registrations</option>
+                <option value="archive">Active-stock archive</option>
+              </select>
+            </label>
+            <span id="rtoReportPeriodLabel">Period</span>
             <div class="rto-report-period-picker">
               <input id="rtoReportBatchDate" type="date" aria-label="Report period date" />
               <span class="status-pill" id="rtoReportPeriodStatus">No report</span>
             </div>
-          </label>
+            <small id="rtoReportPeriodHelp" hidden></small>
+          </div>
           <label class="rto-report-control rto-report-search-control">
             <span>RTO</span>
             <input id="rtoReportSearch" type="search" placeholder="Search RTO or state" autocomplete="off" />
@@ -87,7 +95,7 @@
         </section>
 
         <section class="rto-report-batch-strip" id="rtoReportBatchStrip" hidden>
-          <div><span>Available</span><strong id="rtoReportGeneratedCount">0 / 100</strong></div>
+          <div><span id="rtoReportCoverageLabel">Available</span><strong id="rtoReportGeneratedCount">0 / 100</strong></div>
           <div><span>Ready</span><strong id="rtoReportReadyCount">0</strong></div>
           <div><span>Warnings</span><strong id="rtoReportWarningCount">0</strong></div>
           <div><span>Review</span><strong id="rtoReportReviewCount">0</strong></div>
@@ -118,6 +126,6 @@
       </main>
     </div>
     <script src="/system.js"></script>
-    <script src="/rto-reports.js?v=20261125-optional-factor-drafts" defer></script>
+    <script src="/rto-reports.js?v=20261126-registration-periods" defer></script>
   </body>
 </html>

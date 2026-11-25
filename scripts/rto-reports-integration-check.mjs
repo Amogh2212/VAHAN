@@ -4,6 +4,9 @@ import {
   getRtoReport,
   getRtoReportReadiness,
   listRtoReportsForBatch,
+  listRtoReportBatches,
+  reconcileRtoRegistrationPeriods,
+  renderRtoReportBatchCsv,
   reconcileRtoReportsForRun,
 } from "../lib/rto-reports.mjs";
 
@@ -109,6 +112,40 @@ try {
     second.batches.map((entry) => entry.batch.revision),
     first.batches.map((entry) => entry.batch.revision),
   );
+
+  const rollups = await reconcileRtoRegistrationPeriods({ through: CURRENT_DATE, from: PREVIOUS_DATE });
+  assert.deepEqual(rollups.map(({ cadence }) => cadence), ["weekly", "monthly"]);
+  for (const { cadence, batchId } of rollups) {
+    const [batch] = await listRtoReportBatches({ cadence, from: CURRENT_DATE, to: CURRENT_DATE });
+    assert.equal(batch.id, batchId);
+    assert.equal(batch.isRegistrationPeriod, true);
+    assert.equal(batch.reportCount, 100);
+    assert.equal(batch.warningCount, 100);
+    assert.equal(batch.coverageCount, 0);
+    const summaries = await listRtoReportsForBatch(batchId, { status: "ready_with_warnings" });
+    assert.equal(summaries.length, 100);
+    assert.equal(summaries[0].source.coverage.verifiedDays, 1);
+    const detail = await getRtoReport(summaries[0].id);
+    assert.equal(detail.payload.metrics.period.total, null);
+    assert.equal(detail.payload.metrics.subtotal.total, 60);
+    assert.equal(detail.payload.coverage.expectedDays, cadence === "weekly" ? 7 : 31);
+    const { content } = await renderRtoReportBatchCsv(batchId);
+    assert.match(content, /verified_total_subtotal/);
+    assert.equal(content.trim().split("\n").length, 101);
+  }
+  const rerun = await reconcileRtoRegistrationPeriods({ through: CURRENT_DATE, from: PREVIOUS_DATE });
+  assert.ok(rerun.every(({ generated }) => generated === false));
+
+  const weekly = rollups.find(({ cadence }) => cadence === "weekly");
+  const [firstWeekly] = await listRtoReportsForBatch(weekly.batchId);
+  await query(`update rto_registration_observations set month_to_date_total = month_to_date_total - 1
+    where run_id = $1 and state = $2 and rto = $3 and fuel_group = 'EV' and vehicle_category = '2W'`,
+  [currentRunId, FIXTURE_STATE, firstWeekly.rto]);
+  const repaired = await reconcileRtoRegistrationPeriods({ through: CURRENT_DATE, affectedDate: CURRENT_DATE });
+  assert.ok(repaired.every(({ generated }) => generated === true));
+  const refreshedDetail = await getRtoReport(firstWeekly.id);
+  assert.equal(refreshedDetail.revision, 2);
+  assert.equal(refreshedDetail.payload.metrics.subtotal.total, 59);
 
   console.log("RTO registration report Postgres integration checks passed.");
 } finally {
@@ -260,6 +297,8 @@ async function freezeCurrentCohort() {
 }
 
 async function cleanupFixture() {
+  await query(`delete from rto_report_batches where source_run_id in (
+    select id from rto_daily_collection_runs where metadata ->> 'fixture' = 'rto-registration-reports-integration-check')`);
   await query("delete from rto_report_batches where cohort_hash = $1", [COHORT_HASH]);
   await query("delete from rto_daily_report_totals where state = $1", [FIXTURE_STATE]);
   await query("delete from rto_daily_oem_totals where state = $1", [FIXTURE_STATE]);

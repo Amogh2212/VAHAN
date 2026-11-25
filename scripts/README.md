@@ -509,11 +509,13 @@ reports:
 Collection completeness and Daily usability are separate gates. A Daily batch
 can publish numeric registrations only when all 100 RTOs also have six
 compatible, freshness-distinct observations for the preceding calendar day.
-On the first day of a month, the cross-month baseline remains unavailable. A
-registration collection creates only a Daily batch; weekly/monthly active-stock
-reports remain a separate metric contract. Every complete cohort batch contains
-100 individual RTO reports. Reconciliation is idempotent: unchanged source facts
-reuse the existing revision, while a correction creates a new revision.
+Weekly registration reports cover Monday through Sunday. Monthly registration
+reports cover the calendar month. Both sum each RTO's verified Daily values.
+Partial reports show a verified subtotal and covered days. A completed period
+refreshes after Daily collection, including when only some RTOs have data.
+Historical active-stock reports are available in the report type selector.
+Every fixed-cohort batch contains 100 individual RTO reports. An unchanged
+registration period keeps its revision and report IDs.
 
 Headline EV and ICE Daily totals are differences between consecutive accepted
 `rto_registration_observations.month_to_date_total` values. Negative differences
@@ -530,6 +532,8 @@ daily or comparison boundaries:
 npm.cmd run report:rto:work -- --run-id RUN_ID
 npm.cmd run report:rto:rebuild -- --run-id RUN_ID --backfill-history --history-from YYYY-MM-DD
 npm.cmd run report:rto:work -- --limit 30 --prune
+npm.cmd run report:rto:work -- --registration-periods
+npm.cmd run report:rto:work -- --registration-periods --affected-date YYYY-MM-DD
 ```
 
 The report UI is `/rto-reports.html`. Its API surface is:

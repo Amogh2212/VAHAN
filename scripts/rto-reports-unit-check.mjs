@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   buildRtoReportPayloads,
-  buildMonitoredPeriodRegistrationPayload,
+  buildPeriodRegistrationPayload,
+  completedRegistrationPeriods,
   evaluateRtoReportReadinessGates,
   periodValueForSeries,
   RTO_REPORT_EXPECTED_OEM_ROWS_PER_RTO,
@@ -204,25 +205,54 @@ const [daily] = buildRtoReportPayloads({
   oemRows,
   generatedAt: new Date("2026-07-24T18:00:00.000Z"),
 });
-const monitoredWeekly = buildMonitoredPeriodRegistrationPayload({
+const monitoredWeekly = buildPeriodRegistrationPayload({
   period: reportPeriod("weekly", "2026-07-26"),
   member: { state: "Alpha", rto: "Alpha RTO" }, totalRows,
 });
-assert.equal(monitoredWeekly.status, "needs_review");
+assert.equal(monitoredWeekly.status, "ready_with_warnings");
 assert.equal(monitoredWeekly.metrics.period.total, null, "missing dates must never become zero registrations");
+assert.ok(monitoredWeekly.metrics.subtotal.total > 0);
+assert.equal(monitoredWeekly.coverage.expectedDays, 7);
+assert.equal(monitoredWeekly.coverage.verifiedDays + monitoredWeekly.coverage.missingDates.length, 7);
 assert.equal(monitoredWeekly.rto.cohortRank, null);
-const monitoredMonthEnd = buildMonitoredPeriodRegistrationPayload({
-  period: { cadence: "monthly", periodStart: "2026-07-01", periodEnd: "2026-07-24" },
+const monitoredMonthEnd = buildPeriodRegistrationPayload({
+  period: reportPeriod("monthly", "2026-07-31"),
   member: { state: "Alpha", rto: "Alpha RTO" }, totalRows,
 });
-assert.equal(monitoredMonthEnd.status, "ready");
-assert.equal(monitoredMonthEnd.metrics.period.ev, daily.payload.metrics.sourceMonthToDate.ev);
+assert.equal(monitoredMonthEnd.status, "ready_with_warnings");
+assert.equal(monitoredMonthEnd.metrics.period.ev, null);
+assert.equal(monitoredMonthEnd.coverage.expectedDays, 31);
 assert.equal(monitoredMonthEnd.rto.cohortRank, null);
 const monitoredExport = { state: "Alpha", rto: "Alpha RTO", cadence: "weekly",
   periodStart: "2026-07-20", periodEnd: "2026-07-26", status: monitoredWeekly.status,
   payload: monitoredWeekly };
-assert.match(renderMonitoredRtoReportCsv(monitoredExport), /needs_review,,,,/);
-assert.match(renderMonitoredRtoReportHtml(monitoredExport), /Unavailable/);
+assert.match(renderMonitoredRtoReportCsv(monitoredExport), /verified_days,expected_days,missing_dates/);
+assert.match(renderMonitoredRtoReportHtml(monitoredExport), /Full period total: N\/A/);
+assert.deepEqual(completedRegistrationPeriods("2026-11-25").map(({ periodEnd }) => periodEnd), ["2026-11-22", "2026-10-31"]);
+assert.deepEqual(completedRegistrationPeriods("2026-09-30", "2026-09-16").map(({ periodEnd }) => periodEnd),
+  ["2026-09-20", "2026-09-27", "2026-09-30"]);
+assert.deepEqual(completedRegistrationPeriods("2026-12-31", null, "2026-11-29").map(({ periodEnd }) => periodEnd),
+  ["2026-11-29", "2026-11-30", "2026-12-06"]);
+const completeWeekRows = Array.from({ length: 11 }, (_, index) => {
+  const date = new Date(Date.UTC(2026, 6, index + 26)).toISOString().slice(0, 10);
+  const month = date.slice(0, 7);
+  const count = index === 2 ? 1 : 0;
+  return totalRows.slice(0, 6).map((row) => ({
+    ...row, snapshot_date: date, target_month: month, report_total: count,
+    quality_flags: {}, evidence: {
+      filters: { targetMonth: month },
+      validation: { contract: "public-registration-mtd-v1", targetMonth: month,
+        requestHash: month.endsWith("07") ? "a".repeat(64) : "b".repeat(64), responseHash: index.toString(16).repeat(64) },
+    },
+  }));
+}).flat();
+const completeWeek = buildPeriodRegistrationPayload({
+  period: reportPeriod("weekly", "2026-08-02"), member: cohort[0], totalRows: completeWeekRows,
+});
+assert.equal(completeWeek.coverage.verifiedDays, 7);
+assert.equal(completeWeek.metrics.period.total, 0, "verified zero is included and signed corrections stay signed");
+assert.ok(completeWeek.trend.some(({ status }) => status === "correction"));
+assert.equal(quarantineUnverifiedRtoReport({ payload: completeWeek }).payload, completeWeek);
 
 assert.equal(daily.periodEv, 30, "Daily EV registrations must use consecutive month-to-date registration observations");
 assert.equal(daily.periodIce, 30);

@@ -26,8 +26,8 @@ assert.equal(parseArgs([]).refreshAll, false);
 assert.equal(parseArgs(["--refresh-all"]).preserveHistory, true);
 assert.throws(() => parseArgs(["--refresh-all", "--rto=AP31"]), /entire cycle/);
 const productionWorkflow = fs.readFileSync(new URL("../.github/workflows/rto-daily-neon-production.yml", import.meta.url), "utf8");
-assert.match(productionWorkflow, /cron: "30 14 \* \* \*"/,
-  "production scheduling must target 20:00 IST (14:30 UTC)");
+assert.match(productionWorkflow, /cron: "30 2 \* \* \*"/,
+  "production scheduling must target 08:00 IST (02:30 UTC)");
 assert.match(productionWorkflow, /initialize_cohort:[\s\S]*?default: false/,
   "manual production runs must not reseed an existing daily queue by default");
 assert.match(productionWorkflow, /--neon --work-queue --allow-partial --time-budget-minutes 315/,
@@ -52,6 +52,14 @@ for (const preserveHistory of [true, false]) {
     assert.equal(result.retention.skipped, "preserve_history");
   }
 }
+const periodRefreshes = [];
+await assert.rejects(() => finishRtoDailyReports({
+  run: { id: 1, snapshotDate: "2026-11-22" }, args: { preserveHistory: true },
+}, {
+  reconcilePeriods: async ({ through }) => periodRefreshes.push(through),
+  reconcile: async () => { throw new Error("Daily reconciliation failed"); },
+}), /Daily reconciliation failed/);
+assert.deepEqual(periodRefreshes, ["2026-11-22"], "completed periods refresh independently of Daily report generation");
 
 const loadTestCohort = JSON.parse(fs.readFileSync(new URL("../data/vahan/rto-top-100-cohort.json", import.meta.url), "utf8"));
 const validatedLoadTestCohort = validateRtoDailyLoadTestCohort(loadTestCohort);

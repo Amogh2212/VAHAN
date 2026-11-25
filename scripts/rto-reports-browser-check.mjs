@@ -75,6 +75,7 @@ async function main() {
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-rankings?state=x&rto=y&date=2026-07-24`)).status, 200, "annual API compatibility is retained");
     browser = await chromium.launch({ headless: true, ...(process.env.RTO_REPORT_BROWSER_EXECUTABLE ? {executablePath:process.env.RTO_REPORT_BROWSER_EXECUTABLE} : {}), ...(process.env.RTO_REPORT_BROWSER_CHANNEL ? {channel:process.env.RTO_REPORT_BROWSER_CHANNEL} : {}) });
     await checkWeeklyWithDisabledFactorAgent(browser);
+    await checkRegistrationPeriodsAndArchive(browser);
     const emptyPage = await browser.newPage({ viewport: { width: 1920, height: 825 } });
     await emptyPage.route("https://fonts.googleapis.com/**", (route) =>
       route.fulfill({ status: 200, contentType: "text/css", body: "" }));
@@ -349,6 +350,51 @@ async function checkWeeklyWithDisabledFactorAgent(browser) {
   await page.getByRole("heading", { name: "Observed active stock" }).waitFor({ timeout: 5_000 });
   assert.equal(await page.locator(".rto-report-list-item").count(), 100);
   assert.equal(await page.getByRole("tab", { name: "Daily" }).isEnabled(), true);
+  await page.close();
+}
+
+async function checkRegistrationPeriodsAndArchive(browser) {
+  const page = await browser.newPage();
+  const [daily, weeklyArchive, monthlyArchive] = BATCHES;
+  const weekly = { ...weeklyArchive, id: 904, isRegistrationPeriod: true };
+  const monthly = { ...monthlyArchive, id: 905, isRegistrationPeriod: true };
+  await page.route("https://fonts.googleapis.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/css", body: "" }));
+  await page.route("**/api/rto-reports/**", (route) => {
+    const { pathname } = new URL(route.request().url());
+    if (pathname === "/api/rto-reports/batches") {
+      return json(route, { batches: [daily, weekly, monthly, weeklyArchive, monthlyArchive] });
+    }
+    const selected = [weekly, monthly, weeklyArchive, monthlyArchive].find((entry) => pathname.endsWith(`/${entry.id}/reports`));
+    if (selected) return json(route, { batch: selected, reports: [{ ...REPORTS[0], id: 100_000 + selected.id }] });
+    const detail = [weekly, monthly, weeklyArchive, monthlyArchive].find((entry) => pathname.endsWith(`/${100_000 + entry.id}`));
+    if (!detail) return fulfillReportApi(route);
+    const report = fullReport(REPORTS[0]);
+    if (!detail.isRegistrationPeriod) return json(route, { report: { ...report, cadence: detail.cadence,
+      payload: { ...report.payload, cadence: detail.cadence } } });
+    const expectedDays = detail.cadence === "weekly" ? 7 : 31;
+    const coverage = { verifiedDays: 1, expectedDays, missingDates: [detail.periodEnd] };
+    const payload = { cadence: detail.cadence, period: { label: detail.periodEnd }, coverage,
+      metrics: { period: { ev: null, ice: null, total: null }, subtotal: { ev: 0, ice: 9, total: 9 } },
+      summary: `Verified subtotal of 9 registrations across 1 of ${expectedDays} days verified.`,
+      quality: { warnings: ["The full period total is unavailable."] },
+      trend: [{ date: detail.periodEnd, ev: null, ice: null, total: null, reason: "Missing Daily evidence" }] };
+    return json(route, { report: { ...report, id: 100_000 + detail.id, cadence: detail.cadence, payload } });
+  });
+  await page.goto(`${BASE_URL}/rto-reports.html`);
+  await page.getByRole("tab", { name: "Weekly" }).click();
+  await page.getByRole("heading", { name: "Weekly registrations" }).waitFor();
+  assert.match(await page.locator("#rtoReportDetail").innerText(), /1 of 7 days verified/);
+  const source = page.getByLabel("Report type");
+  await source.selectOption("archive");
+  await page.getByRole("heading", { name: "Observed active stock" }).waitFor();
+  await source.selectOption("registrations");
+  await page.getByRole("heading", { name: "Weekly registrations" }).waitFor();
+  await page.getByRole("tab", { name: "Monthly" }).click();
+  await page.getByRole("heading", { name: "Monthly registrations" }).waitFor();
+  assert.match(await page.locator("#rtoReportDetail").innerText(), /1 of 31 days verified/);
+  await page.getByRole("tab", { name: "Daily" }).click();
+  assert.equal(await source.isHidden(), true);
   await page.close();
 }
 
