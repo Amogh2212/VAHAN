@@ -448,15 +448,14 @@ async function selectReport(reportId) {
   const requestId = ++state.detailRequestId;
   const batchId = state.batch?.id;
   try {
-    const [body, draftsBody] = await Promise.all([
-      apiJson(`/api/rto-reports/${reportId}`),
-      state.currentUser?.role === "admin"
-        ? apiJson(`/api/admin/rto-factor-explanations?reportId=${encodeURIComponent(reportId)}&status=draft`)
-        : Promise.resolve({ explanations: [] }),
-    ]);
+    const { report } = await apiJson(`/api/rto-reports/${reportId}`);
     if (requestId !== state.detailRequestId || batchId !== state.batch?.id) return;
-    state.report = body.report;
-    state.draftExplanations = draftsBody.explanations ?? [];
+    const draftsBody = state.currentUser?.role === "admin" && report.factorContext?.status !== "disabled"
+      ? await apiJson(`/api/admin/rto-factor-explanations?reportId=${encodeURIComponent(reportId)}&status=draft`).catch(() => null)
+      : null;
+    if (requestId !== state.detailRequestId || batchId !== state.batch?.id) return;
+    state.report = report;
+    state.draftExplanations = draftsBody?.explanations ?? [];
     renderReportList();
     renderReportDetail(state.report);
   } catch (error) {

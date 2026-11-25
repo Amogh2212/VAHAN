@@ -74,6 +74,7 @@ async function main() {
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-daily?state=x&date=2026-07-24`)).status, 400);
     assert.equal((await fetch(`${BASE_URL}/api/rto-reports/oem-rankings?state=x&rto=y&date=2026-07-24`)).status, 200, "annual API compatibility is retained");
     browser = await chromium.launch({ headless: true, ...(process.env.RTO_REPORT_BROWSER_EXECUTABLE ? {executablePath:process.env.RTO_REPORT_BROWSER_EXECUTABLE} : {}), ...(process.env.RTO_REPORT_BROWSER_CHANNEL ? {channel:process.env.RTO_REPORT_BROWSER_CHANNEL} : {}) });
+    await checkWeeklyWithDisabledFactorAgent(browser);
     const emptyPage = await browser.newPage({ viewport: { width: 1920, height: 825 } });
     await emptyPage.route("https://fonts.googleapis.com/**", (route) =>
       route.fulfill({ status: 200, contentType: "text/css", body: "" }));
@@ -319,6 +320,36 @@ async function main() {
     if (server.exitCode === null) server.kill();
     if (serverError.trim()) process.stderr.write(serverError);
   }
+}
+
+async function checkWeeklyWithDisabledFactorAgent(browser) {
+  const page = await browser.newPage();
+  await page.route("https://fonts.googleapis.com/**", (route) =>
+    route.fulfill({ status: 200, contentType: "text/css", body: "" }));
+  await page.route("**/api/me", (route) => json(route, { user: { role: "admin" } }));
+  await page.route("**/api/rto-reports/**", fulfillReportApi);
+  const draftsUrl = "**/api/admin/rto-factor-explanations?*";
+  const availableDrafts = (route) => json(route, { explanations: [] });
+  await page.route(draftsUrl, availableDrafts);
+  await page.goto(`${BASE_URL}/rto-reports.html`);
+  await page.getByRole("heading", { name: "Pune Central RTO" }).waitFor();
+  await page.unroute(draftsUrl, availableDrafts);
+  await page.route(/\/api\/rto-reports\/\d+$/, (route) => {
+    const report = fullReport(REPORTS[0]);
+    return json(route, { report: {
+      ...report,
+      cadence: "weekly",
+      periodEnd: "2026-07-26",
+      explanations: [],
+      factorContext: { status: "disabled" },
+      payload: { ...report.payload, cadence: "weekly" },
+    } });
+  });
+  await page.getByRole("tab", { name: "Weekly" }).click();
+  await page.getByRole("heading", { name: "Observed active stock" }).waitFor({ timeout: 5_000 });
+  assert.equal(await page.locator(".rto-report-list-item").count(), 100);
+  assert.equal(await page.getByRole("tab", { name: "Daily" }).isEnabled(), true);
+  await page.close();
 }
 
 async function fulfillReportApi(route) {
