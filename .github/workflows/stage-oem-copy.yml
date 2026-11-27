@@ -36,7 +36,7 @@ jobs:
           try {
             const source = new URL(process.env.OEM_COPY_SOURCE_URL);
             if (source.hostname.endsWith('.neon.tech')) {
-              source.hostname = source.hostname.replace(/-pooler(?=\\.)/, '');
+              source.hostname = source.hostname.replace("-pooler.", ".");
             }
             await copyOemTracking({
               sourceUrl: source.href,
