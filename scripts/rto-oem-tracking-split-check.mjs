@@ -1,0 +1,51 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import EmbeddedPostgres from "embedded-postgres";
+import { copyOemTracking } from "./copy-rto-oem-tracking.mjs";
+import { createOemBaseline, getActiveOemBaseline } from "../lib/rto-oem-tracking.mjs";
+import { closePool, getOemPool, getPool, query } from "../lib/db.mjs";
+import { oemTrackingSchemaDatabaseUrl } from "./apply-rto-oem-tracking-schema.mjs";
+
+const directory = await fs.mkdtemp(path.join(os.tmpdir(), "vahan-oem-split-"));
+const port = Number(process.env.OEM_TEST_PORT || 57382);
+const pg = new EmbeddedPostgres({ databaseDir: directory, user: "testuser", password: "test-only", port, persistent: false, postgresFlags: ["-h", "127.0.0.1", "-k", ""], initdbFlags: ["--locale=C"], onLog: (line) => { if (/FATAL|PANIC/.test(line)) process.stderr.write(line); } });
+try {
+  await pg.initialise();
+  await pg.start();
+  for (const name of ["primary_test", "oem_test"]) await pg.createDatabase(name);
+  const pgUrl = (db) => `postgresql://testuser:test-only@127.0.0.1:${port}/${db}?sslmode=disable`;
+  process.env.DATABASE_URL = pgUrl("primary_test");
+  assert.equal(getOemPool(), getPool(), "without configuration, keep existing database behavior");
+  const sourceSchema = await fs.readFile(new URL("../db/rto-oem-tracking.sql", import.meta.url), "utf8");
+  await query(sourceSchema);
+  const cohort = Array.from({ length: 100 }, (_, i) => ({ rank: i + 1, state: "Demo", rto: `Office ${i + 1}` }));
+  const baseline = await createOemBaseline({ sourceCohortRunId: 1, cohort });
+  await query("update rto_oem_tracking_baselines set is_active=true, status='success' where id=$1", [baseline.id]);
+  await query("insert into rto_oem_tracking_observation_history (id, previous_observation) values (9007199254740993, '{\"count\":9007199254740993}'::jsonb)");
+  await query("create table primary_only (x int)");
+  const args = { sourceUrl: process.env.DATABASE_URL, targetUrl: pgUrl("oem_test"), expectedSourceHost: "127.0.0.1", expectedTargetHost: "127.0.0.1" };
+  await assert.rejects(copyOemTracking({ ...args, targetUrl: args.sourceUrl }), /source database/);
+  await assert.rejects(copyOemTracking({ ...args, expectedTargetHost: "invalid" }), /hostname/);
+  const manifest = await copyOemTracking(args);
+  assert.equal(manifest.rto_oem_tracking_scopes.count, 600);
+  assert.equal(manifest.rto_oem_tracking_observation_history.count, 1);
+  await assert.rejects(copyOemTracking(args), /initialize empty target/);
+  process.env.OEM_DATABASE_URL = args.targetUrl;
+  assert.notEqual(getOemPool(), getPool());
+  assert.equal((await getActiveOemBaseline()).id, baseline.id);
+  await getOemPool().query("update rto_oem_tracking_baselines set is_active=false where id=$1", [baseline.id]);
+  assert.equal(await getActiveOemBaseline(), null);
+  assert.equal((await query("select is_active from rto_oem_tracking_baselines")).rows[0].is_active, true);
+  assert.equal((await getOemPool().query("select previous_observation->>'count' as n from rto_oem_tracking_observation_history")).rows[0].n, "9007199254740993");
+  const insert = await getOemPool().query("insert into rto_oem_tracking_observation_history (previous_observation) values ('{}') returning id::text");
+  assert.equal(insert.rows[0].id, "9007199254740994");
+  assert.equal((await getOemPool().query("select to_regclass('primary_only') as t")).rows[0].t, null);
+  assert.equal(oemTrackingSchemaDatabaseUrl(process.env), args.targetUrl);
+  console.log("Verified read-only source copy, all table checksums, bigint preservation, sequence continuation, target guards, and isolated OEM routing.");
+} finally {
+  await closePool();
+  await pg.stop().catch(() => {});
+  await fs.rm(directory, { recursive: true, force: true });
+}
