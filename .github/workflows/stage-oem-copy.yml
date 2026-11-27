@@ -1,0 +1,33 @@
+name: Stage OEM tracking database copy
+on:
+  push:
+    branches: [codex/oem-storage-split]
+    paths: [docs/oem-copy-approved.flag]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vahan-rto-oem-tracking-production
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    if: github.repository == 'Amogh2212/VAHAN' && github.ref == 'refs/heads/codex/oem-storage-split'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --omit=dev --ignore-scripts
+      - name: Verify and copy the selected OEM tables
+        env:
+          OEM_COPY_SOURCE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          OEM_COPY_TARGET_URL: ${{ secrets.OEM_COPY_TARGET_URL }}
+          OEM_COPY_SOURCE_HOST: ${{ vars.OEM_COPY_SOURCE_HOST }}
+          OEM_COPY_TARGET_HOST: ${{ vars.OEM_COPY_TARGET_HOST }}
+        run: node scripts/copy-rto-oem-tracking.mjs --copy-to-empty
