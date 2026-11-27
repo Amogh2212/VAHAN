@@ -11,7 +11,8 @@ Baseline: (--cohort-run-id ID | --latest-cohort | --resume-baseline-id ID) [--se
 Daily: [--baseline-id ID] [--automatic] (defaults to the established active baseline; never creates one)
 Optional: --refresh (daily only) --rto NAME --limit 1..100 --time-budget-minutes 315 --output PATH
 Baseline resume preserves successful maker membership across days. Daily observations use today's IST date.
-Remote writes require --production. DATABASE_URL is read directly; local dotenv files are never loaded.`;
+Remote writes require --production. OEM_DATABASE_URL optionally splits OEM data from DATABASE_URL.
+Primary cohort and scrape lock still use DATABASE_URL. Local dotenv files are never loaded.`;
 
 export function parseTrackingArguments(args) {
   if (args.includes("--help")) return { help: true };
@@ -350,6 +351,12 @@ async function main() {
   const options = parseTrackingArguments(process.argv.slice(2));
   if (options.help) { console.log(HELP); return; }
   process.env.DATABASE_URL = trackingDatabaseUrl(process.env, options.production);
+  if (process.env.OEM_DATABASE_URL_UNPOOLED || process.env.OEM_DATABASE_URL) {
+    process.env.OEM_DATABASE_URL = trackingDatabaseUrl({
+      DATABASE_URL_UNPOOLED: process.env.OEM_DATABASE_URL_UNPOOLED,
+      DATABASE_URL: process.env.OEM_DATABASE_URL,
+    }, options.production);
+  }
   const [{ query, closePool }, { acquireVahanScrapeLock }, store, source] = await Promise.all([
     import("../lib/db.mjs"), import("../lib/vahan-scrape-lock.mjs"), import("../lib/rto-oem-tracking.mjs"), import("../lib/rto-oem-tracking-source.mjs"),
   ]);
