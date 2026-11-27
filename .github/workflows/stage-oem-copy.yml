@@ -26,8 +26,27 @@ jobs:
       - run: npm ci --omit=dev --ignore-scripts
       - name: Verify and copy the selected OEM tables
         env:
-          OEM_COPY_SOURCE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
-          OEM_COPY_TARGET_URL: ${{ secrets.OEM_COPY_TARGET_URL }}
+          OEM_COPY_SOURCE_URL: ${{ secrets.DATABASE_URL_UNPOOLED || secrets.DATABASE_URL }}
+          OEM_COPY_TARGET_URL: ${{ secrets.OEM_DATABASE_URL }}
           OEM_COPY_SOURCE_HOST: ${{ vars.OEM_COPY_SOURCE_HOST }}
           OEM_COPY_TARGET_HOST: ${{ vars.OEM_COPY_TARGET_HOST }}
-        run: node scripts/copy-rto-oem-tracking.mjs --copy-to-empty
+        run: |
+          node --input-type=module <<'JS'
+          import { copyOemTracking } from './scripts/copy-rto-oem-tracking.mjs';
+          try {
+            const source = new URL(process.env.OEM_COPY_SOURCE_URL);
+            if (source.hostname.endsWith('.neon.tech')) {
+              source.hostname = source.hostname.replace(/-pooler(?=\\.)/, '');
+            }
+            await copyOemTracking({
+              sourceUrl: source.href,
+              targetUrl: process.env.OEM_COPY_TARGET_URL,
+              expectedSourceHost: process.env.OEM_COPY_SOURCE_HOST,
+              expectedTargetHost: process.env.OEM_COPY_TARGET_HOST,
+              log: console.log,
+            });
+          } catch (error) {
+            console.error(error instanceof TypeError ? 'Check the source and destination connection settings.' : error.message);
+            process.exitCode = 1;
+          }
+          JS
