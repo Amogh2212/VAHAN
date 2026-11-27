@@ -28,21 +28,31 @@ jobs:
         env:
           OEM_COPY_SOURCE_URL: ${{ secrets.DATABASE_URL_UNPOOLED || secrets.DATABASE_URL }}
           OEM_COPY_TARGET_URL: ${{ secrets.OEM_DATABASE_URL }}
-          OEM_COPY_SOURCE_HOST: ${{ vars.OEM_COPY_SOURCE_HOST }}
-          OEM_COPY_TARGET_HOST: ${{ vars.OEM_COPY_TARGET_HOST }}
         run: |
           node --input-type=module <<'JS'
           import { copyOemTracking } from './scripts/copy-rto-oem-tracking.mjs';
           try {
-            const source = new URL(process.env.OEM_COPY_SOURCE_URL);
-            if (source.hostname.endsWith('.neon.tech')) {
-              source.hostname = source.hostname.replace("-pooler.", ".");
+            function checkedUrl(raw, endpoint, allowPooler = false) {
+              const url = new URL(raw);
+              const [label, ...domain] = url.hostname.split('.');
+              if (!['postgres:', 'postgresql:'].includes(url.protocol)
+                || !url.username || !url.password || (url.port && url.port !== '5432')
+                || url.pathname !== '/neondb'
+                || !url.hostname.endsWith('.neon.tech')
+                || (label !== endpoint && !(allowPooler && label === endpoint + '-pooler'))) {
+                throw new TypeError('Database connection did not pass checks.');
+              }
+              url.hostname = [endpoint, ...domain].join('.');
+              return url;
             }
+            // Match the independently confirmed Neon production endpoint IDs.
+            const source = checkedUrl(process.env.OEM_COPY_SOURCE_URL, 'ep-morning-pond-az4f1c1z', true);
+            const target = checkedUrl(process.env.OEM_COPY_TARGET_URL, 'ep-royal-mountain-bizy3qvq');
             await copyOemTracking({
               sourceUrl: source.href,
-              targetUrl: process.env.OEM_COPY_TARGET_URL,
-              expectedSourceHost: process.env.OEM_COPY_SOURCE_HOST,
-              expectedTargetHost: process.env.OEM_COPY_TARGET_HOST,
+              targetUrl: target.href,
+              expectedSourceHost: source.hostname,
+              expectedTargetHost: target.hostname,
               log: console.log,
             });
           } catch (error) {
